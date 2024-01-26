@@ -32,17 +32,22 @@ ajouter un plan pour la position des trous ??
 
 ### premiere utilisation 
 j'ai crée un code pour trouver les parametres a copier coller dans settings.h
-
 charger le fichier start.ino et televerser sur le microcontroleur
 ouvrir la console et suivre les information pour choisir le reglage (doigts ou air flow)
 
--- parties doigts :
-deplacer de +/-1,+/-5 ou +/-10 degrès chaque servo l'un après l'autre, 
+parties doigts :
+
+deplacer de +/-1,+/-5 ou +/-10 degrès chaque servo l'un après l'autre
+
 avant de passer a la note suivante, pensez a tester le changement de note en activant le ventilateur et le solenoide avec la commande indiqué
+
 une fois tout les servo initialisé, copier le resultat dans settings.h
 
--- partie air flow :
+partie air flow :
+
 il faut definir la position air MIN_SERVO_AIR_FLOW avec tout les trous bouché car c'est la plus grande consomation qu'il y aura pour la flute
+
 le servo air flow sera initilialisé a la position minimum (MIN_SERVO_AIR_FLOW), la valve ouverte et le ventilateur au maximum
+
 changer l'angle de la meme maniere qu'avec les doigts jusqu'a avoir le bon son, ce sera la position MIN_SERVO_AIR_FLOW a mettre dans settings.h
 
