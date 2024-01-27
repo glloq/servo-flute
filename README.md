@@ -48,13 +48,19 @@ Schemas Arduino a ajouter
 
 
 ## Fichiers 3D
-Le systeme est concu pour fonctionner avec une flute a bec bas de gamme acheté sur amazon, la position des doigts peut ne pas etre adapté a d'autres flutes a bec sans faire de changement sur les doigts ou le support de rotation des doigts( on peut ce permettre 1 a 3 mm de decallage avec l'utilisation de la mousse) 
-verifier que les dimensions sont adapté a la flute avant d'imprimer quoi que ce soit
+Le systeme est concu pour fonctionner avec une flute a bec bas de gamme acheté sur amazon, la position des doigts peut ne pas etre adapté a d'autres flutes a bec sans faire de changement sur les doigts ou le support de rotation des doigts( on peut ce permettre 1 a 2 mm de decallage avec l'utilisation de la mousse) 
+verifier que les dimensions sont adapté a la flute en votre pocession avant d'imprimer quoi que ce soit
 ![Dimensions flute](https://github.com/glloq/servo-flute/blob/main/img/dimenssionFlute.png?raw=true)
 
 -- a venir --
 
+## le support en bois
+
+
 ### premiere utilisation 
+
+ => encore plein de bugs :S
+
 j'ai crée un code pour trouver les parametres a copier coller dans settings.h
 charger le fichier start.ino et televerser sur le microcontroleur
 ouvrir la console et suivre les information pour choisir le reglage (doigts ou air flow)
