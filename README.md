@@ -1,14 +1,14 @@
 # servo flute
+<! projet en cours non testé >
 
-Schema des doigts
+## presentation du projet
+
 
 ![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/schemas%20doigts.png?raw=true)
 
-Schema du systeme d'air 
-
 ![Schema du systeme d'air ](https://github.com/glloq/servo-flute/blob/main/img/schemas%20air.png?raw=true)
 
-Schemas Arduino
+Schemas Arduino a ajouter 
 
 ## materiel necessaire 
 
@@ -18,6 +18,7 @@ Schemas Arduino
 - du fil de fer diametre 1mm
 - un systeme de mousse isolante pour fenetre a coller (bande de 5mm de large min environ 3mm d'epaisseur)
 - 10 roulements 4x13x5mm
+- 1 vis M4x20 une tige filetée M4 coupé a la bonne longeur
 - Alimentation 5V pour les servomoteurs => les 11 servomoteurs bougent en meme temps, prevoir une puissance adapté aux servomoteurs
   
 - 2 mofsets  
@@ -29,12 +30,16 @@ Schemas Arduino
   - un bout de tube pcb pour cable electrique diametre 17mm
  
 - Un systeme de support en bois pour tenir tout les composants
-- toutes les pieces imprimé en 3D => viendrons quand tout fonctionne mais je sis pas certain que ce s'adapte facilement aux autres flutes 
+
+- toutes les pieces imprimé en 3D
+
+
 
 ## Fichiers 3D
+Le systeme est concu pour fonctionner avec une flute a bec bas de gamme acheté sur amazon, la position des doigts peut ne pas etre adapté a d'autres flutes a bec sans faire de changement sur les doigts ou le support de rotation des doigts( on peut ce permettre 1 a 3 mm de decallage avec l'utilisation de la mousse) 
+
 
 -- a venir --
-ajouter un plan pour la position des trous ??
 
 ### premiere utilisation 
 j'ai crée un code pour trouver les parametres a copier coller dans settings.h
