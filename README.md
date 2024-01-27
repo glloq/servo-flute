@@ -3,9 +3,21 @@
 
 ## presentation du projet
 
+Le systeme est concu pour jouer de la flute a bec automatiquement en fonction des messages midi recu (par usb uniquement).
+dans le cas d'un message midi NoteOn, si la note peut etre jouée le systeme va :
+- augmenter la vitesse du ventilateur a 100%
+- deplacer les doigts pour faire l'accord voulu
+- deplacer le servo airFlow entre l'angle MIN_SERVO_AIR_FLOW et MAX_SERVO_AIR_FLOW fonction de la velocité
+- ouvrir la valve d'air vers la flute 
+
+Après une noteOn, le servo air flow s'ouvrira de 1 degres toute les 25ms ( TIME_BETWEEN_UPDATE ) jusqu'a la limite min (MIN_SERVO_AIR_FLOW) si la note est active et jusqu'au max ( OPEN_SERVO_AIR_FLOW ) a la meme vitesse 
+
+dans le cas d'un message midi NoteOff, si la note peut etre jouée le systeme :
+- ferme la valve d'air vers la flute
+- reduit la vitesse du ventilateur
+- ouvre le servo airFlow jusqu'a la position OPEN_SERVO_AIR_FLOW
 
 ![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/schemasComplet.png?raw=true)
-
 
 
 Schemas Arduino a ajouter 
