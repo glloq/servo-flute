@@ -4,7 +4,7 @@
 ## presentation du projet
 
 
-![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/schemasomplet.png?raw=true)
+![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/schemasComplet.png?raw=true)
 
 
 
