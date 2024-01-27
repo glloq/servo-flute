@@ -1,9 +1,13 @@
 # servo flute
 
 Schema des doigts
-![alt text](https://github.com/glloq/servo-flute/blob/main/img/schemas doigts.png?raw=true)
+
+![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/schemas doigts.png?raw=true)
+
 Schema du systeme d'air 
-![alt text](https://github.com/glloq/servo-flute/blob/main/img/schemas air.png?raw=true)
+
+![Schema du systeme d'air ](https://github.com/glloq/servo-flute/blob/main/img/schemas air.png?raw=true)
+
 Schemas Arduino
 
 ## materiel necessaire 
