@@ -38,8 +38,9 @@ Schemas Arduino a ajouter
 - Une alimentation 12V
 - Un systeme de valve
   - un solenoide 12v
+  - une diode
   - un joint torique de 15x1mm
-  - un bout de tube pcb pour cable electrique diametre 17mm
+  - un bout de tube pcb pour cable electrique diametre externe 17mm
  
 - Un systeme de support en bois pour tenir tout les composants
 
