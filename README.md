@@ -49,7 +49,8 @@ Schemas Arduino a ajouter
 
 ## Fichiers 3D
 Le systeme est concu pour fonctionner avec une flute a bec bas de gamme acheté sur amazon, la position des doigts peut ne pas etre adapté a d'autres flutes a bec sans faire de changement sur les doigts ou le support de rotation des doigts( on peut ce permettre 1 a 3 mm de decallage avec l'utilisation de la mousse) 
-
+verifier que les dimensions sont adapté a la flute avant d'imprimer quoi que ce soit
+![Dimensions flute](https://github.com/glloq/servo-flute/blob/main/img/dimenssionFlute.png?raw=true)
 
 -- a venir --
 
