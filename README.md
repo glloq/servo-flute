@@ -4,9 +4,9 @@
 ## presentation du projet
 
 
-![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/schemas%20doigts.png?raw=true)
+![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/schemasomplet.png?raw=true)
 
-![Schema du systeme d'air ](https://github.com/glloq/servo-flute/blob/main/img/schemas%20air.png?raw=true)
+
 
 Schemas Arduino a ajouter 
 
