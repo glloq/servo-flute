@@ -17,7 +17,7 @@ dans le cas d'un message midi NoteOff, si la note peut etre jouée le systeme :
 - reduit la vitesse du ventilateur
 - ouvre le servo airFlow jusqu'a la position OPEN_SERVO_AIR_FLOW
 
-![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/schemasComplet.png?raw=true)
+![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/schemasCompletv2.png?raw=true)
 
 
 Schemas Arduino a ajouter 
