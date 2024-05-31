@@ -1,5 +1,5 @@
 # servo flute
-<! projet en cours non testé >
+<! projet en cours de tests >
 
 ## presentation du projet
 
