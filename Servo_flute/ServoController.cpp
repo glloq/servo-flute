@@ -73,7 +73,7 @@ void ServoController::resetServosPosition() {
       Serial.println(i);
     } 
   }
-  	  delay(1000); // délai pour laisser les servos se déplacer
+  	  delay(3000); // délai pour laisser les servos se déplacer
      //ferme tout les trous 
   for (uint8_t i = 0; i < NUMBER_SERVOS_FINGER; ++i) {
     setServoAngle(i, closedAngles[i]); 
@@ -92,7 +92,7 @@ void ServoController::openFingers(bool open) {
 
   if (open){
     for (uint8_t i = 0; i < NUMBER_SERVOS_FINGER; ++i) {
-      setServoAngle(i, closedAngles[i]+(ANGLE_OPEN*sensRotation[i]));  
+      setServoAngle(i, closedAngles[i]-(ANGLE_OPEN*sensRotation[i]));  
       delay(10); // délai pour laisser les servos se déplacer
     }
   }else{

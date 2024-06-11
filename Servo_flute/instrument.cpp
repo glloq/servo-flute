@@ -9,7 +9,7 @@ Instrument::Instrument() : servoController() {
   vibratoDirection=true;
   pinMode(PIN_OPEN_FINGER, INPUT_PULLUP); 
   ButtonState = digitalRead(PIN_OPEN_FINGER);
-  //test();
+ // test();
 }
 /*******************************************************************************
 ----------------              gestion notes on             --------------------
@@ -43,7 +43,7 @@ void Instrument::noteOff(uint8_t midiNote) {
 ******************************************************************************/
 void Instrument:: test(){
   int i;
-  for(i=FIRST_MIDI_NOTE;i<NUMBER_NOTES+FIRST_MIDI_NOTE;i++){
+  for(i=FIRST_MIDI_NOTE;i<10+FIRST_MIDI_NOTE;i++){
     noteOn(i,50);//vient faire toutes les notes jouable de la flute
     delay(500); // 1/2 seconde noteOn
     noteOff(i);//essayer sans ?
@@ -71,6 +71,7 @@ void Instrument:: modulationWheel(int value){
 void Instrument:: update(){
   servoController.update();
 
+   /* ca me fait des bugs ...
    // Lecture de l'état du bouton
     bool etatEntree = digitalRead(PIN_OPEN_FINGER);
     if (etatEntree != ButtonState) {//si changement d'etat
@@ -83,7 +84,7 @@ void Instrument:: update(){
         servoController.openFingers(false);
       }
       ButtonState=etatEntree;
-    }
+    }*/
 
   if(vibratoActive){ // si le vibrato est actif
     if(isPlaying){// si on est en train de jouer une note

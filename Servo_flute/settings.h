@@ -7,7 +7,7 @@ fichiers pour la configuration du systeme
 #include "stdint.h"
 #define DEBUG 0
 
-#define  PIN_OPEN_FINGER 4 //pin bouton ouverture des doigts 
+#define  PIN_OPEN_FINGER 10 //pin bouton ouverture des doigts 
 
 /*******************************************************************************
 -------------------------         MIDI SETTINGS        ------------------------
@@ -19,9 +19,9 @@ fichiers pour la configuration du systeme
 ******************************************************************************/
 //reglage valve arrivé air
 #define NUM_SERVO_VALVE 15 // position brachement servo valve sur le PCA9685
-#define SERVO_VALVE_CLOSE 40 // angle pour bloquer l'air
-#define SERVO_VALVE_MIN_FLOW 60 // Angle ouverture minimum de la valve
-#define SERVO_VALVE_MAX_FLOW 160 // Angle ouverture max de la valve
+#define SERVO_VALVE_CLOSE 30 // angle pour bloquer l'air
+#define SERVO_VALVE_MIN_FLOW 35 // Angle ouverture minimum de la valve
+#define SERVO_VALVE_MAX_FLOW 45 // Angle ouverture max de la valve
 
 //reglage vibrato/modulation 
 #define VIBRATO_MAX 100 // temps minimum entre 2 variations d'angle de servo valve
@@ -31,16 +31,16 @@ fichiers pour la configuration du systeme
 /*******************************************************************************
 ---------------------------   FINGERS MANAGER ------------------------
 ******************************************************************************/
-#define TIMEUNPOWER 100 //temps pour desactiver l'alim de la carte pwm 
+#define TIMEUNPOWER 200 //temps pour desactiver l'alim de la carte pwm 
 #define PIN_SERVOS_OFF 5//pin oe carte pwm pour couper l'alim des servomoteurs et limiter le bruits => on a 0 off a 1
 
 #define NUMBER_SERVOS_FINGER 10 // nombre de servo pour les doigts 
-#define NUMBER_NOTES 10 // nombres de note jouables donc 21 ou jusqu'a 32 si on prend en compte les trous demis ouvert
-#define ANGLE_OPEN 30 // angle ouverture du trouo de la flute
+#define NUMBER_NOTES 21 // nombres de note jouables donc 21 ou jusqu'a 32 si on prend en compte les trous demis ouvert
+#define ANGLE_OPEN 35 // angle ouverture du trouo de la flute
 #define ANGLE_HALF_OPEN 10 // test ouverture a moitié du trou => bien gerer avec la mousse ? 
 
 // Tableau des angles pour chaque doigts/servo en position fermé (idealement entre 50 et 120 °)
-const uint16_t closedAngles[NUMBER_SERVOS_FINGER] = {65, 95, 95, 85, 95, 95, 90, 108, 90, 108};
+const uint16_t closedAngles[NUMBER_SERVOS_FINGER] = {55, 100, 95, 85, 95, 100, 95, 108, 95, 108};
 
 //sens de rotation des servomoteur 1 : sens horaire, -1:sens anti horaire
 const int sensRotation[NUMBER_SERVOS_FINGER] = {1,1,1,1,1,1,1,1,1,1};
