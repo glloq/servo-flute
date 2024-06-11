@@ -17,6 +17,7 @@ private:
   void closeValve();
   bool isPlaying; //stocke si en train de jouer une note
   
+  bool ButtonState;
   //gestion angle ouverture valve
   int servoValveAngle;//on stocke l'angle actuel de servoValve 
 

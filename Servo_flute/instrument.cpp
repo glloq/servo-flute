@@ -7,7 +7,8 @@ Instrument::Instrument() : servoController() {
   isPlaying=false;
   vibratoActive=false;
   vibratoDirection=true;
-
+  pinMode(PIN_OPEN_FINGER, INPUT_PULLUP); 
+  ButtonState = digitalRead(PIN_OPEN_FINGER);
   //test();
 }
 /*******************************************************************************
@@ -69,6 +70,21 @@ void Instrument:: modulationWheel(int value){
 ******************************************************************************/
 void Instrument:: update(){
   servoController.update();
+
+   // Lecture de l'état du bouton
+    bool etatEntree = digitalRead(PIN_OPEN_FINGER);
+    if (etatEntree != ButtonState) {//si changement d'etat
+      if (etatEntree == LOW) {
+        Serial.println("DEBUG : instrument, bouton appuyé");
+        servoController.openFingers(true);
+
+      } else {
+        Serial.println("DEBUG : instrument, bouton relaché");
+        servoController.openFingers(false);
+      }
+      ButtonState=etatEntree;
+    }
+
   if(vibratoActive){ // si le vibrato est actif
     if(isPlaying){// si on est en train de jouer une note
       // on vient faire bouegr servoVale en fct du rythme recu et des valeurs dans settings

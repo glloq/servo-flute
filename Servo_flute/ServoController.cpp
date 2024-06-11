@@ -42,10 +42,8 @@ void ServoController::SetAirFlow (int angle) {
 void ServoController::desactivate(bool active){
   if (active){
   digitalWrite(PIN_SERVOS_OFF, LOW);//on active la carte de ctrl des servos
-  Serial.println("DEBUG : active servos");
   }else{
   digitalWrite(PIN_SERVOS_OFF, HIGH);//on desactive la carte de ctrl des servos pour reduire le bruit des moteurs
-  Serial.println("DEBUG : desactive servos");
   }
 }
 
@@ -95,12 +93,12 @@ void ServoController::openFingers(bool open) {
   if (open){
     for (uint8_t i = 0; i < NUMBER_SERVOS_FINGER; ++i) {
       setServoAngle(i, closedAngles[i]+(ANGLE_OPEN*sensRotation[i]));  
-      delay(80); // délai pour laisser les servos se déplacer
+      delay(10); // délai pour laisser les servos se déplacer
     }
   }else{
     for (uint8_t i = 0; i < NUMBER_SERVOS_FINGER; ++i) {
       setServoAngle(i, closedAngles[i]);  
-      delay(100); // délais pour laisser les servos se déplacer
+      delay(10); // délais pour laisser les servos se déplacer
     }
   }
 }
@@ -130,25 +128,12 @@ void ServoController::noteOn(int numNote){
 ----------------------------- Update -------------------------------
 ********************************************************************************/
 void ServoController::update(){
-  //verifier si le bouton ouverture des doigts est actif 
-    // Lecture de l'état de la broche d'entrée
-    
-   /* bool etatEntree = digitalRead(PIN_OPEN_FINGER);
-    if (etatEntree == HIGH) {
-      openFingers(true);
-    } else {
-      openFingers(false);
-    }*/
   //gestion coupure alimentation des servomoteurs pour limiter le bruit 
   if (isPowered){
     unsigned long currentTime = millis();
-
     if(currentTime>(TimeLastAction+TIMEUNPOWER)){// si on depase le temps d'attente sans actions 
-        Serial.println("DEBUG ServoController::update");
-
         desactivate(false); // on desactive l'alim des servos de la carte mcp
         isPowered=false; // on stocke l'etat d'alim de la carte mcp
-
     }
   }
 }

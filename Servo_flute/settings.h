@@ -7,7 +7,7 @@ fichiers pour la configuration du systeme
 #include "stdint.h"
 #define DEBUG 0
 
-#define PIN_OPEN_FINGER 4//pin bouton ouverture des doigts 
+#define  PIN_OPEN_FINGER 4 //pin bouton ouverture des doigts 
 
 /*******************************************************************************
 -------------------------         MIDI SETTINGS        ------------------------
