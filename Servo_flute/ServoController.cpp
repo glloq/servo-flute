@@ -9,6 +9,8 @@ ServoController::ServoController() {
   //on active la carte 
   pinMode(PIN_SERVOS_OFF, OUTPUT);
   digitalWrite(PIN_SERVOS_OFF, LOW);//on active la carte de ctrl des servos
+  isPowered=true;
+
 
   pwm.setOscillatorFrequency(27000000);
   pwm.setPWMFreq(SERVO_FREQUENCY);
@@ -19,6 +21,7 @@ ServoController::ServoController() {
 ----------------        Gestion angle finger         --------------------
 ******************************************************************************/
 void ServoController::setServoAngle(uint8_t servoNum, uint16_t angle) {
+  TimeLastAction = millis();//on stocke le temps de la derniere action 
   checkPowerOn();
   // Adaptation de l'angle en plage de pulsations pour Adafruit_ServoDriver
   uint16_t pulsation = map(angle, SERVO_MIN_ANGLE, SERVO_MAX_ANGLE, SERVO_PULSE_MIN, SERVO_PULSE_MAX);
@@ -39,8 +42,10 @@ void ServoController::SetAirFlow (int angle) {
 void ServoController::desactivate(bool active){
   if (active){
   digitalWrite(PIN_SERVOS_OFF, LOW);//on active la carte de ctrl des servos
+  Serial.println("DEBUG : active servos");
   }else{
   digitalWrite(PIN_SERVOS_OFF, HIGH);//on desactive la carte de ctrl des servos pour reduire le bruit des moteurs
+  Serial.println("DEBUG : desactive servos");
   }
 }
 
@@ -48,11 +53,10 @@ void ServoController::desactivate(bool active){
 ----------------      remet l'alim des servo si besoin          --------------------
 ******************************************************************************/
 void ServoController::checkPowerOn(){
-  //on verifie si la carte est active avant de bouger les doigts
-  if (isPowered==false){
+  
+  if (isPowered==false){  //on verifie si la carte est active avant de bouger les doigts
   desactivate(true); // on active l'alim des servos de la carte mcp
   isPowered=true; // on met a jours l'etat d'alim de la carte mcp
-  TimeLastAction = millis();//on stocke le temps de la derniere action 
   }
 }
 
@@ -61,7 +65,7 @@ void ServoController::checkPowerOn(){
 ******************************************************************************/
 void ServoController::resetServosPosition() {
   // Utilisé au démarrage pour déplacer les doigts en position initiale fermée et le servoValve
-
+  setServoAngle(NUM_SERVO_VALVE, SERVO_VALVE_CLOSE);
   //vient ouvrir tous les doigts
   for (uint8_t i = 0; i < NUMBER_SERVOS_FINGER; ++i) {
     setServoAngle(i, closedAngles[i]-(ANGLE_OPEN*sensRotation[i]));  // ouvert 
@@ -72,7 +76,7 @@ void ServoController::resetServosPosition() {
     } 
   }
   	  delay(1000); // délai pour laisser les servos se déplacer
-     //ferme tout les tous 
+     //ferme tout les trous 
   for (uint8_t i = 0; i < NUMBER_SERVOS_FINGER; ++i) {
     setServoAngle(i, closedAngles[i]); 
 	  //delay(200); // délai pour laisser les servos se déplacer
@@ -128,19 +132,24 @@ void ServoController::noteOn(int numNote){
 void ServoController::update(){
   //verifier si le bouton ouverture des doigts est actif 
     // Lecture de l'état de la broche d'entrée
-    bool etatEntree = digitalRead(PIN_OPEN_FINGER);
+    
+   /* bool etatEntree = digitalRead(PIN_OPEN_FINGER);
     if (etatEntree == HIGH) {
       openFingers(true);
     } else {
       openFingers(false);
-    }
+    }*/
   //gestion coupure alimentation des servomoteurs pour limiter le bruit 
-  /*if (isPowered){
+  if (isPowered){
     unsigned long currentTime = millis();
-    if(currentTime<(TimeLastAction+TIMEUNPOWER)){// si on depase le temps d'attente sans actions 
+
+    if(currentTime>(TimeLastAction+TIMEUNPOWER)){// si on depase le temps d'attente sans actions 
+        Serial.println("DEBUG ServoController::update");
+
         desactivate(false); // on desactive l'alim des servos de la carte mcp
         isPowered=false; // on stocke l'etat d'alim de la carte mcp
+
     }
-  }*/
+  }
 }
 

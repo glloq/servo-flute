@@ -15,7 +15,6 @@ private:
   ServoController servoController;
   void openValve(int velocity);
   void closeValve();
-  bool isActive;//boolean pour couper l'alim des servos via update
   bool isPlaying; //stocke si en train de jouer une note
   
   //gestion angle ouverture valve

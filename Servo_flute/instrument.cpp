@@ -8,7 +8,7 @@ Instrument::Instrument() : servoController() {
   vibratoActive=false;
   vibratoDirection=true;
 
-  test();
+  //test();
 }
 /*******************************************************************************
 ----------------              gestion notes on             --------------------
@@ -19,7 +19,7 @@ void Instrument::noteOn(uint8_t midiNote, uint8_t velocity) {
     //******************************************** delay a supprimer ou reduire au min---------------------------------------------------------<<<<<<<<<<<<<<<<<<<<<<<
     //delay(80);
     openValve(velocity);                                                  // ouvre les valves d'air en fonction de la velocité
-    isActive=true;
+    isPlaying=true;
   }else{
     if (DEBUG) {Serial.println("DEBUG : instrument, Wrong MIDI noteOn");}
   } 
@@ -31,7 +31,7 @@ void Instrument::noteOn(uint8_t midiNote, uint8_t velocity) {
 void Instrument::noteOff(uint8_t midiNote) {
   if ((midiNote>=FIRST_MIDI_NOTE)&&(midiNote<=(FIRST_MIDI_NOTE+NUMBER_NOTES))){   // si on peut jouer la note
     closeValve();                                                            // ferme la valve d'air           
-    isActive=false;                                  
+    isPlaying=false;                                  
   }else{
     if (DEBUG) {Serial.println("DEBUG : instrument, Wrong MIDI noteOff");}
   } 
@@ -69,8 +69,8 @@ void Instrument:: modulationWheel(int value){
 ******************************************************************************/
 void Instrument:: update(){
   servoController.update();
-  if(isActive){// si on est en train de jouer une note
-    if(vibratoActive){ // si le vibrato est actif
+  if(vibratoActive){ // si le vibrato est actif
+    if(isPlaying){// si on est en train de jouer une note
       // on vient faire bouegr servoVale en fct du rythme recu et des valeurs dans settings
       unsigned long currentTime = millis();
       if(currentTime>vibratoNextTime){

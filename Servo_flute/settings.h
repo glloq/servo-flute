@@ -31,11 +31,11 @@ fichiers pour la configuration du systeme
 /*******************************************************************************
 ---------------------------   FINGERS MANAGER ------------------------
 ******************************************************************************/
-#define TIMEUNPOWER 1000 //temps pour desactiver l'alim de la carte pwm 
+#define TIMEUNPOWER 100 //temps pour desactiver l'alim de la carte pwm 
 #define PIN_SERVOS_OFF 5//pin oe carte pwm pour couper l'alim des servomoteurs et limiter le bruits => on a 0 off a 1
 
 #define NUMBER_SERVOS_FINGER 10 // nombre de servo pour les doigts 
-#define NUMBER_NOTES 21 // nombres de note jouables donc 21 ou jusqu'a 32 si on prend en compte les trous demis ouvert
+#define NUMBER_NOTES 10 // nombres de note jouables donc 21 ou jusqu'a 32 si on prend en compte les trous demis ouvert
 #define ANGLE_OPEN 30 // angle ouverture du trouo de la flute
 #define ANGLE_HALF_OPEN 10 // test ouverture a moitié du trou => bien gerer avec la mousse ? 
 
