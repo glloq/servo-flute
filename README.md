@@ -12,7 +12,7 @@ dans le cas d'un message midi NoteOff, si la note peut etre jouée le systeme :
 - ferme la valve d'air vers la flute
 
 ## Schema principe
-![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/schemasComplet.png?raw=true)
+![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/schemasDePrincipe.png?raw=true)
 
 ## materiel necessaire 
 
