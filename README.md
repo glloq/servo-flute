@@ -25,7 +25,7 @@ dans le cas d'un message midi NoteOff, si la note peut etre jouée le systeme :
 - un systeme de mousse isolante pour fenetre a coller (bande de 5mm de large min environ 3mm d'epaisseur)
 - 10 roulements 4x13x5mm ?
 - 1 vis M4x20 une tige filetée M4 coupé a la bonne longeur
-- Un systeme de support en bois pour tenir tout les composants
+- Une planche de bois pour tenir tout les composants
 
 - toutes les pieces imprimé en 3D
 
