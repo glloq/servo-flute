@@ -40,10 +40,7 @@ verifier que les dimensions sont adapté a la flute en votre pocession avant d'i
 
 ## le support en bois
 
-
-il faut definir la position air MIN_SERVO_AIR_FLOW avec tout les trous bouché car c'est la plus grande consomation qu'il y aura pour la flute
-
-le servo air flow sera initilialisé a la position minimum (MIN_SERVO_AIR_FLOW), la valve ouverte et le ventilateur au maximum
-
-changer l'angle de la meme maniere qu'avec les doigts jusqu'a avoir le bon son, ce sera la position MIN_SERVO_AIR_FLOW a mettre dans settings.h
+-- a venir --
+ 
+## Premiere utilisation
 
