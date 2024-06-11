@@ -17,7 +17,7 @@ l'objectif est d'etre le plus complet au niveau de la selection des messages qui
 -Message de System Real-Time : Comprend des messages qui sont transmis en temps réel pour synchroniser les appareils MIDI, tels que les messages de synchronisation d'horloge.
 -Message de System Exclusive (SysEx) : Utilisé pour transmettre des données spécifiques au fabricant et aux modèles d'équipements MIDI. Ces messages peuvent être très variés et personnalisés.
 ------------------------------------------------------------------------------------------------
-Chaque fonction qui peut etre utilisé doit etre decommenté et déclaré dans instrument.h 
+Chaque fonction qui peut etre utilisé doit etre decommenté dans le .cpp et déclaré dans instrument.h 
 ************************************************************************************************/
 
 class MidiHandler {

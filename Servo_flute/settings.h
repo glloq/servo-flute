@@ -5,51 +5,45 @@ fichiers pour la configuration du systeme
 #ifndef SETTINGS_H
 #define SETTINGS_H
 #include "stdint.h"
-
 #define DEBUG 0
+
+#define PIN_OPEN_FINGER 4//pin bouton ouverture des doigts 
+
 /*******************************************************************************
 -------------------------         MIDI SETTINGS        ------------------------
 ******************************************************************************/
-
-
+#define FIRST_MIDI_NOTE 72
 
 /*******************************************************************************
 ---------------------------         AIR MANAGER        ------------------------
 ******************************************************************************/
-//ventilateur 
-#define PIN_PWM 6 // pin pour le pwm du ventilateur 
-#define MIN_PWM 100// vitesse minimum du ventilateur pour qu'il tourne sans faire de bruits
+//reglage valve arrivé air
+#define NUM_SERVO_VALVE 15 // position brachement servo valve sur le PCA9685
+#define SERVO_VALVE_CLOSE 40 // angle pour bloquer l'air
+#define SERVO_VALVE_MIN_FLOW 60 // Angle ouverture minimum de la valve
+#define SERVO_VALVE_MAX_FLOW 160 // Angle ouverture max de la valve
 
+//reglage vibrato/modulation 
+#define VIBRATO_MAX 100 // temps minimum entre 2 variations d'angle de servo valve
+#define VIBRATO_MIN 1000 // temps max entre 2 variations d'angle de servo valve
+#define VIBRATO_ANGLE 5 // angle de variation de servo valve en degres pour un "vibrato"
 
-//valve arrivé air
-#define PIN_AIR_VALVE 5 //pin valve pour les notes ON
-
-//servo debit air 
-#define PIN_SERVO_AIR_FLOW 10 // pin sur le pca du servo pour le controle du debit d'air 
-#define OPEN_AIR_FLOW_ANGLE 45
-#define MIN_AIR_FLOW_ANGLE 70
-#define MAX_AIR_FLOW_ANGLE 135
-#define PIN_SERVO_OFF 7  // pin pour desactiver les servos (reduirt le bruit a l'arret )
-#define TIME_BETWEEN_UPDATE 25 // attend 25ms entre chaque degres pour ouvrir de 45° en environ 1seconde
-
-
-#define FAN_OFF_ACTIVE 1 // 0 ou 1 pour desactivé le ventilateur après un certain temps sans notes
-#define TIME_FAN_OFF 10000 // attend 10 secondes sans notes avant de couper le ventilateur 
 /*******************************************************************************
 ---------------------------   FINGERS MANAGER ------------------------
 ******************************************************************************/
-#define NUM_SERVOS_FINGER 10
-#define FIRST_MIDI_NOTE 72 
-#define NUMBER_NOTES 21 // nombres de note jouables donc 21 ou jusqu'a 32 si on prend en compte les trous demis ouvert
-#define ANGLE_OPEN 30
-#define ANGLE_HALF_OPEN 10
-#define NUM_SERVOS 10
+#define TIMEUNPOWER 1000 //temps pour desactiver l'alim de la carte pwm 
+#define PIN_SERVOS_OFF 5//pin oe carte pwm pour couper l'alim des servomoteurs et limiter le bruits => on a 0 off a 1
 
-// Tableau des angles pour chaque doigts/servo en position fermé
-const uint16_t closedAngles[NUM_SERVOS_FINGER] = {90, 90, 90, 90, 90, 90, 90, 90, 90, 90};
+#define NUMBER_SERVOS_FINGER 10 // nombre de servo pour les doigts 
+#define NUMBER_NOTES 21 // nombres de note jouables donc 21 ou jusqu'a 32 si on prend en compte les trous demis ouvert
+#define ANGLE_OPEN 30 // angle ouverture du trouo de la flute
+#define ANGLE_HALF_OPEN 10 // test ouverture a moitié du trou => bien gerer avec la mousse ? 
+
+// Tableau des angles pour chaque doigts/servo en position fermé (idealement entre 50 et 120 °)
+const uint16_t closedAngles[NUMBER_SERVOS_FINGER] = {65, 95, 95, 85, 95, 95, 90, 108, 90, 108};
 
 //sens de rotation des servomoteur 1 : sens horaire, -1:sens anti horaire
-const uint16_t sensRotation[NUM_SERVOS_FINGER] = {1,1,1,1,1,1,1,1,1,1};
+const int sensRotation[NUMBER_SERVOS_FINGER] = {1,1,1,1,1,1,1,1,1,1};
 
 /******************************************************************************
 ---tableau positions des doigts pour chaque note----
@@ -98,7 +92,6 @@ const int finger_position[][10] = {
 -----------------------    parametres des servomoteurs ------------------------
 ******************************************************************************/
 //reglages du PCA9685 pour des servo mf90 
-#define PCA_ADRESS 
 
 #define SERVO_MIN_ANGLE 0
 #define SERVO_MAX_ANGLE 180

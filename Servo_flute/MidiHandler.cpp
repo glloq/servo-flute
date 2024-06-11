@@ -69,7 +69,7 @@ void MidiHandler::processControlChange(byte controller, byte value) {
     case 91:
     case 92:
     case 94: // Gestion du vibrato
-      //_instrument.modulationWheel(value);
+      _instrument.modulationWheel(value);
       break;
     case 0x07: // Volume
       //_instrument.volumeControl(value);
