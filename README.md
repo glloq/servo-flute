@@ -1,6 +1,12 @@
 # servo flute
 <! projet en cours de tests >
 
+problemes actuel : 
+  - le systeme de doigts n'est pas optimal et ne bouche pas bien le trou a cause de la mousse qui bouge=> il faudrait prevoir un embout en silicone ?
+  - je n'ai pas reussi a trouver comment faire pour avoir des trous a moitié ouvert
+  - la gestion du deplacement de doigts lors de la reception d'une notOn bug certaines fois (avec des notes courtes ?) 
+  - la servo valve fonctionne relativement bien mais n'est pas assez rapide pour les notes courtes => necessite une electrovanne adapté (rapidité et debit) 
+
 ## presentation du projet
 
 Le systeme est concu pour jouer de la flute a bec automatiquement en fonction des messages midi recu (par usb uniquement).
@@ -36,11 +42,12 @@ Le systeme est concu pour fonctionner avec une flute a bec bas de gamme acheté 
 verifier que les dimensions sont adapté a la flute en votre pocession avant d'imprimer quoi que ce soit
 ![Dimensions flute](https://github.com/glloq/servo-flute/blob/main/img/dimenssionFlute.png?raw=true)
 
--- a venir --
+les fichiers STL sont dans le dossier stl 
 
-## le support en bois
-
--- a venir --
- 
 ## Premiere utilisation
+
+
+pour les doigts, il faut que les servomoteur soit proche de 90° en position doigts fermé 
+Pour la servoValve, il faut bien definir les 3 debit ( SERVO_VALVE_CLOSE ,SERVO_VALVE_MIN_FLOW , SERVO_VALVE_MAX_FLOW ) en fonction de l'instrument. 
+les valeurs SERVO_VALVE_MIN_FLOW et SERVO_VALVE_MAX_FLOW sont très proche l'une de l'autre il faut definir SERVO_VALVE_MAX_FLOW avec tout les trou bouché et SERVO_VALVE_MIN_FLOW tout les trous ouvert
 
