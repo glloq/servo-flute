@@ -3,22 +3,32 @@
 
 problemes actuel : 
   - le systeme de doigts n'est pas optimal et ne bouche pas bien le trou a cause de la mousse qui bouge=> il faudrait prevoir un embout en silicone ?
-  - je n'ai pas reussi a trouver comment faire pour avoir des trous a moitié ouvert
-  - la gestion du deplacement de doigts lors de la reception d'une notOn bug certaines fois (avec des notes courtes ?) 
-  - la servo valve fonctionne relativement bien mais n'est pas assez rapide pour les notes courtes => necessite une electrovanne adapté (rapidité et debit) 
+  - la gestion du deplacement de doigts lors de la reception d'une notOn bug certaines fois (avec des notes courtes ?) => probleme intensité trop faible ?? 
+  - ajout d'une electrovanne 
 
 ## presentation du projet
 
 Le systeme est concu pour jouer de la flute a bec automatiquement en fonction des messages midi recu (par usb uniquement).
 dans le cas d'un message midi NoteOn, si la note peut etre jouée le systeme va :
 - deplacer les doigts pour faire l'accord voulu
-- deplacer le servo airFlow entre l'angle MIN_SERVO_AIR_FLOW et MAX_SERVO_AIR_FLOW en fonction de la velocité
+- deplacer le servo airFlow entre l'angle MIN_SERVO_AIR_FLOW et MAX_SERVO_AIR_FLOW en fonction de la note demandée
+- ouvrir la valve d'air 
 
-dans le cas d'un message midi NoteOff, si la note peut etre jouée le systeme :
-- ferme la valve d'air vers la flute
-
+Dans le cas d'un message midi NoteOff, si la note peut etre jouée le systeme :
+- ferme la valve d'air
+  
+Ajout possible : 
+- gestion du vibrato/modulation wheel
+- gestion du volume (en gros augmenter/reduire le debit d'air)
+- une boucle de rétroaction pour un meilleur controle des notes jouée => necessite un capteur piezo + ampli ?
+- un systeme de pompe et reserve d'air independant adapté => moteur + driver + capteur pression 
+  
 ## Schema principe
+
+Manque la valve general 
 ![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/schemasDePrincipe.png?raw=true)
+
+ajouter partie gestion air (moteur + systeme de pompe + 
 
 ## materiel necessaire 
 
