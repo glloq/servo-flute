@@ -26,7 +26,7 @@ Ajout possible :
 ## Schema principe
 
 Manque la valve general 
-![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/schemasDePrincipe.png?raw=true)
+![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/schemasDePrincipeV3.png?raw=true)
 
 ajouter partie gestion air (moteur + systeme de pompe + 
 
