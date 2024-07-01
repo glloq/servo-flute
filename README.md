@@ -20,8 +20,14 @@ Ajout possible :
   
 ## Schema principe
 
-Manque la valve general 
+#### Servo Finger
+
 ![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/schemasDePrincipeV3.png?raw=true)
+
+#### Air Manager
+
+
+
 
 
 ## materiel necessaire 
@@ -29,12 +35,15 @@ Manque la valve general
 - un controleur tel que l'arduino leonardo ou micro
 - un module PCA9685
 - 11 servomoteurs => 10 doigts et 1 servo air flow
-- Alimentation 5V pour les servomoteurs => les 11 servomoteurs bougent en meme temps, prevoir une puissance adapté aux servomoteurs
+- Alimentation 5V pour les servomoteurs => les 11 servomoteurs bougent en meme temps, prevoir une puissance adapté aux servomoteurs (environ 8A minimum)
+- une electrovanne 12V (au moins 2mm de diametre de sortie ou un debit de 0.23cv) 
   
 - du fil de fer diametre 1mm
 - un systeme de mousse isolante pour fenetre a coller (bande de 5mm de large min environ 3mm d'epaisseur)
 - une tige en metal de 3mm (j'ai utilisé un cintre) 
 - Une planche de bois pour tenir tout les composants
+
+
 
 - toutes les pieces imprimé en 3D => a venir lorsque le projet est validé 
 
