@@ -16,14 +16,13 @@ Ajout possible :
 - gestion du vibrato/modulation wheel
 - gestion du volume (en gros augmenter/reduire le debit d'air)
 - une boucle de rétroaction pour un meilleur controle des notes jouée => necessite un capteur piezo + ampli ?
-- un systeme de pompe et reserve d'air independant adapté => moteur + driver + capteur pression 
   
 ## Schema principe
 
 #### Servo Finger
 l'objectif est d'avoir quelque chose de simple (sans soudures) qui utilise au mieux un systeme de bras de levier afin d'avoir un controle plus precis du mouvement de chaque doigts.
 Si on par du principe que tout les doigts vont etre deplacé en meme temps, il faudra au moins 8A prevu juste pour les servomoteurs
-![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/schemasDePrincipeV3.png?raw=true)
+![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/schemasfingers.png?raw=true)
 
 #### Air Manager
 
@@ -37,8 +36,6 @@ on peut estimer la consomation d'air d'une flute autour de 2 a 3 litres/minutes 
 idealement 2 a 3 petites pompes permettrait un aport d'air correct, il nous faut un moteur silencieux qui tourne a une vitesse sufisante pour avoir notre cible de 4 l/sec.
 Il y a beaucoup de facon de faire le systeme de pompes : pompe a verin, a soufflet, centrifuge etc ... 
 Nous ferons un systeme de 2 a 3 pompes a soufflet inspiré par les systemes de soufflet d'orgues. il faut idealement eviter d'utiliser des pompes trop grosses, nous viserons une largeur maximale de 10cm et un deplacement de 4 a 5 cm.
-
-
 
 
  ###### La reserve d'air
