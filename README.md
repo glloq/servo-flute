@@ -112,7 +112,9 @@ les fichiers STL sont dans le dossier stl
 
 ## Premiere utilisation
 
-pour les doigts, il faut que les servomoteur soit initialisé en position doigts fermé (initialiser les servo avant de fixer les bras) et il faut permettre un deplacement de 90° du servo.
+pour les doigts, il faut que les servomoteur soit initialisé en position doigts fermé (initialiser les servo a 90° avant de fixer les bras) et il faut permettre un deplacement de +/-45° du servo.
+Chacune des position des doigts sera a initialiser dans le fichier setting.h 
+
 Pour le servo AirFlow, il faut bien definir les 2 debit ( SERVO_VALVE_MIN_FLOW , SERVO_VALVE_MAX_FLOW ) en fonction de l'instrument et du systeme d'air.
 
-
+=> je travaille pour faire un code qui aidera a la calibration dse doigts et du servoFlow
