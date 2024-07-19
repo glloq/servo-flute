@@ -11,10 +11,13 @@ dans le cas d'un message midi NoteOn, si la note peut etre jouée le systeme va 
 
 Dans le cas d'un message midi NoteOff, si la note peut etre jouée le systeme :
 - ferme la valve d'air
-  
+
+Ajout en cours : 
+- pompes et reserves d'air
+
 Ajout possible : 
-- gestion du vibrato/modulation wheel
-- gestion du volume (en gros augmenter/reduire le debit d'air)
+- gestion du vibrato/modulation wheel => software avec servoFlow
+- gestion du volume (en gros augmenter/reduire le debit d'air)  => software avec servoFlow
 - une boucle de rétroaction pour un meilleur controle des notes jouée => necessite un capteur piezo + ampli ?
   
 ## Schema principe
@@ -24,11 +27,13 @@ l'objectif est d'avoir quelque chose de simple (sans soudures) qui utilise au mi
 Si on par du principe que tout les doigts vont etre deplacé en meme temps, il faudra au moins 8A prevu juste pour les servomoteurs
 ![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/schemasfingers.png?raw=true)
 
+L'idée est d'utiliser des fils de fers de 1 a 1.5mm de diametre pour relier les servomoteurs a chaque doigts, ce design permet l'ajout de "ressorts" en pliant les fil de fers en Z => ca reduit les risque de casse et permet d'appuyer un peut plus sur le trou.
+Il faut garder environ 10cm de chaque coté de la flute pour permetre le placement des servo
+
 #### Air Manager
 
 l'objectif est d'avoir un systeme de pompes et reserves a souflet le plus compact possible.
 on peut estimer la consomation d'air d'une flute autour de 2 a 3 litres/minutes lors d'un jeu modéré et une consomation max instantané autour de 0.4 l/s soit environ 24 l/min et une pression de reserve autour de 3 a 4 KPa.
-
 ![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/schemaspompes.png?raw=true)
 
  ###### Les pompes
@@ -41,7 +46,7 @@ il faut idealement eviter d'utiliser des pompes trop grosses, nous viserons une 
 
  ###### La reserve d'air
 
-Le systeme de reserve devras etre maintenu sous pression avec des poids ou un ou pluseurs ressorts.
+Le systeme de reserve devras etre maintenu sous pression avec l'utilisation de ou un ou pluseurs ressorts (l'ajout de poids est ausi possible) 
 On va essayer de limiter l'usage de capteur complexe et essayer d'utiliser un capteur mecanique pour indiquer que la reserve d'air est pleine
 
  ###### Les vannes 
@@ -49,21 +54,28 @@ On va essayer de limiter l'usage de capteur complexe et essayer d'utiliser un ca
 il y a 2 type de vannes utilisé dans ce projet : 
 - la servo vanne :
 ![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/servo%20vavle%20variable.png?raw=true)
-
- le servomoteur "servoFlow" permet de controler le debit d'air en comprimant plus ou moins un tube en silicone qui alimente la flute en air.
+Le debit doit etre adapté en fonction ed la note jouée; une note grave consomera plus d'air qu'une note aigue.
+le servomoteur "servoFlow" permet de controler le debit d'air en comprimant plus ou moins un tube en silicone qui alimente la flute en air.
+ 
 Après plusieurs test, un tuyau en silicone de diametre exterieur 8 mm et de diametre interieur 6mm fonctionne parfaitement pour gerer le debit d'air avec precision.
+
 
 - la vanne principale : une vanne faite avec un solenoide 5 ou 12v a la sortie du reservoir d'air
   ![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/vanne%20generale.png?raw=true)
 
-  il faut absolument poncer au plus lisse possible la parroie ou il y a le trou d'evacuation d'air, une parroie lisse aidera beaucoup pour eviter les fuites d'airs.
-pour eviter les problemes d'alignement, on utilisera des patins en mousse très souple entre lr support imprimé et la partie qui fait "joint" (plaque a joint, coir , etc ...)
+il faut absolument poncer au plus lisse possible la parroie ou il y a le trou d'evacuation d'air, une parroie lisse aidera beaucoup pour eviter les fuites d'airs.
+  
+Pour eviter les problemes d'alignement, on utilisera des patins en mousse très souple entre lr support imprimé et la partie qui fait "joint" (plaque a joint, coir , etc ...)
+
 il faudra aussi prevoir une plaque a joint que l'ont peut decouper pour limiter les fuites d'air de la valve au maximum (plaque de 10x4cm)
+
 il faut prevoir un solenoide avec un deplacement de 10mm et un couple autour de 3 a 5N, ont peut choisir un solenoide moyen/bas de gamme car il restera ventilé en fonctionement.
+
 le solenoide devra etre legerement mis en pression afin d'appuyer sur le joint de la valve (et le couple est plus important plus on se rapproche de la position alimenté) 
 La vis de reglage permet de limiter le trajet de la tige du solenoide, l'objectif est de limiter le trajet afin d'avoir une noteOff plus rapide.
 
 ## Fichiers 3D
+
 Le systeme est concu pour fonctionner avec une flute a bec bas de gamme acheté sur amazon, la position des doigts peut ne pas etre adapté a d'autres flutes a bec sans faire de changement sur les doigts ou le support de rotation des doigts( on peut ce permettre 1 a 2 mm de decallage avec l'utilisation de la mousse) 
 verifier que les dimensions sont adapté a la flute en votre possession avant d'imprimer quoi que ce soit
 ![Dimensions flute](https://github.com/glloq/servo-flute/blob/main/img/dimenssionFlute.png?raw=true)
