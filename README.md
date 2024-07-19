@@ -28,17 +28,17 @@ Si on par du principe que tout les doigts vont etre deplacé en meme temps, il f
 #### Air Manager
 
 l'objectif est d'avoir un systeme de pompes et reserves a souflet le plus compact possible.
-on peut estimer la consomation d'air d'une flute autour de 2 a 3 litres/minutes lors d'un jeu modéré. Nous viserons une consomation max autour de 5 l/min.
-il faut donc essayer d'avoir un systeme de pompe silencieux qui est capable de fournir 5 l/min avec assez de force pour remplir une reserve d'environ 2 litres.
-il faut aussi respecter des contraintes de tailles pour eviter d'avoir un systeme trop gros.
+on peut estimer la consomation d'air d'une flute autour de 2 a 3 litres/minutes lors d'un jeu modéré et une consomation max instantané autour de 0.4 l/s soit environ 24 l/min et une pression de reserve autour de 3 a 4 KPa.
 
-On va commencer par des pompes carré de 11x11cm avec un deplacement de 4cm 
+![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/schemaspompes.png?raw=true)
 
  ###### Les pompes
  
+idealement 2 a 3 petites pompes permettrait un aport d'air correct, il nous faut un moteur silencieux qui tourne a une vitesse sufisante pour avoir notre cible de 4 l/sec.
+Il y a beaucoup de facon de faire le systeme de pompes : pompe a verin, a soufflet, centrifuge etc ... 
+Nous ferons un systeme de 2 a 3 pompes a soufflet inspiré par les systemes de soufflet d'orgues. il faut idealement eviter d'utiliser des pompes trop grosses, nous viserons une largeur maximale de 10cm et un deplacement de 4 a 5 cm.
 
 
-idealement 2 a 3 petites pompes permettrait un aport d'air correct, il nous faut un moteur silencieux qui tourne a une vitesse sufisante pour avoir notre cible de 5 l/min.
 
 
  ###### La reserve d'air
