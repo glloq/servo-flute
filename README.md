@@ -52,8 +52,10 @@ On va essayer de limiter l'usage de capteur complexe et essayer d'utiliser un ca
  ###### Les vannes 
  
 il y a 2 type de vannes utilisé dans ce projet : 
+
 - la servo vanne :
-![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/servo%20vavle%20variable.png?raw=true)
+  ![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/servo%20vavle%20variable.png?raw=true)
+
 Le debit doit etre adapté en fonction ed la note jouée; une note grave consomera plus d'air qu'une note aigue.
 le servomoteur "servoFlow" permet de controler le debit d'air en comprimant plus ou moins un tube en silicone qui alimente la flute en air.
  
