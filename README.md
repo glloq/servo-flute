@@ -50,7 +50,7 @@ il y a 2 type de vannes utilisé dans ce projet :
 - la vanne principale : une vanne faite avec un solenoide 5 ou 12v a la sortie du reservoir d'air
   
 - la servo vanne : le servomoteur "servoFlow" permet de controler le debit d'air en comprimant plus ou moins un tube en silicone qui alimente la flute en air.
-![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/servo vavle variable.png?raw=true)
+![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/servo%20vavle%20variable.png?raw=true)
 
 
 ## Fichiers 3D
