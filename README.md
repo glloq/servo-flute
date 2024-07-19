@@ -1,5 +1,5 @@
 # servo flute
-<! projet en cours de tests >
+<! projet en cours >
 
 ## presentation du projet
 
@@ -33,20 +33,23 @@ on peut estimer la consomation d'air d'une flute autour de 2 a 3 litres/minutes 
 
  ###### Les pompes
  
-idealement 2 a 3 petites pompes permettrait un aport d'air correct, il nous faut un moteur silencieux qui tourne a une vitesse sufisante pour avoir notre cible de 4 l/sec.
+idealement 2 a 3 petites pompes permettrait un aport d'air correct, il nous faut un moteur silencieux qui tourne a une vitesse sufisante pour avoir notre cible de 0.4 l/sec.
 Il y a beaucoup de facon de faire le systeme de pompes : pompe a verin, a soufflet, centrifuge etc ... 
-Nous ferons un systeme de 2 a 3 pompes a soufflet inspiré par les systemes de soufflet d'orgues. il faut idealement eviter d'utiliser des pompes trop grosses, nous viserons une largeur maximale de 10cm et un deplacement de 4 a 5 cm.
+Nous ferons un systeme de 2 pompes a soufflet inspiré par les systemes de soufflet d'orgues.
+il faut idealement eviter d'utiliser des pompes trop grosses, nous viserons une largeur maximale de 10cm et un deplacement de 4 a 5 cm.
 
 
  ###### La reserve d'air
 
 Le systeme de reserve devras etre maintenu sous pression avec des poids ou un ou pluseurs ressorts.
-on a plusieurs facons de controler le volume d'air disponible dans le soufflet de reserve: 
-- un potentiometre lineaire relié a la pompe a soufflet
-- un systeme de capteur de pression
-- un systeme de mesure de distance par ultrason
+On va essayer de limiter l'usage de capteur complexe et essayer d'utiliser un capteur mecanique pour indiquer que la reserve d'air est pleine
 
-
+ ###### Les vannes 
+ 
+il y a 2 type de vannes utilisé dans ce projet : 
+- la vanne principale : une vanne faite avec un solenoide 5 ou 12v a la sortie du reservoir d'air
+  
+- la servo vanne : le servomoteur "servoFlow" permet de controler le debit d'air en comprimant plus ou moins un tube en silicone qui alimente la flute en air.
 
 
 ## Fichiers 3D
