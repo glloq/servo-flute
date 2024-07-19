@@ -62,8 +62,8 @@ il y a 2 type de vannes utilisé dans ce projet :
 
 - la servo vanne :
   ![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/servo%20vavle%20variable.png?raw=true)
-
-Le debit doit etre adapté en fonction ed la note jouée; une note grave consomera plus d'air qu'une note aigue.
+le diametre minimum du passage d'air (tuyaux et pieces imprimé) est a 6mm pour limiter les pertes.
+Le debit doit etre adapté en fonction de la note jouée; une note grave consomera plus d'air qu'une note aigue.
 le servomoteur "servoFlow" permet de controler le debit d'air en comprimant plus ou moins un tube en silicone qui alimente la flute en air.
  
 Après plusieurs test, un tuyau en silicone de diametre exterieur 8 mm et de diametre interieur 6mm fonctionne parfaitement pour gerer le debit d'air avec precision.
