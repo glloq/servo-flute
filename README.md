@@ -43,11 +43,18 @@ Il y a beaucoup de facon de faire le systeme de pompes : pompe a verin, a souffl
 Nous ferons un systeme de 2 pompes a soufflet inspiré par les systemes de soufflet d'orgues.
 il faut idealement eviter d'utiliser des pompes trop grosses, nous viserons une largeur maximale de 10cm et un deplacement de 4 a 5 cm.
 
+Le moteur devrais idealement etre arrété lorsque la pompe est pleine mais il est possible de devoir faire tourner le moteur a faible vitesse pour compensser les pertes par fuite => a adapter en fonction de la construction :/
+
+on peut estimer le volume d'air envoyé par un cycle de la pompe avec le calcul suivant:
+( volume soufflet x hauteur ouverture  / 2 ) x 0.7  => on retire 30% pour le volume retiré par les eclisses des pompes.
+
+Voici un exemple de dimenssions qui pourrait etre adapté :
+2 pompes de 10x25cm avec une deplacement de 5cm fournirait environ 26 litres par minutes avec un moteur qui tourne a 30tr/min 
 
  ###### La reserve d'air
 
 Le systeme de reserve devras etre maintenu sous pression avec l'utilisation de ou un ou pluseurs ressorts (l'ajout de poids est ausi possible) 
-On va essayer de limiter l'usage de capteur complexe et essayer d'utiliser un capteur mecanique pour indiquer que la reserve d'air est pleine
+On va essayer de limiter l'usage de capteur complexe et essayer d'utiliser un capteur mecanique pour indiquer que la reserve d'air est pleine 
 
  ###### Les vannes 
  
