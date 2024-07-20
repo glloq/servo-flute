@@ -38,7 +38,7 @@ on peut estimer la consomation d'air d'une flute autour de 2 a 3 litres/minutes 
 
  ###### Les pompes
  
-idealement 2 a 3 petites pompes permettrait un aport d'air correct, il nous faut un moteur silencieux qui tourne a une vitesse sufisante pour avoir notre cible de 0.4 l/sec.
+idealement 2  pompes permettrait un aport d'air correct, il nous faut un moteur silencieux qui tourne a une vitesse sufisante pour avoir notre cible de 0.4 l/sec.
 Il y a beaucoup de facon de faire le systeme de pompes : pompe a verin, a soufflet, centrifuge etc ... 
 Nous ferons un systeme de 2 pompes a soufflet inspiré par les systemes de soufflet d'orgues.
 il faut idealement eviter d'utiliser des pompes trop grosses, nous viserons une largeur maximale de 10cm et un deplacement de 4 a 5 cm.
