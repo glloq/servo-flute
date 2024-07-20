@@ -49,12 +49,12 @@ on peut estimer le volume d'air envoyé par un cycle de la pompe avec le calcul 
 ( volume soufflet x hauteur ouverture  / 2 ) x 0.7  => on retire 30% pour le volume retiré par les eclisses des pompes.
 
 Voici un exemple de dimenssions qui pourrait etre adapté :
-2 pompes de 10x25cm avec une deplacement de 5cm fournirait environ 26 litres par minutes avec un moteur qui tourne a 30tr/min 
+2 pompes de 10x25cm avec un deplacement de 5cm fournirait environ 26 litres par minutes avec un moteur qui tourne a 30tr/min 
 
  ###### La reserve d'air
 
 Le systeme de reserve devras etre maintenu sous pression avec l'utilisation de ou un ou pluseurs ressorts (l'ajout de poids est ausi possible) 
-On va essayer de limiter l'usage de capteur complexe et essayer d'utiliser un capteur mecanique pour indiquer que la reserve d'air est pleine 
+on va utilise run capteur a effet hall pour connaitre precisement la position de la partie supperieur de la reserve => la vitesse de rotation du moteur actionnant les pompes sera faite en fonction de la valeur du capteur a effet hall ( on reste autour de la meme pression d'utilisation avec un volume de securité autour de 5 a 10 secondes => entre 1 a 2 litres)
 
  ###### Les vannes 
  
