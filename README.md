@@ -6,7 +6,7 @@
 Le systeme est concu pour jouer de la flute a bec automatiquement en fonction des messages midi recu (par usb uniquement mais le code est facilement adaptable).
 dans le cas d'un message midi NoteOn, si la note peut etre jouée le systeme va :
 - deplacer les doigts pour faire l'accord voulu
-- deplacer le servo airFlow entre l'angle MIN_SERVO_AIR_FLOW et MAX_SERVO_AIR_FLOW en fonction de la note demandée
+- deplacer le servo airFlow entre l'angle MIN_SERVO_AIR_FLOW et MAX_SERVO_AIR_FLOW en fonction de la note demandée 
 - ouvrir la valve d'air 
 
 Dans le cas d'un message midi NoteOff, si la note peut etre jouée le systeme :
@@ -43,7 +43,12 @@ Il y a beaucoup de facon de faire le systeme de pompes : pompe a verin, a souffl
 Nous ferons un systeme de 2 pompes a soufflet inspiré par les systemes de soufflet d'orgues.
 il faut idealement eviter d'utiliser des pompes trop grosses, nous viserons une largeur maximale de 10cm et un deplacement de 4 a 5 cm.
 
-Le moteur devrais idealement etre arrété lorsque la pompe est pleine mais il est possible de devoir faire tourner le moteur a faible vitesse pour compensser les pertes par fuite => a adapter en fonction de la construction :/
+Le moteur devrais idealement etre arrété lorsque la pompe est pleine mais il est possible de devoir faire tourner le moteur a faible vitesse pour compensser les pertes par fuite => à adapter en fonction de la construction :/
+
+Pour un soucis de maitenance et pour rendre le tout plus adaptable aux materiaux trouvé pour faire les valves, nous utiliserons un systeme de trappe d'acces sur laquelle on fixera les valves, une mousse pour eviter la poussiere à l'entrée d'air et une boite de redirection vers la reserve à la sortie d'air.
+
+   ![Schema trappe valves](https://github.com/glloq/servo-flute/blob/main/img/.png?raw=true)
+
 
 on peut estimer le volume d'air envoyé par un cycle de la pompe avec le calcul suivant:
 ( volume soufflet x hauteur ouverture  / 2 ) x 0.7  => on retire 30% pour le volume retiré par les eclisses des pompes.
@@ -61,7 +66,7 @@ on va utilise run capteur a effet hall pour connaitre precisement la position de
 il y a 2 type de vannes utilisé dans ce projet : 
 
 - la servo vanne :
-  ![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/servo%20vavle%20variable.png?raw=true)
+  ![Schema servoFlow](https://github.com/glloq/servo-flute/blob/main/img/servo%20vavle%20variable.png?raw=true)
   - le diametre minimum du passage d'air (tuyaux et pieces imprimé) est a 6mm pour limiter les pertes.
   - Le debit doit etre adapté en fonction de la note jouée; une note grave consomera plus d'air qu'une note aigue.
   - le servomoteur "servoFlow" permet de controler le debit d'air en comprimant plus ou moins un tube en silicone qui alimente la flute en air.
@@ -69,13 +74,18 @@ il y a 2 type de vannes utilisé dans ce projet :
 
 
 - la vanne principale : une vanne faite avec un solenoide 5 ou 12v a la sortie du reservoir d'air
-  ![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/vanne%20generale.png?raw=true)
-  - il faut absolument poncer au plus lisse possible la parroie ou il y a le trou d'evacuation d'air, une parroie lisse aidera beaucoup pour eviter les fuites d'airs. 
+  ![Schema vanne air](https://github.com/glloq/servo-flute/blob/main/img/vanne%20generale.png?raw=true)
+  - il faut absolument poncer au plus lisse possible la parroie ou il y a le trou d'evacuation d'air, une parroie lisse aidera beaucoup pour eviter les fuites d'airs.
+  - utiliser de la colle chaude pour recourvir le passage des cables et recouvrir les tetes des boulons pour eviter toute fuites d'air
   - Pour eviter les problemes d'alignement, on utilisera des patins en mousse très souple entre lr support imprimé et la partie qui fait "joint" (plaque a joint, cuir ,caoutchouc, siline, etc ...)
   - il faudra aussi prevoir une plaque a joint que l'ont peut decouper pour limiter les fuites d'air de la valve au maximum (plaque de 10x4cm)
   - il faut prevoir un solenoide avec un deplacement de 10mm et un couple autour de 3 a 5N, ont peut choisir un solenoide moyen/bas de gamme car il restera ventilé en fonctionement.
   - le solenoide devra etre legerement mis en pression afin d'appuyer sur le joint de la valve (et le couple est plus important plus on se rapproche de la position alimenté/activé) 
   - La vis de reglage permet de limiter le trajet de la tige du solenoide, l'objectif est de limiter le trajet afin d'avoir une noteOff plus rapide.
+
+ il faut penser que les notes grave necessitent plus de debit que les notes aigues pour rester au meme niveau sonore, il faut donc adapter l'ouverture du servoFlow en fonction de la note et ajouter un delta en fonction de la velocité demandé.
+ 
+il faut aussi penser a la gestion du volume et du vibrato dans le futur=> prevoir un code facilement adaptable
 
 ## Fichiers 3D
 
