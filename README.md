@@ -47,7 +47,7 @@ Le moteur devrais idealement etre arrété lorsque la pompe est pleine mais il e
 
 Pour un soucis de maitenance et pour rendre le tout plus adaptable aux materiaux trouvé pour faire les valves, nous utiliserons un systeme de trappe d'acces sur laquelle on fixera les valves, une mousse pour eviter la poussiere à l'entrée d'air et une boite de redirection vers la reserve à la sortie d'air.
 
-   ![Schema trappe valves](https://github.com/glloq/servo-flute/blob/main/img/.png?raw=true)
+   ![Schema trappe valves](https://github.com/glloq/servo-flute/blob/main/img/trappe soufflet.png?raw=true)
 
 
 on peut estimer le volume d'air envoyé par un cycle de la pompe avec le calcul suivant:
