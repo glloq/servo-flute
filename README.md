@@ -1,5 +1,7 @@
 # servo flute
-<! projet en cours >
+
+> [!WARNING]
+> projet en cours de construction.
 
 ## presentation du projet
 
