@@ -8,14 +8,11 @@
 Le systeme est concu pour jouer de la flute a bec automatiquement en fonction des messages midi recu (par usb uniquement mais le code est facilement adaptable).
 dans le cas d'un message midi NoteOn, si la note peut etre jouée le systeme va :
 - deplacer les doigts pour faire l'accord voulu
-- deplacer le servo airFlow entre l'angle MIN_SERVO_AIR_FLOW et MAX_SERVO_AIR_FLOW en fonction de la note demandée 
-- ouvrir la valve d'air 
+- deplacer le servo airFlow vers la plute entre l'angle MIN_SERVO_AIR_FLOW et MAX_SERVO_AIR_FLOW en fonction de la note demandée 
+
 
 Dans le cas d'un message midi NoteOff, si la note peut etre jouée le systeme :
-- ferme la valve d'air
-
-Ajout en cours : 
-- pompes et reserves d'air
+- ferme deplace le servo airflow vers l'exterieur
 
 Ajout possible : 
 - gestion du vibrato/modulation wheel => software avec servoFlow
@@ -27,15 +24,12 @@ Ajout possible :
 #### Servo Finger
 l'objectif est d'avoir quelque chose de simple (sans soudures) qui utilise au mieux un systeme de bras de levier afin d'avoir un controle plus precis du mouvement de chaque doigts.
 Si on par du principe que tout les doigts vont etre deplacé en meme temps, il faudra au moins 8A prevu juste pour les servomoteurs
-![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/schemasfingers.png?raw=true)
+![Schema de principe](https://github.com/glloq/servo-flute/blob/main/img/schemasv4.png?raw=true)
 
 L'idée est d'utiliser des fils de fers de 1 a 1.5mm de diametre pour relier les servomoteurs a chaque doigts, ce design permet l'ajout de "ressorts" en pliant les fil de fers en Z => ca reduit les risque de casse et permet d'appuyer un peut plus sur le trou.  
 Il faut garder environ 10cm de chaque coté de la flute pour permetre le placement des servo
 
-#### Air
-
 nous utiliserons un gros ventilateur radial controlé en on/off via un mofset et un servomoteur viendra mettre en rotation le systeme de "bouche" devant l'entrée d'air de la flute et la sortie du ventilateur.
-![Schema air](https://github.com/glloq/servo-flute/blob/main/img/schemasAir.png?raw=true)
 
 il faut aussi penser a la gestion du volume et du vibrato dans le futur=> prevoir un code facilement adaptable
 
