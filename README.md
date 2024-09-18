@@ -29,64 +29,14 @@ l'objectif est d'avoir quelque chose de simple (sans soudures) qui utilise au mi
 Si on par du principe que tout les doigts vont etre deplacé en meme temps, il faudra au moins 8A prevu juste pour les servomoteurs
 ![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/schemasfingers.png?raw=true)
 
-L'idée est d'utiliser des fils de fers de 1 a 1.5mm de diametre pour relier les servomoteurs a chaque doigts, ce design permet l'ajout de "ressorts" en pliant les fil de fers en Z => ca reduit les risque de casse et permet d'appuyer un peut plus sur le trou.
+L'idée est d'utiliser des fils de fers de 1 a 1.5mm de diametre pour relier les servomoteurs a chaque doigts, ce design permet l'ajout de "ressorts" en pliant les fil de fers en Z => ca reduit les risque de casse et permet d'appuyer un peut plus sur le trou.  
 Il faut garder environ 10cm de chaque coté de la flute pour permetre le placement des servo
 
-#### Air Manager
+#### Air
 
-l'objectif est d'avoir un systeme de pompes et reserves a souflet le plus compact possible.
-on peut estimer la consomation d'air d'une flute autour de 2 a 3 litres/minutes lors d'un jeu modéré et une consomation max instantané autour de 0.4 l/s soit environ 24 l/min et une pression de reserve autour de 3 a 4 KPa.
-![Schema des doigts](https://github.com/glloq/servo-flute/blob/main/img/schemaspompes.png?raw=true)
+nous utiliserons un gros ventilateur radial controlé en on/off via un mofset et un servomoteur viendra mettre en rotation le systeme de "bouche" devant l'entrée d'air de la flute et la sortie du ventilateur.
+![Schema air](https://github.com/glloq/servo-flute/blob/main/img/schemasAir.png?raw=true)
 
- ###### Les pompes
- 
-idealement 2  pompes permettrait un aport d'air correct, il nous faut un moteur silencieux qui tourne a une vitesse sufisante pour avoir notre cible de 0.4 l/sec.
-Il y a beaucoup de facon de faire le systeme de pompes : pompe a verin, a soufflet, centrifuge etc ... 
-Nous ferons un systeme de 2 pompes a soufflet inspiré par les systemes de soufflet d'orgues.
-il faut idealement eviter d'utiliser des pompes trop grosses, nous viserons une largeur maximale de 10cm et un deplacement de 4 a 5 cm.
-
-Le moteur devrais idealement etre arrété lorsque la pompe est pleine mais il est possible de devoir faire tourner le moteur a faible vitesse pour compensser les pertes par fuite => à adapter en fonction de la construction :/
-
-Pour un soucis de maitenance et pour rendre le tout plus adaptable aux materiaux trouvé pour faire les valves, nous utiliserons un systeme de trappe d'acces sur laquelle on fixera les valves, une mousse pour eviter la poussiere à l'entrée d'air et une boite de redirection vers la reserve à la sortie d'air.
-
-   ![Schema trappe valves](https://github.com/glloq/servo-flute/blob/main/img/trappe%20soufflet.png?raw=true)
-
-
-on peut estimer le volume d'air envoyé par un cycle de la pompe avec le calcul suivant:
-( volume soufflet x hauteur ouverture  / 2 ) x 0.7  => on retire 30% pour le volume retiré par les eclisses des pompes.
-
-Voici un exemple de dimenssions qui pourrait etre adapté :
-2 pompes de 10x25cm avec un deplacement de 5cm fournirait environ 26 litres par minutes avec un moteur qui tourne a 30tr/min 
-
- ###### La reserve d'air
-
-Le systeme de reserve devras etre maintenu sous pression avec l'utilisation de ou un ou pluseurs ressorts (l'ajout de poids est ausi possible) 
-on va utilise run capteur a effet hall pour connaitre precisement la position de la partie supperieur de la reserve => la vitesse de rotation du moteur actionnant les pompes sera faite en fonction de la valeur du capteur a effet hall ( on reste autour de la meme pression d'utilisation avec un volume de securité autour de 5 a 10 secondes => entre 1 a 2 litres)
-
- ###### Les vannes 
- 
-il y a 2 type de vannes utilisé dans ce projet : 
-
-- la servo vanne :
-  ![Schema servoFlow](https://github.com/glloq/servo-flute/blob/main/img/servo%20vavle%20variable.png?raw=true)
-  - le diametre minimum du passage d'air (tuyaux et pieces imprimé) est a 6mm pour limiter les pertes.
-  - Le debit doit etre adapté en fonction de la note jouée; une note grave consomera plus d'air qu'une note aigue.
-  - le servomoteur "servoFlow" permet de controler le debit d'air en comprimant plus ou moins un tube en silicone qui alimente la flute en air.
-  -Après plusieurs test, un tuyau en silicone de diametre exterieur 8 mm et de diametre interieur 6mm fonctionne parfaitement pour gerer le debit d'air avec precision.
-
-
-- la vanne principale : une vanne faite avec un solenoide 5 ou 12v a la sortie du reservoir d'air
-  ![Schema vanne air](https://github.com/glloq/servo-flute/blob/main/img/vanne%20generale.png?raw=true)
-  - il faut absolument poncer au plus lisse possible la parroie ou il y a le trou d'evacuation d'air, une parroie lisse aidera beaucoup pour eviter les fuites d'airs.
-  - utiliser de la colle chaude pour recourvir le passage des cables et recouvrir les tetes des boulons pour eviter toute fuites d'air
-  - Pour eviter les problemes d'alignement, on utilisera des patins en mousse très souple entre lr support imprimé et la partie qui fait "joint" (plaque a joint, cuir ,caoutchouc, siline, etc ...)
-  - il faudra aussi prevoir une plaque a joint que l'ont peut decouper pour limiter les fuites d'air de la valve au maximum (plaque de 10x4cm)
-  - il faut prevoir un solenoide avec un deplacement de 10mm et un couple autour de 3 a 5N, ont peut choisir un solenoide moyen/bas de gamme car il restera ventilé en fonctionement.
-  - le solenoide devra etre legerement mis en pression afin d'appuyer sur le joint de la valve (et le couple est plus important plus on se rapproche de la position alimenté/activé) 
-  - La vis de reglage permet de limiter le trajet de la tige du solenoide, l'objectif est de limiter le trajet afin d'avoir une noteOff plus rapide.
-
- il faut penser que les notes grave necessitent plus de debit que les notes aigues pour rester au meme niveau sonore, il faut donc adapter l'ouverture du servoFlow en fonction de la note et ajouter un delta en fonction de la velocité demandé.
- 
 il faut aussi penser a la gestion du volume et du vibrato dans le futur=> prevoir un code facilement adaptable
 
 ## Fichiers 3D
