@@ -58,13 +58,6 @@ les fichiers STL sont dans le dossier stl
 - 2 vois bois 3x15mm (pour fixer le support flute)
 - Une planche de bois pour tenir tout les composants ( environ 40x25cm avec une profondeur de 150cm )
 
-#### air manager
-
-- un solenoide de 6V 3 à 5 N
-  - un transitor ou mofset avec diode de roue libre
-- un roulement de 4x12x5mm
-- 2 boulon + ecrous M4x25mm
-- 8 boulon + ecrous m3x20mm
 
 
 ## Premiere utilisation
