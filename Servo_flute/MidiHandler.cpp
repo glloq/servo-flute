@@ -48,38 +48,11 @@ void MidiHandler::processMidiEvent(midiEventPacket_t midiEvent) {
       //_instrument.polyKeyPressure(polyKeyPressureValue);
       break;
     case 0xB0: // Control Change
-      processControlChange(note, velocity);
+      //processControlChange(note, velocity);
     case 0xF0: // System Common or System Real-Time
       // Add logic for handling System Common and System Real-Time messages
-      break;
-    case 0xF7: // End of System Exclusive
-      // Add logic for handling the end of System Exclusive message
       break;
     // Add more cases as needed for other message types
   }
 }
-/*------------------------------------------------------------------
---------------        process Control Change             ----------
-------------------------------------------------------------------*/
-void MidiHandler::processControlChange(byte controller, byte value) {
-  // Add logic for handling Control Change messages
-  // You can switch on the controller value to handle specific control changes
-  switch (controller) {
-     case 1:
-    case 91:
-    case 92:
-    case 94: // Gestion du vibrato
-      _instrument.modulationWheel(value);
-      break;
-    case 0x07: // Volume
-      //_instrument.volumeControl(value);
-      break;
-    case 121: // Réinitialisation de tous les contrôleurs
-      //_instrument.reset();
-      break;
-    case 123: // Désactiver toutes les notes
-      //_instrument.mute();
-      break;
-    // Add more cases as needed for other control changes
-  }
-}
+

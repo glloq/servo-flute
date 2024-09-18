@@ -13,11 +13,12 @@ private:
   void desactivate(bool active); // desactiver tout les servo => utilisé après un certain temps sans notes
   unsigned long TimeLastAction;
   void checkPowerOn();
+  //int FingerPosition[10]; // tableau position actuelle des doigts 
 public:
   ServoController(); //initialise toutles servomoteurs 
   void noteOn(int numNote); //ouvre ou ferme les servo en fonction de la note voulue  
   void openFingers(bool open);//demande l'ouverture /fermeture des doigts avec le bouton
-  void SetAirFlow (int angle);//gere l'angle de servoValve
+  void SetAirFlow (int velocity);//gere l'angle de servoValve
   void update();//desactive la carte pwm x ms après la derniere action
 };
 

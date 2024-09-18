@@ -24,9 +24,9 @@ MidiHandler* midiHandler= nullptr;
 void setup() {
   Serial.begin(115200);
   delay(1000);
- // while (!Serial) {
-  //  delay(10); // Attendre que la connexion série soit établie
-  //}
+  while (!Serial) {
+    delay(10); // Attendre que la connexion série soit établie
+  }
   Serial.println("init servo flute ");
   instrument= new Instrument();
   midiHandler = new MidiHandler(*instrument);

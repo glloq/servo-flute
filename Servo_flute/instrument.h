@@ -13,8 +13,6 @@ update permet de mettre a jours l'angle du servo airflow
 class Instrument {
 private:
   ServoController servoController;
-  void openValve(int velocity);
-  void closeValve();
   bool isPlaying; //stocke si en train de jouer une note
   
   bool ButtonState;
@@ -33,7 +31,7 @@ public:
 	void noteOff(uint8_t midiNote); // message midi noteOn
   void modulationWheel(int value); // message midi vibrato
   void update();//gere le vibrato et l'extinction des servos après un certain temps 
-
+  
   void test();
 };
 

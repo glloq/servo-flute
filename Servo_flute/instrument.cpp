@@ -4,12 +4,14 @@ Instrument::Instrument() : servoController() {
   if (DEBUG) {
     Serial.println("DEBUG : Instrument--creation");
   } 
+  //varibles for vibrato 
   isPlaying=false;
   vibratoActive=false;
   vibratoDirection=true;
+  //init buton open finger
   pinMode(PIN_OPEN_FINGER, INPUT_PULLUP); 
   ButtonState = digitalRead(PIN_OPEN_FINGER);
- // test();
+ //test();
 }
 /*******************************************************************************
 ----------------              gestion notes on             --------------------
@@ -17,9 +19,9 @@ Instrument::Instrument() : servoController() {
 void Instrument::noteOn(uint8_t midiNote, uint8_t velocity) {
   if ((midiNote>=FIRST_MIDI_NOTE)&&(midiNote<=(FIRST_MIDI_NOTE+NUMBER_NOTES))){     // si on peut jouer la note
     servoController.noteOn(midiNote-FIRST_MIDI_NOTE);                     // on met les doigts en position 
+    servoController.SetAirFlow(velocity);     
     //******************************************** delay a supprimer ou reduire au min---------------------------------------------------------<<<<<<<<<<<<<<<<<<<<<<<
     //delay(80);
-    openValve(velocity);                                                  // ouvre les valves d'air en fonction de la velocité
     isPlaying=true;
   }else{
     if (DEBUG) {Serial.println("DEBUG : instrument, Wrong MIDI noteOn");}
@@ -31,8 +33,8 @@ void Instrument::noteOn(uint8_t midiNote, uint8_t velocity) {
 ******************************************************************************/
 void Instrument::noteOff(uint8_t midiNote) {
   if ((midiNote>=FIRST_MIDI_NOTE)&&(midiNote<=(FIRST_MIDI_NOTE+NUMBER_NOTES))){   // si on peut jouer la note
-    closeValve();                                                            // ferme la valve d'air           
-    isPlaying=false;                                  
+    isPlaying=false; 
+    servoController.SetAirFlow(0);                                 
   }else{
     if (DEBUG) {Serial.println("DEBUG : instrument, Wrong MIDI noteOff");}
   } 
@@ -43,7 +45,7 @@ void Instrument::noteOff(uint8_t midiNote) {
 ******************************************************************************/
 void Instrument:: test(){
   int i;
-  for(i=FIRST_MIDI_NOTE;i<10+FIRST_MIDI_NOTE;i++){
+  for(i=FIRST_MIDI_NOTE;i<30+FIRST_MIDI_NOTE;i++){
     noteOn(i,50);//vient faire toutes les notes jouable de la flute
     delay(500); // 1/2 seconde noteOn
     noteOff(i);//essayer sans ?
@@ -104,23 +106,3 @@ void Instrument:: update(){
     }
   }
 }
-
-
-/******************************************************************************
-----------------              gestion air            --------------------
-******************************************************************************/
-
-//************************************ ouverture de la valve en fct de la vélocité 
-// ====> il faudra ajouter de quoi adapter en fonction de chaque note ?
-void Instrument:: openValve(int velocity){
-  //on calcul l'angle necessaire pour avoir plus ou moins d'air
-  servoValveAngle= map(velocity, 1, 127, SERVO_VALVE_MIN_FLOW, SERVO_VALVE_MAX_FLOW);
-  servoController.SetAirFlow(servoValveAngle);
-}
-
-//*********************** fermeture valves air 
-void Instrument:: closeValve(){
-  servoValveAngle= SERVO_VALVE_CLOSE; 
-  servoController.SetAirFlow(servoValveAngle);
-}
-

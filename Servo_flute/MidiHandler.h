@@ -24,7 +24,6 @@ class MidiHandler {
   private:
     Instrument& _instrument;
     void processMidiEvent(midiEventPacket_t midiEvent);
-    void processControlChange( byte controller, byte value);
   public:
     MidiHandler(Instrument &instrument);
     void readMidi();

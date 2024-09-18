@@ -5,6 +5,7 @@ ServoController::ServoController() {
   pwm = Adafruit_PWMServoDriver(); 
   if(pwm.begin()==false){
     Serial.println("DEBUG ServoController :pca i2c not found");
+    while(1){}//on bloque tant que pb connexion
   }
   //on active la carte 
   pinMode(PIN_SERVOS_OFF, OUTPUT);
@@ -32,8 +33,14 @@ void ServoController::setServoAngle(uint8_t servoNum, uint16_t angle) {
 /*******************************************************************************
 ----------------        Gestion angle servoValve         --------------------
 ******************************************************************************/
-void ServoController::SetAirFlow (int angle) {
-  setServoAngle(NUM_SERVO_VALVE, angle);
+void ServoController::SetAirFlow (int velocity) {
+  if (velocity==0){
+    setServoAngle(NUM_SERVO_VALVE, SERVO_VALVE_FLOW_OFF);
+  }else {
+    int angle= map(velocity,1, 127,SERVO_VALVE_MIN_FLOW,SERVO_VALVE_MAX_FLOW);
+    setServoAngle(NUM_SERVO_VALVE, angle);  
+  }
+  
 }
 
 /*******************************************************************************
@@ -62,26 +69,26 @@ void ServoController::checkPowerOn(){
 ----------------        reset Servos Position       --------------------
 ******************************************************************************/
 void ServoController::resetServosPosition() {
-  // Utilisé au démarrage pour déplacer les doigts en position initiale fermée et le servoValve
-  setServoAngle(NUM_SERVO_VALVE, SERVO_VALVE_CLOSE);
+  // Utilisé au démarrage pour déplacer les doigts en position initiale
+  setServoAngle(NUM_SERVO_VALVE, SERVO_VALVE_FLOW_OFF);
   //vient ouvrir tous les doigts
   for (uint8_t i = 0; i < NUMBER_SERVOS_FINGER; ++i) {
-    setServoAngle(i, closedAngles[i]-(ANGLE_OPEN*sensRotation[i]));  // ouvert 
-	  //delay(30); // délai pour laisser les servos se déplacer
+    setServoAngle(i, closedAngles[i]+(ANGLE_OPEN*sensRotation[i]));  // ouvert 
+	  delay(50); // délai pour laisser les servos se déplacer
     if (DEBUG) {
-      Serial.print("DEBUG ServoController :reset init ouverture servo");
+      Serial.print("DEBUG ServoController :reset init ouverture servo ");
       Serial.println(i);
     } 
   }
   	  delay(3000); // délai pour laisser les servos se déplacer
      //ferme tout les trous 
   for (uint8_t i = 0; i < NUMBER_SERVOS_FINGER; ++i) {
-    setServoAngle(i, closedAngles[i]); 
-	  //delay(200); // délai pour laisser les servos se déplacer
+    setServoAngle(i, closedAngles[i]);
+	  delay(50); // délai pour laisser les servos se déplacer
     if (DEBUG) {
       Serial.print("DEBUG ServoController :reset init fermeture servo");
       Serial.println(i);
-    } 
+    }
   }
 }
 
@@ -92,7 +99,7 @@ void ServoController::openFingers(bool open) {
 
   if (open){
     for (uint8_t i = 0; i < NUMBER_SERVOS_FINGER; ++i) {
-      setServoAngle(i, closedAngles[i]-(ANGLE_OPEN*sensRotation[i]));  
+      setServoAngle(i, closedAngles[i]+(ANGLE_OPEN*sensRotation[i]));  
       delay(10); // délai pour laisser les servos se déplacer
     }
   }else{
@@ -117,9 +124,9 @@ void ServoController::noteOn(int numNote){
     if(finger_position[numNote][i]==0){// position fermée 
       setServoAngle(i, closedAngles[i]);
     }else if(finger_position[numNote][i]==1){//position ouverte 
-      setServoAngle(i, closedAngles[i]-(ANGLE_OPEN*sensRotation[i]));
+      setServoAngle(i, closedAngles[i]+(ANGLE_OPEN*sensRotation[i]));
     }else if(finger_position[numNote][i]==2){// demi ouverte
-      setServoAngle(i, closedAngles[i]-(ANGLE_HALF_OPEN*sensRotation[i]));
+      setServoAngle(i, closedAngles[i]+(ANGLE_HALF_OPEN*sensRotation[i]));
     }
   }
 } 
