@@ -12,7 +12,7 @@ dans le cas d'un message midi NoteOn, si la note peut etre jouée le systeme va 
 
 
 Dans le cas d'un message midi NoteOff, si la note peut etre jouée le systeme :
-- ferme deplace le servo airflow vers l'exterieur
+- deplace le servo airflow vers l'exterieur pour couper l'apport d'air
 
 Ajout possible : 
 - gestion du vibrato/modulation wheel => software avec servoFlow
