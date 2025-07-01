@@ -2,17 +2,21 @@
 
 > [!WARNING]
 > projet en cours de construction.
+> echec du design actuel, je repart sur une pompe + soufflet de reserve
 
 ## presentation du projet
 
 Le systeme est concu pour jouer de la flute a bec automatiquement en fonction des messages midi recu (par usb uniquement mais le code est facilement adaptable).
 dans le cas d'un message midi NoteOn, si la note peut etre jouée le systeme va :
 - deplacer les doigts pour faire l'accord voulu
-- deplacer le servo airFlow vers la plute entre l'angle MIN_SERVO_AIR_FLOW et MAX_SERVO_AIR_FLOW en fonction de la note demandée 
-
+- deplacer le servo airFlow vers la plute entre l'angle MIN_SERVO_AIR_FLOW et MAX_SERVO_AIR_FLOW en fonction de la note demandée et de la velocité 
+- ouvrir la vanne air vers la flute
 
 Dans le cas d'un message midi NoteOff, si la note peut etre jouée le systeme :
-- deplace le servo airflow vers l'exterieur pour couper l'apport d'air
+- fermer la vanne air vers la flute
+
+en tache de fond il faudra ajouter un systeme pour gerer la partie air, c'est a dire activer la pompe a membrane quand la reserve d'air est trop basse et et la couper quand remplie au max. on utrilisera un systeme de capteur inductif ou magnetique a la base du soufflet 
+
 
 Ajout possible : 
 - gestion du vibrato/modulation wheel => software avec servoFlow
@@ -24,14 +28,13 @@ Ajout possible :
 #### Servo Finger
 l'objectif est d'avoir quelque chose de simple (sans soudures) qui utilise au mieux un systeme de bras de levier afin d'avoir un controle plus precis du mouvement de chaque doigts.
 Si on par du principe que tout les doigts vont etre deplacé en meme temps, il faudra au moins 8A prevu juste pour les servomoteurs
+> [!WARNING]
+> je garde les doigts mais je change la partie pompe => schema a refaire avec partie pompe separée
 ![Schema de principe](https://github.com/glloq/servo-flute/blob/main/img/schemasv4.png?raw=true)
 
 L'idée est d'utiliser des fils de fers de 1 a 1.5mm de diametre pour relier les servomoteurs a chaque doigts, ce design permet l'ajout de "ressorts" en pliant les fil de fers en Z => ca reduit les risque de casse et permet d'appuyer un peut plus sur le trou.  
 Il faut garder environ 10cm de chaque coté de la flute pour permetre le placement des servo
 
-nous utiliserons un gros ventilateur radial controlé en on/off via un mofset et un servomoteur viendra mettre en rotation le systeme de "bouche" devant l'entrée d'air de la flute et la sortie du ventilateur.
-
-il faut aussi penser a la gestion du volume et du vibrato dans le futur=> prevoir un code facilement adaptable
 
 ## Fichiers 3D
 
