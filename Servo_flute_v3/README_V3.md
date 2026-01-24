@@ -29,13 +29,21 @@ Version 3 du projet servo-flute avec architecture repensée pour :
 - Coupure ultra-rapide (~5-10ms vs ~50-100ms pour servo)
 - Activation synchronisée avec doigtés
 
-### 3. EventQueue avec timestamps relatifs
+### 3. EventQueue avec timestamps relatifs + Anticipation
 
-**Problème résolu** : Respecter le timing entre notes MIDI
-- Example : Note A (t=0ms), Note B (t=50ms), NoteOff A (t=120ms)
+**Problème résolu** : Respecter le timing exact MIDI malgré le délai mécanique
+
+**EventQueue**
+- Example : Note A (t=0ms), Note B (t=150ms), NoteOff A (t=120ms)
 - La V3 rejoue ces événements avec les délais exacts
 - Queue FIFO circulaire de 16 événements
 - Timestamp relatif au premier événement
+
+**Anticipation automatique** ⭐
+- Pour compenser le délai mécanique (105ms), la séquence démarre EN AVANCE
+- Note B timestamp=150ms → séquence démarre à t=45ms → son produit pile à t=150ms ✅
+- Synchronisation MIDI précise au millisecond près
+- Voir [TIMING_ANTICIPATION.md](TIMING_ANTICIPATION.md) pour détails techniques
 
 ### 4. State Machine non-bloquante
 

@@ -78,11 +78,21 @@ void NoteSequencer::handleWaitingStable() {
     transitionTo(STATE_PLAYING);
 
     if (DEBUG) {
-      Serial.print("DEBUG: NoteSequencer - Note jouée: ");
+      unsigned long actualTime = millis() - _playbackStartTime;
+      unsigned long targetTime = _eventScheduledTime - _playbackStartTime;
+      long timing_error = (long)actualTime - (long)targetTime;
+
+      Serial.print("DEBUG: NoteSequencer - 🎵 SON produit note ");
       Serial.print(_currentNote);
-      Serial.print(" (vélocité: ");
+      Serial.print(" (vel: ");
       Serial.print(_currentVelocity);
-      Serial.println(")");
+      Serial.print(") | t=");
+      Serial.print(actualTime);
+      Serial.print("ms | Cible: ");
+      Serial.print(targetTime);
+      Serial.print("ms | Erreur: ");
+      Serial.print(timing_error);
+      Serial.println("ms");
     }
   }
 }
@@ -128,8 +138,26 @@ void NoteSequencer::processNextEvent() {
     eventAbsoluteTime = _playbackStartTime + event->timestamp;
   }
 
-  // Vérifier si le timing de l'événement est atteint
-  if (millis() >= eventAbsoluteTime) {
+  // ANTICIPATION : Calculer le délai mécanique total
+  const unsigned long MECHANICAL_DELAY = SERVO_SETTLE_TIME_MS + STABILIZATION_TIME_MS;
+
+  // Pour les NoteOn : démarrer la séquence en avance pour compenser le délai mécanique
+  // Pour les NoteOff : exécuter au timing exact
+  unsigned long startTime;
+  if (event->type == EVENT_NOTE_ON) {
+    // Anticiper : démarrer MECHANICAL_DELAY ms avant le timing prévu
+    if (eventAbsoluteTime > MECHANICAL_DELAY) {
+      startTime = eventAbsoluteTime - MECHANICAL_DELAY;
+    } else {
+      startTime = 0;  // Impossible d'anticiper, démarrer immédiatement
+    }
+  } else {
+    // NoteOff : timing exact
+    startTime = eventAbsoluteTime;
+  }
+
+  // Vérifier si le moment de démarrer est atteint
+  if (millis() >= startTime) {
     // Traiter l'événement selon son type
     if (event->type == EVENT_NOTE_ON) {
       // Si une note est déjà en cours, l'arrêter d'abord
@@ -137,7 +165,7 @@ void NoteSequencer::processNextEvent() {
         stopCurrentNote();
       }
 
-      // Démarrer la nouvelle note
+      // Démarrer la nouvelle note (le son sera produit à eventAbsoluteTime)
       startNoteSequence(event->midiNote, event->velocity, eventAbsoluteTime);
 
       // Retirer l'événement de la queue
@@ -168,10 +196,17 @@ void NoteSequencer::startNoteSequence(byte note, byte velocity, unsigned long sc
   transitionTo(STATE_POSITIONING);
 
   if (DEBUG) {
+    unsigned long currentTime = millis() - _playbackStartTime;
+    unsigned long targetTime = scheduledTime - _playbackStartTime;
     Serial.print("DEBUG: NoteSequencer - Début séquence note: ");
     Serial.print(note);
-    Serial.print(" à t=");
-    Serial.println(millis() - _playbackStartTime);
+    Serial.print(" | Démarrage à t=");
+    Serial.print(currentTime);
+    Serial.print("ms | Son prévu à t=");
+    Serial.print(targetTime);
+    Serial.print("ms (dans ");
+    Serial.print(SERVO_SETTLE_TIME_MS + STABILIZATION_TIME_MS);
+    Serial.println("ms)");
   }
 }
 
