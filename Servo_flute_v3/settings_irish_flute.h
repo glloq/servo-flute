@@ -132,27 +132,29 @@ struct NoteDefinition {
 };
 
 // TABLE DES NOTES - Flûte irlandaise en C (à partir de A#5)
+// LOGIQUE PHYSIQUE : Plus de trous fermés = colonne d'air longue = PLUS d'air
+//                    Plus de trous ouverts = colonne d'air courte = MOINS d'air
 const NoteDefinition NOTES[NUMBER_NOTES] = {
   // OCTAVE BASSE - Notes graves (A#5 à B5)
   // MIDI  Doigtés (6 trous)  Min%  Max%
-  {  82,  {0,1,1,1,1,1},  0,   50  },  // A#5 (La#5) - Note grave
-  {  83,  {1,1,1,1,1,1},  0,   55  },  // B5  (Si5) - Tous ouverts
+  {  82,  {0,1,1,1,1,1},  10,  60  },  // A#5 (La#5) - 1 fermé
+  {  83,  {1,1,1,1,1,1},  0,   50  },  // B5  (Si5) - Tous ouverts, moins d'air
 
-  // OCTAVE 1 - MÉDIUM (C6 à B6) - Airflow moyen
-  {  84,  {0,0,0,0,0,0},  0,   60  },  // C6  (Do6) - Note de base, tous fermés
-  {  86,  {0,0,0,0,0,1},  0,   60  },  // D6  (Ré6)
-  {  88,  {0,0,0,0,1,1},  0,   65  },  // E6  (Mi6)
-  {  89,  {0,0,0,1,1,1},  0,   65  },  // F6  (Fa6)
-  {  91,  {0,0,1,1,1,1},  0,   70  },  // G6  (Sol6)
-  {  93,  {0,1,1,1,1,1},  0,   70  },  // A6  (La6)
-  {  95,  {1,1,1,1,1,1},  0,   75  },  // B6  (Si6)
+  // OCTAVE 1 - MÉDIUM (C6 à B6)
+  {  84,  {0,0,0,0,0,0},  20,  75  },  // C6  (Do6) - Tous fermés, PLUS d'air
+  {  86,  {0,0,0,0,0,1},  15,  70  },  // D6  (Ré6) - 5 fermés
+  {  88,  {0,0,0,0,1,1},  10,  65  },  // E6  (Mi6) - 4 fermés
+  {  89,  {0,0,0,1,1,1},  10,  60  },  // F6  (Fa6) - 3 fermés
+  {  91,  {0,0,1,1,1,1},  5,   55  },  // G6  (Sol6) - 2 fermés
+  {  93,  {0,1,1,1,1,1},  5,   50  },  // A6  (La6) - 1 fermé
+  {  95,  {1,1,1,1,1,1},  0,   45  },  // B6  (Si6) - Tous ouverts, MOINS d'air
 
-  // OCTAVE 2 - AIGU (C7 à G7) - Airflow fort
-  {  96,  {0,0,0,0,0,0},  30,  90  },  // C7  (Do7) - Octave sup, ++air
-  {  98,  {0,0,0,0,0,1},  35,  90  },  // D7  (Ré7)
-  {  100, {0,0,0,0,1,1},  40,  95  },  // E7  (Mi7)
-  {  101, {0,0,0,1,1,1},  40,  95  },  // F7  (Fa7)
-  {  103, {0,0,1,1,1,1},  45,  100 }   // G7  (Sol7) - Très aigu, +++air
+  // OCTAVE 2 - AIGU (C7 à G7) - Octave sup = plus d'air partout
+  {  96,  {0,0,0,0,0,0},  50,  100 },  // C7  (Do7) - Tous fermés, octave haute
+  {  98,  {0,0,0,0,0,1},  45,  95  },  // D7  (Ré7)
+  {  100, {0,0,0,0,1,1},  40,  90  },  // E7  (Mi7)
+  {  101, {0,0,0,1,1,1},  35,  85  },  // F7  (Fa7)
+  {  103, {0,0,1,1,1,1},  30,  80  }   // G7  (Sol7) - Moins fermé, moins d'air
 };
 
 // Note MIDI la plus basse (calculée automatiquement)

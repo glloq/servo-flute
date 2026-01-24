@@ -33,10 +33,13 @@ Le système Servo Flute V3 supporte plusieurs types d'instruments grâce à une 
 **Caractéristiques:**
 - Doigtés standard Irish flute / Tin whistle en C
 - Notes graves A#5-B5, puis C6 à G7
-- Airflow adapté par octave :
-  - Notes graves (A#5-B5) : 0-55% (faible pression)
-  - Octave 1 (C6-B6) : 0-75% (pression moyenne)
-  - Octave 2 (C7-G7) : 30-100% (forte pression)
+- **Logique physique correcte :**
+  - Plus de trous fermés = colonne d'air longue = PLUS d'air
+  - Plus de trous ouverts = colonne d'air courte = MOINS d'air
+- Airflow adapté par configuration :
+  - Octave grave (A#5-B5) : 0-60%
+  - Octave 1 (C6-B6) : 0-75% (C6 tous fermés = max, B6 tous ouverts = min)
+  - Octave 2 (C7-G7) : 30-100% (octave haute = plus d'air globalement)
 
 **Utilisation:**
 ```cpp
@@ -83,22 +86,24 @@ Trou 5 (bas) -----> Main droite - Annulaire
 
 ### Doigtés principaux (0=fermé, 1=ouvert)
 
-| Note | MIDI | Doigté  | Octave      | Airflow % |
-|------|------|---------|-------------|-----------|
-| A#5  | 82   | 011111  | Grave       | 0-50      |
-| B5   | 83   | 111111  | Grave       | 0-55      |
-| C6   | 84   | 000000  | 1 (base)    | 0-60      |
-| D6   | 86   | 000001  | 1           | 0-60      |
-| E6   | 88   | 000011  | 1           | 0-65      |
-| F6   | 89   | 000111  | 1           | 0-65      |
-| G6   | 91   | 001111  | 1           | 0-70      |
-| A6   | 93   | 011111  | 1           | 0-70      |
-| B6   | 95   | 111111  | 1           | 0-75      |
-| C7   | 96   | 000000  | 2 (aigu)    | 30-90     |
-| D7   | 98   | 000001  | 2           | 35-90     |
-| E7   | 100  | 000011  | 2           | 40-95     |
-| F7   | 101  | 000111  | 2           | 40-95     |
-| G7   | 103  | 001111  | 2           | 45-100    |
+**LOGIQUE PHYSIQUE :** Plus de trous fermés → colonne d'air longue → PLUS d'air nécessaire
+
+| Note | MIDI | Doigté  | Trous fermés | Octave      | Airflow % |
+|------|------|---------|--------------|-------------|-----------|
+| A#5  | 82   | 011111  | 1            | Grave       | 10-60     |
+| B5   | 83   | 111111  | 0 (tous ouv.)| Grave       | 0-50      |
+| C6   | 84   | 000000  | 6 (tous fer.)| 1 (base)    | 20-75     |
+| D6   | 86   | 000001  | 5            | 1           | 15-70     |
+| E6   | 88   | 000011  | 4            | 1           | 10-65     |
+| F6   | 89   | 000111  | 3            | 1           | 10-60     |
+| G6   | 91   | 001111  | 2            | 1           | 5-55      |
+| A6   | 93   | 011111  | 1            | 1           | 5-50      |
+| B6   | 95   | 111111  | 0 (tous ouv.)| 1           | 0-45      |
+| C7   | 96   | 000000  | 6 (tous fer.)| 2 (aigu)    | 50-100    |
+| D7   | 98   | 000001  | 5            | 2           | 45-95     |
+| E7   | 100  | 000011  | 4            | 2           | 40-90     |
+| F7   | 101  | 000111  | 3            | 2           | 35-85     |
+| G7   | 103  | 001111  | 2            | 2           | 30-80     |
 
 ### Personnalisation des doigtés
 
