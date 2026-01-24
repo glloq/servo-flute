@@ -2,7 +2,6 @@
 
 > [!WARNING]
 > projet en cours de construction.
-> echec du design actuel, je repart sur une pompe + soufflet de reserve
 
 ## presentation du projet
 
@@ -14,14 +13,11 @@ dans le cas d'un message midi NoteOn, si la note peut etre jouée le systeme va 
 
 Dans le cas d'un message midi NoteOff, si la note peut etre jouée le systeme :
 - fermer la vanne air vers la flute
-
-en tache de fond il faudra ajouter un systeme pour gerer la partie air, c'est a dire activer la pompe a membrane quand la reserve d'air est trop basse et et la couper quand remplie au max. on utrilisera un systeme de capteur inductif ou magnetique a la base du soufflet 
-
-
-Ajout possible : 
 - gestion du vibrato/modulation wheel => software avec servoFlow
 - gestion du volume (en gros augmenter/reduire le debit d'air)  => software avec servoFlow
-- une boucle de rétroaction pour un meilleur controle des notes jouée => necessite un capteur piezo + ampli ?
+
+Ajout possible : 
+- une boucle de rétroaction pour un meilleur controle des notes jouée
   
 ## Schema principe
 
@@ -35,31 +31,22 @@ Si on par du principe que tout les doigts vont etre deplacé en meme temps, il f
 L'idée est d'utiliser des fils de fers de 1 a 1.5mm de diametre pour relier les servomoteurs a chaque doigts, ce design permet l'ajout de "ressorts" en pliant les fil de fers en Z => ca reduit les risque de casse et permet d'appuyer un peut plus sur le trou.  
 Il faut garder environ 10cm de chaque coté de la flute pour permetre le placement des servo
 
-
-## Fichiers 3D
-
-Le systeme est concu pour fonctionner avec une flute a bec bas de gamme acheté sur amazon, la position des doigts peut ne pas etre adapté a d'autres flutes a bec sans faire de changement sur les doigts ou le support de rotation des doigts( on peut ce permettre 1 a 2 mm de decallage avec l'utilisation de la mousse) 
-verifier que les dimensions sont adapté a la flute en votre possession avant d'imprimer quoi que ce soit
-![Dimensions flute](https://github.com/glloq/servo-flute/blob/main/img/dimenssionFlute.png?raw=true)
-
-les fichiers STL sont dans le dossier stl 
-
-
 ## materiel necessaire 
-
-#### General
-
+#### Electronique :
 - un controleur tel que l'arduino leonardo ou micro et des cables de prototypage
 - un module PCA9685
-  - 11 servomoteurs 9g bas de gamme (avec dent metalique) => 10 doigts et 1 servo air flow
-  - Alimentation 5V pour les servomoteurs => les 11 servomoteurs bougent en meme temps, prevoir une puissance adapté aux servomoteurs (environ 10A)
-- du fil de fer diametre 1mm
-- un systeme de mousse  (bande de 5mm de large min environ 3mm d'epaisseur)
-- une tige en metal de 3mm (j'ai utilisé un cintre) 
+- 7 servomoteurs 9g bas de gamme (avec dent metalique) => 6 doigts et 1 servo air flow
+- Alimentation 5V 5A minimum
+- Un solenoide 5V/6V avec 2N min (ideal secutiré a 5N ) il faut viser 500mA maximum de consomation pour eviter la surchauffe (idéal autour de 30m0A) 
+- un mofset adapté a la puissance
+- une diode de roue libre
+  
+  #### Mécanique :
+- du fil de fer diametre 1mm (pour lier les servomoteurs aux doigts) 
+- un systeme de mousse a pores fermée environ 3mm d'epaisseur
 - les doigts et supports imprimé en 3D
-- des vis a bois 3x35/40mm (2 par support servoFinger)
-- 2 vois bois 3x15mm (pour fixer le support flute)
-- Une planche de bois pour tenir tout les composants ( environ 40x25cm avec une profondeur de 150cm )
+- servo valve imprimé en 3D avec 2 roulements 12x4x3 et 3vis/ecrous M3x20mm 
+- une boite ou planche pour supportrer le tout 
 
 
 
