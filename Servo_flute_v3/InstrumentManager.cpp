@@ -44,6 +44,9 @@ void InstrumentManager::update() {
   // Mettre à jour le séquenceur (state machine)
   _sequencer.update();
 
+  // Mettre à jour le contrôleur d'air (gestion PWM solénoïde)
+  _airflowCtrl.update();
+
   // Gérer l'alimentation des servos
   managePower();
 }

@@ -101,7 +101,10 @@ InstrumentManager
 - Canal 10 : Servo débit air
 
 ### Solénoïde
-- GPIO Pin 13 (configurable dans `settings.h`)
+- Pin 13 PWM (configurable dans `settings.h`)
+- **Mode PWM disponible** : Réduit chaleur de ~50% (voir [SOLENOID_PWM.md](SOLENOID_PWM.md))
+  - Phase activation : 100% pendant 50ms (ouverture rapide)
+  - Phase maintien : 50% (réduction chaleur/consommation)
 - Transistor/MOSFET requis (200-500mA)
 - Alimentation séparée recommandée
 
@@ -136,9 +139,17 @@ const int sensRotation[10] = {-1, 1, 1, ...};          // Direction
 #define SERVO_AIRFLOW_MIN       60    // Angle velocity=1
 #define SERVO_AIRFLOW_MAX       100   // Angle velocity=127
 
-#define SOLENOID_PIN            13    // GPIO solénoïde
+#define SOLENOID_PIN            13    // Pin PWM solénoïde
 #define SOLENOID_ACTIVE_HIGH    true  // Logique HIGH/LOW
+#define SOLENOID_USE_PWM        true  // Mode PWM (réduction chaleur)
+
+// Paramètres PWM (si SOLENOID_USE_PWM = true)
+#define SOLENOID_PWM_ACTIVATION 255   // PWM max activation (100%)
+#define SOLENOID_PWM_HOLDING    128   // PWM maintien (50%, -50% chaleur)
+#define SOLENOID_ACTIVATION_TIME_MS 50 // Durée activation avant réduction
 ```
+
+**Mode PWM** : Réduit la chaleur du solénoïde de ~50% en utilisant un duty cycle réduit pour le maintien. Voir [SOLENOID_PWM.md](SOLENOID_PWM.md) pour détails et réglages.
 
 ## Adaptation à d'autres instruments
 

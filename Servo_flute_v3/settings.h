@@ -35,8 +35,16 @@ Architecture avec servo débit + solénoïde valve
 /*******************************************************************************
 ---------------------------     SOLENOID VALVE        ------------------------
 ******************************************************************************/
-#define SOLENOID_PIN 13           // Pin GPIO pour contrôle solénoïde
+#define SOLENOID_PIN 13           // Pin GPIO/PWM pour contrôle solénoïde
 #define SOLENOID_ACTIVE_HIGH true // true = HIGH pour activer, false = LOW
+
+// MODE PWM (option pour réduction chaleur)
+#define SOLENOID_USE_PWM true     // true = PWM, false = GPIO simple (on/off)
+
+// Paramètres PWM (si SOLENOID_USE_PWM = true)
+#define SOLENOID_PWM_ACTIVATION 255    // PWM max pour ouverture rapide (0-255)
+#define SOLENOID_PWM_HOLDING    128    // PWM réduit pour maintien (réduit chaleur)
+#define SOLENOID_ACTIVATION_TIME_MS 50 // Temps PWM max avant réduction (ms)
 
 /*******************************************************************************
 ---------------------------   AIR FLOW SERVO          ------------------------

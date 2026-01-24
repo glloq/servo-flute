@@ -1,7 +1,7 @@
 #include "AirflowController.h"
 
 AirflowController::AirflowController(Adafruit_PWMServoDriver& pwm)
-  : _pwm(pwm), _solenoidOpen(false) {
+  : _pwm(pwm), _solenoidOpen(false), _solenoidOpenTime(0) {
 }
 
 void AirflowController::begin() {
@@ -16,6 +16,15 @@ void AirflowController::begin() {
 
   if (DEBUG) {
     Serial.println("DEBUG: AirflowController - Initialisation");
+    #if SOLENOID_USE_PWM
+    Serial.println("DEBUG: AirflowController - Mode PWM activé");
+    Serial.print("DEBUG:   - PWM activation: ");
+    Serial.println(SOLENOID_PWM_ACTIVATION);
+    Serial.print("DEBUG:   - PWM maintien: ");
+    Serial.println(SOLENOID_PWM_HOLDING);
+    #else
+    Serial.println("DEBUG: AirflowController - Mode GPIO simple");
+    #endif
   }
 }
 
@@ -41,27 +50,47 @@ void AirflowController::setAirflowVelocity(byte velocity) {
 }
 
 void AirflowController::openSolenoid() {
-  if (SOLENOID_ACTIVE_HIGH) {
-    digitalWrite(SOLENOID_PIN, HIGH);
-  } else {
-    digitalWrite(SOLENOID_PIN, LOW);
-  }
+  #if SOLENOID_USE_PWM
+    // Mode PWM : démarrer à pleine puissance pour ouverture rapide
+    setSolenoidPWM(SOLENOID_PWM_ACTIVATION);
+    _solenoidOpenTime = millis();  // Sauvegarder timestamp pour réduction ultérieure
+  #else
+    // Mode GPIO simple
+    if (SOLENOID_ACTIVE_HIGH) {
+      digitalWrite(SOLENOID_PIN, HIGH);
+    } else {
+      digitalWrite(SOLENOID_PIN, LOW);
+    }
+  #endif
 
   _solenoidOpen = true;
 
   if (DEBUG) {
+    #if SOLENOID_USE_PWM
+    Serial.print("DEBUG: AirflowController - Solénoïde OUVERT (PWM=");
+    Serial.print(SOLENOID_PWM_ACTIVATION);
+    Serial.println(")");
+    #else
     Serial.println("DEBUG: AirflowController - Solénoïde OUVERT");
+    #endif
   }
 }
 
 void AirflowController::closeSolenoid() {
-  if (SOLENOID_ACTIVE_HIGH) {
-    digitalWrite(SOLENOID_PIN, LOW);
-  } else {
-    digitalWrite(SOLENOID_PIN, HIGH);
-  }
+  #if SOLENOID_USE_PWM
+    // Mode PWM : mettre à 0
+    setSolenoidPWM(0);
+  #else
+    // Mode GPIO simple
+    if (SOLENOID_ACTIVE_HIGH) {
+      digitalWrite(SOLENOID_PIN, LOW);
+    } else {
+      digitalWrite(SOLENOID_PIN, HIGH);
+    }
+  #endif
 
   _solenoidOpen = false;
+  _solenoidOpenTime = 0;
 
   if (DEBUG) {
     Serial.println("DEBUG: AirflowController - Solénoïde FERMÉ");
@@ -78,6 +107,27 @@ void AirflowController::setAirflowToRest() {
   if (DEBUG) {
     Serial.println("DEBUG: AirflowController - Servo en position repos");
   }
+}
+
+void AirflowController::update() {
+  #if SOLENOID_USE_PWM
+  // Gérer la réduction PWM après SOLENOID_ACTIVATION_TIME_MS
+  if (_solenoidOpen && _solenoidOpenTime > 0) {
+    unsigned long elapsed = millis() - _solenoidOpenTime;
+
+    if (elapsed >= SOLENOID_ACTIVATION_TIME_MS) {
+      // Réduire le PWM pour maintien (économie énergie/chaleur)
+      setSolenoidPWM(SOLENOID_PWM_HOLDING);
+      _solenoidOpenTime = 0;  // Reset pour ne faire qu'une fois
+
+      if (DEBUG) {
+        Serial.print("DEBUG: AirflowController - PWM réduit à ");
+        Serial.print(SOLENOID_PWM_HOLDING);
+        Serial.println(" (maintien)");
+      }
+    }
+  }
+  #endif
 }
 
 void AirflowController::setAirflowServoAngle(uint16_t angle) {
@@ -99,4 +149,14 @@ uint16_t AirflowController::angleToPWM(uint16_t angle) {
   float pwmValue = pulseDuration * SERVO_FREQUENCY * 4096.0;
 
   return (uint16_t)pwmValue;
+}
+
+void AirflowController::setSolenoidPWM(uint8_t pwmValue) {
+  #if SOLENOID_USE_PWM
+    if (SOLENOID_ACTIVE_HIGH) {
+      analogWrite(SOLENOID_PIN, pwmValue);
+    } else {
+      analogWrite(SOLENOID_PIN, 255 - pwmValue);  // Inverser si active low
+    }
+  #endif
 }
