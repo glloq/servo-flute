@@ -11,17 +11,17 @@ Architecture avec servo débit + solénoïde valve + mode binaire (ouvert/fermé
 
 /*******************************************************************************
 -------------------------   CONFIGURATION INSTRUMENT  ------------------------
-FLÛTE IRLANDAISE EN D (Irish Flute / Tin Whistle)
+FLÛTE IRLANDAISE EN C (Irish Flute / Tin Whistle)
 - 6 trous
-- Tonalité: D majeur
-- Gamme: D5 (Ré5) à D7 (Ré7) - 2 octaves
+- Tonalité: C majeur (Do majeur)
+- Gamme: A#5 (La#5) à C7 (Do7)
 ******************************************************************************/
 
 // Nombre de servos pour les doigts
 #define NUMBER_SERVOS_FINGER 6
 
 // Nombre de notes jouables
-#define NUMBER_NOTES 15
+#define NUMBER_NOTES 14
 
 /*******************************************************************************
 ---------------------------   TIMING SETTINGS (ms)    ------------------------
@@ -105,21 +105,21 @@ const FingerConfig FINGERS[NUMBER_SERVOS_FINGER] = {
 -----------------   CONFIGURATION DES NOTES JOUABLES   ----------------------
 Structure : {MIDI, {doigtés}, flow_min%, flow_max%}
 
-MIDI         : Numéro MIDI (74-98 pour D5-D7)
+MIDI         : Numéro MIDI (82-96 pour A#5-C7)
 Doigtés      : Tableau 6 trous (0=fermé, 1=ouvert)
 flow_min%    : Pourcentage MIN ouverture servo flow (0-100%)
 flow_max%    : Pourcentage MAX ouverture servo flow (0-100%)
 
 Les pourcentages sont appliqués sur la plage [SERVO_AIRFLOW_MIN, SERVO_AIRFLOW_MAX]
 
-DOIGTÉS IRISH FLUTE EN D :
-  000000 = D (note de base selon octave)
-  000001 = E
-  000011 = F#
-  000111 = G
-  001111 = A
-  011111 = B
-  111111 = C#
+DOIGTÉS IRISH FLUTE EN C :
+  000000 = C (note de base selon octave)
+  000001 = D
+  000011 = E
+  000111 = F
+  001111 = G
+  011111 = A
+  111111 = B
 
   Octaves : même doigtés avec plus d'air
 ******************************************************************************/
@@ -131,29 +131,28 @@ struct NoteDefinition {
   byte airflowMaxPercent;                   // % max servo flow (0-100)
 };
 
-// TABLE DES NOTES - Flûte irlandaise en D (2 octaves)
+// TABLE DES NOTES - Flûte irlandaise en C (à partir de A#5)
 const NoteDefinition NOTES[NUMBER_NOTES] = {
-  // OCTAVE 1 - GRAVE (D5 à C#6) - Airflow faible
+  // OCTAVE BASSE - Notes graves (A#5 à B5)
   // MIDI  Doigtés (6 trous)  Min%  Max%
-  {  74,  {0,0,0,0,0,0},  0,   50  },  // D5  (Ré5) - Tous fermés
-  {  76,  {0,0,0,0,0,1},  0,   50  },  // E5  (Mi5)
-  {  78,  {0,0,0,0,1,1},  0,   55  },  // F#5 (Fa#5)
-  {  79,  {0,0,0,1,1,1},  0,   60  },  // G5  (Sol5)
-  {  81,  {0,0,1,1,1,1},  0,   60  },  // A5  (La5)
-  {  83,  {0,1,1,1,1,1},  0,   65  },  // B5  (Si5)
-  {  85,  {1,1,1,1,1,1},  0,   70  },  // C#6 (Do#6)
+  {  82,  {0,1,1,1,1,1},  0,   50  },  // A#5 (La#5) - Note grave
+  {  83,  {1,1,1,1,1,1},  0,   55  },  // B5  (Si5) - Tous ouverts
 
-  // OCTAVE 2 - MÉDIUM (D6 à C#7) - Airflow moyen/fort
-  {  86,  {0,0,0,0,0,0},  30,  80  },  // D6  (Ré6) - Octave sup, ++air
-  {  88,  {0,0,0,0,0,1},  30,  80  },  // E6  (Mi6)
-  {  90,  {0,0,0,0,1,1},  35,  85  },  // F#6 (Fa#6)
-  {  91,  {0,0,0,1,1,1},  35,  85  },  // G6  (Sol6)
-  {  93,  {0,0,1,1,1,1},  40,  90  },  // A6  (La6)
-  {  95,  {0,1,1,1,1,1},  40,  90  },  // B6  (Si6)
-  {  97,  {1,1,1,1,1,1},  45,  95  },  // C#7 (Do#7)
+  // OCTAVE 1 - MÉDIUM (C6 à B6) - Airflow moyen
+  {  84,  {0,0,0,0,0,0},  0,   60  },  // C6  (Do6) - Note de base, tous fermés
+  {  86,  {0,0,0,0,0,1},  0,   60  },  // D6  (Ré6)
+  {  88,  {0,0,0,0,1,1},  0,   65  },  // E6  (Mi6)
+  {  89,  {0,0,0,1,1,1},  0,   65  },  // F6  (Fa6)
+  {  91,  {0,0,1,1,1,1},  0,   70  },  // G6  (Sol6)
+  {  93,  {0,1,1,1,1,1},  0,   70  },  // A6  (La6)
+  {  95,  {1,1,1,1,1,1},  0,   75  },  // B6  (Si6)
 
-  // OCTAVE 3 - AIGU (D7) - Airflow très fort
-  {  98,  {0,0,0,0,0,0},  50,  100 }   // D7  (Ré7) - Très aigu, +++air
+  // OCTAVE 2 - AIGU (C7 à G7) - Airflow fort
+  {  96,  {0,0,0,0,0,0},  30,  90  },  // C7  (Do7) - Octave sup, ++air
+  {  98,  {0,0,0,0,0,1},  35,  90  },  // D7  (Ré7)
+  {  100, {0,0,0,0,1,1},  40,  95  },  // E7  (Mi7)
+  {  101, {0,0,0,1,1,1},  40,  95  },  // F7  (Fa7)
+  {  103, {0,0,1,1,1,1},  45,  100 }   // G7  (Sol7) - Très aigu, +++air
 };
 
 // Note MIDI la plus basse (calculée automatiquement)

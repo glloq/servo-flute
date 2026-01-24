@@ -22,21 +22,21 @@ Le système Servo Flute V3 supporte plusieurs types d'instruments grâce à une 
 
 ---
 
-### 2. **Flûte irlandaise en D** (settings_irish_flute.h)
+### 2. **Flûte irlandaise en C** (settings_irish_flute.h)
 - **Fichier:** `settings_irish_flute.h`
 - **Trous:** 6 servos doigts
-- **Tonalité:** Ré (D majeur)
-- **Gamme:** Ré5 (D5) à Ré7 (D7)
-- **Notes MIDI:** 74 à 98
-- **Nombre de notes:** 15
+- **Tonalité:** Do (C majeur)
+- **Gamme:** La#5 (A#5) à Sol7 (G7)
+- **Notes MIDI:** 82 à 103
+- **Nombre de notes:** 14
 
 **Caractéristiques:**
-- Doigtés standard Irish flute / Tin whistle
-- 3 octaves supportées (grave, médium, aigu)
+- Doigtés standard Irish flute / Tin whistle en C
+- Notes graves A#5-B5, puis C6 à G7
 - Airflow adapté par octave :
-  - Octave 1 : 0-70% (faible pression)
-  - Octave 2 : 30-95% (pression moyenne)
-  - Octave 3 : 50-100% (forte pression)
+  - Notes graves (A#5-B5) : 0-55% (faible pression)
+  - Octave 1 (C6-B6) : 0-75% (pression moyenne)
+  - Octave 2 (C7-G7) : 30-100% (forte pression)
 
 **Utilisation:**
 ```cpp
@@ -83,23 +83,22 @@ Trou 5 (bas) -----> Main droite - Annulaire
 
 ### Doigtés principaux (0=fermé, 1=ouvert)
 
-| Note | MIDI | Doigté  | Octave | Airflow % |
-|------|------|---------|--------|-----------|
-| D5   | 74   | 000000  | 1      | 0-50      |
-| E5   | 76   | 000001  | 1      | 0-50      |
-| F#5  | 78   | 000011  | 1      | 0-55      |
-| G5   | 79   | 000111  | 1      | 0-60      |
-| A5   | 81   | 001111  | 1      | 0-60      |
-| B5   | 83   | 011111  | 1      | 0-65      |
-| C#6  | 85   | 111111  | 1      | 0-70      |
-| D6   | 86   | 000000  | 2      | 30-80     |
-| E6   | 88   | 000001  | 2      | 30-80     |
-| F#6  | 90   | 000011  | 2      | 35-85     |
-| G6   | 91   | 000111  | 2      | 35-85     |
-| A6   | 93   | 001111  | 2      | 40-90     |
-| B6   | 95   | 011111  | 2      | 40-90     |
-| C#7  | 97   | 111111  | 2      | 45-95     |
-| D7   | 98   | 000000  | 3      | 50-100    |
+| Note | MIDI | Doigté  | Octave      | Airflow % |
+|------|------|---------|-------------|-----------|
+| A#5  | 82   | 011111  | Grave       | 0-50      |
+| B5   | 83   | 111111  | Grave       | 0-55      |
+| C6   | 84   | 000000  | 1 (base)    | 0-60      |
+| D6   | 86   | 000001  | 1           | 0-60      |
+| E6   | 88   | 000011  | 1           | 0-65      |
+| F6   | 89   | 000111  | 1           | 0-65      |
+| G6   | 91   | 001111  | 1           | 0-70      |
+| A6   | 93   | 011111  | 1           | 0-70      |
+| B6   | 95   | 111111  | 1           | 0-75      |
+| C7   | 96   | 000000  | 2 (aigu)    | 30-90     |
+| D7   | 98   | 000001  | 2           | 35-90     |
+| E7   | 100  | 000011  | 2           | 40-95     |
+| F7   | 101  | 000111  | 2           | 40-95     |
+| G7   | 103  | 001111  | 2           | 45-100    |
 
 ### Personnalisation des doigtés
 
@@ -108,7 +107,7 @@ Pour modifier les doigtés, éditer `settings_irish_flute.h` :
 ```cpp
 const NoteDefinition NOTES[NUMBER_NOTES] = {
   // MIDI  Doigtés        Min%  Max%
-  {  74,  {0,0,0,0,0,0},  0,   50  },  // Modifier ici
+  {  84,  {0,0,0,0,0,0},  0,   60  },  // C6 - Modifier ici
   // ...
 };
 ```
