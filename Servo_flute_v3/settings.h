@@ -24,158 +24,131 @@ Modifier cette section pour adapter à un autre instrument (tin whistle, etc.)
 ---------------------------   TIMING SETTINGS (ms)    ------------------------
 ******************************************************************************/
 // Délai total entre positionnement servos et activation solénoïde
-// = Temps déplacement servos + stabilisation mécanique
-#define SERVO_TO_SOLENOID_DELAY_MS  105   // Temps total avant ouverture valve
+#define SERVO_TO_SOLENOID_DELAY_MS  105
 
 // Si deux notes sont espacées de moins que ce délai, on garde la valve ouverte
-// et on change juste les doigts (économie usure solénoïde + fluidité)
 #define MIN_NOTE_INTERVAL_FOR_VALVE_CLOSE_MS  50
 
-#define MIN_NOTE_DURATION_MS    10    // Durée minimale pour produire un son
+#define MIN_NOTE_DURATION_MS    10
 
 /*******************************************************************************
 ---------------------------   EVENT QUEUE SETTINGS    ------------------------
 ******************************************************************************/
-#define EVENT_QUEUE_SIZE 16  // Nombre max d'événements MIDI en buffer
+#define EVENT_QUEUE_SIZE 16
 
 /*******************************************************************************
 ---------------------------     SOLENOID VALVE        ------------------------
 ******************************************************************************/
-#define SOLENOID_PIN 13           // Pin GPIO/PWM pour contrôle solénoïde
-#define SOLENOID_ACTIVE_HIGH true // true = HIGH pour activer, false = LOW
+#define SOLENOID_PIN 13
+#define SOLENOID_ACTIVE_HIGH true
 
 // MODE PWM (option pour réduction chaleur)
-#define SOLENOID_USE_PWM true     // true = PWM, false = GPIO simple (on/off)
+#define SOLENOID_USE_PWM true
 
 // Paramètres PWM (si SOLENOID_USE_PWM = true)
-#define SOLENOID_PWM_ACTIVATION 255    // PWM max pour ouverture rapide (0-255)
-#define SOLENOID_PWM_HOLDING    128    // PWM réduit pour maintien (réduit chaleur)
-#define SOLENOID_ACTIVATION_TIME_MS 50 // Temps PWM max avant réduction (ms)
+#define SOLENOID_PWM_ACTIVATION 255
+#define SOLENOID_PWM_HOLDING    128
+#define SOLENOID_ACTIVATION_TIME_MS 50
 
 /*******************************************************************************
 ---------------------------   AIR FLOW SERVO          ------------------------
 ******************************************************************************/
 #define NUM_SERVO_AIRFLOW 10      // Canal PCA9685 pour servo débit air
 #define SERVO_AIRFLOW_OFF 20      // Angle repos (pas de note)
-#define SERVO_AIRFLOW_MIN 60      // Angle pour velocity=1 (pianissimo)
-#define SERVO_AIRFLOW_MAX 100     // Angle pour velocity=127 (fortissimo)
+#define SERVO_AIRFLOW_MIN 60      // Angle minimum absolu
+#define SERVO_AIRFLOW_MAX 100     // Angle maximum absolu
 
 /*******************************************************************************
 ---------------------------   POWER MANAGEMENT        ------------------------
 ******************************************************************************/
-#define TIMEUNPOWER 200               // Temps avant coupure alimentation servos (anti-bruit)
-#define PIN_SERVOS_OFF 5              // Pin OE carte PCA9685 (0=off, 1=on)
+#define TIMEUNPOWER 200
+#define PIN_SERVOS_OFF 5
 
 /*******************************************************************************
-------------------   MAPPING SERVOS DOIGTS → PCA9685   ----------------------
-Permet de définir l'ordre de branchement physique des servos
-Index 0-9 = ordre logique des doigts (0=premier trou, 9=dernier trou)
-Valeur = canal PCA9685 (0-15)
+------------------   CONFIGURATION SERVOS DOIGTS       ----------------------
+Structure : {PCA_channel, angle_fermé, sens_ouverture}
 
-EXEMPLE pour inverser l'ordre:
-  const int fingerToPCAChannel[10] = {9,8,7,6,5,4,3,2,1,0};
-******************************************************************************/
-const int fingerToPCAChannel[NUMBER_SERVOS_FINGER] = {
-  0,  // Doigt 0 (1er trou) → PCA9685 canal 0
-  1,  // Doigt 1 (2e trou)  → PCA9685 canal 1
-  2,  // Doigt 2 (3e trou)  → PCA9685 canal 2
-  3,  // Doigt 3 (4e trou)  → PCA9685 canal 3
-  4,  // Doigt 4 (5e trou)  → PCA9685 canal 4
-  5,  // Doigt 5 (6e trou)  → PCA9685 canal 5
-  6,  // Doigt 6 (7e trou)  → PCA9685 canal 6
-  7,  // Doigt 7 (8e trou)  → PCA9685 canal 7
-  8,  // Doigt 8 (9e trou)  → PCA9685 canal 8
-  9   // Doigt 9 (10e trou) → PCA9685 canal 9
-};
-
-/*******************************************************************************
-------------------   CALIBRATION SERVOS DOIGTS         ----------------------
+PCA_channel     : Canal PCA9685 (0-15)
+angle_fermé     : Angle servo en position fermée (0-180°)
+sens_ouverture  : 1 = horaire, -1 = anti-horaire
 ******************************************************************************/
 #define ANGLE_OPEN 30  // Angle d'ouverture du trou (degrés)
 
-// Angles de position fermée pour chaque doigt (calibration individuelle)
-const uint16_t closedAngles[NUMBER_SERVOS_FINGER] = {
-  90,   // Doigt 0 : angle fermé
-  100,  // Doigt 1 : angle fermé
-  95,   // Doigt 2 : angle fermé
-  100,  // Doigt 3 : angle fermé
-  90,   // Doigt 4 : angle fermé
-  95,   // Doigt 5 : angle fermé
-  90,   // Doigt 6 : angle fermé
-  90,   // Doigt 7 : angle fermé
-  100,  // Doigt 8 : angle fermé
-  90    // Doigt 9 : angle fermé
+struct FingerConfig {
+  byte pcaChannel;      // Canal PCA9685
+  uint16_t closedAngle; // Angle position fermée
+  int8_t direction;     // 1=horaire, -1=anti-horaire
 };
 
-// Sens de rotation : 1 = horaire, -1 = anti-horaire
-const int sensRotation[NUMBER_SERVOS_FINGER] = {
-  -1,  // Doigt 0
-   1,  // Doigt 1
-   1,  // Doigt 2
-   1,  // Doigt 3
-   1,  // Doigt 4
-  -1,  // Doigt 5
-  -1,  // Doigt 6
-   1,  // Doigt 7
-   1,  // Doigt 8
-   1   // Doigt 9
+const FingerConfig FINGERS[NUMBER_SERVOS_FINGER] = {
+  // PCA  Fermé  Sens
+  {  0,   90,   -1  },  // Doigt 0
+  {  1,   100,   1  },  // Doigt 1
+  {  2,   95,    1  },  // Doigt 2
+  {  3,   100,   1  },  // Doigt 3
+  {  4,   90,    1  },  // Doigt 4
+  {  5,   95,   -1  },  // Doigt 5
+  {  6,   90,   -1  },  // Doigt 6
+  {  7,   90,    1  },  // Doigt 7
+  {  8,   100,   1  },  // Doigt 8
+  {  9,   90,    1  }   // Doigt 9
 };
 
 /*******************************************************************************
 -----------------   CONFIGURATION DES NOTES JOUABLES   ----------------------
-Structure : Chaque ligne définit une note complète
-Format : {MIDI, "Nom", {doigtés}, airflowMin}
+Structure : {MIDI, {doigtés}, flow_min%, flow_max%}
 
-MIDI        : Numéro MIDI de la note (72-127)
-Nom         : Nom lisible (ex: "Do5", "C5", etc.)
-Doigtés     : Tableau de 10 valeurs (0=fermé, 1=ouvert)
-              Index correspond à l'ordre des doigts (pas forcément PCA channel!)
-airflowMin  : Angle servo débit minimum pour cette note (optionnel)
-              Si 0, utilise SERVO_AIRFLOW_MIN par défaut
+MIDI         : Numéro MIDI (72-127)
+Doigtés      : Tableau (0=fermé, 1=ouvert)
+flow_min%    : Pourcentage MIN ouverture servo flow (0-100%)
+flow_max%    : Pourcentage MAX ouverture servo flow (0-100%)
+
+Les pourcentages sont appliqués sur la plage [SERVO_AIRFLOW_MIN, SERVO_AIRFLOW_MAX]
 
 EXEMPLE :
-  {72, "Do5", {0,0,0,0,0,0,0,0,0,0}, 0},  // Tous fermés, airflow défaut
-  {73, "Re5", {0,0,0,0,0,0,0,0,0,1}, 65}, // Dernier ouvert, airflow custom
+  {72, {0,0,0,0,0,0,0,0,0,0}, 0, 50}    // Do5: 0-50% de la plage
+  {92, {1,1,0,0,0,0,0,0,1,1}, 40, 100}  // Sol#6: octave haute, 40-100%
+
+→ Permet gestion volume ET adaptation débit selon octave
 ******************************************************************************/
 
-// Structure pour définir une note
 struct NoteDefinition {
   byte midiNote;                            // Numéro MIDI
-  const char* name;                         // Nom lisible
   bool fingerPattern[NUMBER_SERVOS_FINGER]; // Doigtés (0=fermé, 1=ouvert)
-  byte minAirflow;                          // Angle servo débit min (0=défaut)
+  byte airflowMinPercent;                   // % min servo flow (0-100)
+  byte airflowMaxPercent;                   // % max servo flow (0-100)
 };
 
 // TABLE DES NOTES - Flûte à bec soprano
 const NoteDefinition NOTES[NUMBER_NOTES] = {
-  // MIDI  Nom      Doigtés (0=fermé, 1=ouvert)                    Airflow
-  {  72,  "Do5",  {0,0,0,0,0,0,0,0,0,0},  0  },  // Do5  - Tous fermés
-  {  73,  "Do#5", {0,0,0,0,0,0,0,0,0,1},  0  },  // Do#5
-  {  74,  "Re5",  {0,0,0,0,0,0,0,0,1,1},  0  },  // Ré5
-  {  75,  "Re#5", {0,0,0,0,0,0,0,1,1,1},  0  },  // Ré#5
-  {  76,  "Mi5",  {0,0,0,0,0,0,1,1,1,1},  0  },  // Mi5
-  {  77,  "Fa5",  {0,0,0,0,0,1,1,1,1,1},  0  },  // Fa5
-  {  78,  "Fa#5", {0,0,0,0,0,1,0,0,0,0},  0  },  // Fa#5
-  {  79,  "Sol5", {0,0,0,0,1,0,0,0,0,0},  0  },  // Sol5
-  {  80,  "Sol#5",{0,0,0,0,1,0,0,0,1,1},  0  },  // Sol#5
-  {  81,  "La5",  {0,0,0,0,1,1,1,1,1,1},  0  },  // La5
-  {  82,  "La#5", {0,0,0,1,0,0,0,1,1,1},  0  },  // La#5
-  {  83,  "Si5",  {0,0,0,1,1,1,1,1,1,1},  0  },  // Si5
-  {  84,  "Do6",  {0,0,1,0,0,1,1,1,1,1},  0  },  // Do6
-  {  85,  "Do#6", {0,1,0,0,0,1,1,1,1,1},  0  },  // Do#6
-  {  86,  "Re6",  {0,0,1,1,1,1,1,1,1,1},  0  },  // Ré6
-  {  87,  "Re#6", {0,1,0,0,1,1,1,1,1,1},  0  },  // Ré#6
-  {  88,  "Mi6",  {0,1,0,1,1,1,1,1,1,1},  0  },  // Mi6
-  {  89,  "Fa6",  {1,0,0,1,1,1,1,1,1,1},  0  },  // Fa6
-  {  90,  "Fa#6", {0,1,1,1,1,1,1,1,1,1},  0  },  // Fa#6
-  {  91,  "Sol6", {1,1,0,1,1,1,1,1,1,1},  0  },  // Sol6
-  {  92,  "Sol#6",{1,1,0,0,0,0,0,0,1,1},  0  }   // Sol#6
+  // MIDI  Doigtés (0=fermé, 1=ouvert)                    Min%  Max%
+  {  72,  {0,0,0,0,0,0,0,0,0,0},  0,   50  },  // Do5  - Grave
+  {  73,  {0,0,0,0,0,0,0,0,0,1},  0,   50  },  // Do#5
+  {  74,  {0,0,0,0,0,0,0,0,1,1},  0,   50  },  // Ré5
+  {  75,  {0,0,0,0,0,0,0,1,1,1},  0,   50  },  // Ré#5
+  {  76,  {0,0,0,0,0,0,1,1,1,1},  0,   50  },  // Mi5
+  {  77,  {0,0,0,0,0,1,1,1,1,1},  0,   50  },  // Fa5
+  {  78,  {0,0,0,0,0,1,0,0,0,0},  0,   60  },  // Fa#5
+  {  79,  {0,0,0,0,1,0,0,0,0,0},  0,   60  },  // Sol5
+  {  80,  {0,0,0,0,1,0,0,0,1,1},  0,   60  },  // Sol#5
+  {  81,  {0,0,0,0,1,1,1,1,1,1},  0,   60  },  // La5
+  {  82,  {0,0,0,1,0,0,0,1,1,1},  0,   60  },  // La#5
+  {  83,  {0,0,0,1,1,1,1,1,1,1},  0,   70  },  // Si5
+  {  84,  {0,0,1,0,0,1,1,1,1,1},  20,  80  },  // Do6  - Médium, +air
+  {  85,  {0,1,0,0,0,1,1,1,1,1},  20,  80  },  // Do#6
+  {  86,  {0,0,1,1,1,1,1,1,1,1},  20,  80  },  // Ré6
+  {  87,  {0,1,0,0,1,1,1,1,1,1},  20,  80  },  // Ré#6
+  {  88,  {0,1,0,1,1,1,1,1,1,1},  30,  90  },  // Mi6
+  {  89,  {1,0,0,1,1,1,1,1,1,1},  30,  90  },  // Fa6
+  {  90,  {0,1,1,1,1,1,1,1,1,1},  30,  90  },  // Fa#6
+  {  91,  {1,1,0,1,1,1,1,1,1,1},  40,  100 },  // Sol6 - Aigu, ++air
+  {  92,  {1,1,0,0,0,0,0,0,1,1},  40,  100 }   // Sol#6
 };
 
 // Note MIDI la plus basse (calculée automatiquement)
 #define FIRST_MIDI_NOTE (NOTES[0].midiNote)
 
-// Fonction utilitaire pour obtenir une note par index
+// Fonction utilitaire pour obtenir une note par MIDI
 inline const NoteDefinition* getNoteByMidi(byte midiNote) {
   for (int i = 0; i < NUMBER_NOTES; i++) {
     if (NOTES[i].midiNote == midiNote) {
@@ -185,7 +158,7 @@ inline const NoteDefinition* getNoteByMidi(byte midiNote) {
   return nullptr;
 }
 
-// Fonction utilitaire pour obtenir l'index d'une note MIDI
+// Fonction utilitaire pour obtenir l'index d'une note
 inline int getNoteIndex(byte midiNote) {
   for (int i = 0; i < NUMBER_NOTES; i++) {
     if (NOTES[i].midiNote == midiNote) {
@@ -200,8 +173,8 @@ inline int getNoteIndex(byte midiNote) {
 ******************************************************************************/
 #define SERVO_MIN_ANGLE 0
 #define SERVO_MAX_ANGLE 180
-const uint16_t SERVO_PULSE_MIN = 550;   // Largeur impulsion min (µs)
-const uint16_t SERVO_PULSE_MAX = 2450;  // Largeur impulsion max (µs)
-const uint16_t SERVO_FREQUENCY = 50;    // Fréquence PWM (Hz)
+const uint16_t SERVO_PULSE_MIN = 550;
+const uint16_t SERVO_PULSE_MAX = 2450;
+const uint16_t SERVO_FREQUENCY = 50;
 
 #endif

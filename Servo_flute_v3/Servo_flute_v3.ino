@@ -73,8 +73,8 @@ void setup() {
     Serial.println(")");
     Serial.print("  - Servos doigts: ");
     Serial.println(NUMBER_SERVOS_FINGER);
-    Serial.print("  - Délai servos: ");
-    Serial.print(SERVO_SETTLE_TIME_MS);
+    Serial.print("  - Délai servos→solénoïde: ");
+    Serial.print(SERVO_TO_SOLENOID_DELAY_MS);
     Serial.println(" ms");
     Serial.print("  - Taille queue: ");
     Serial.print(EVENT_QUEUE_SIZE);

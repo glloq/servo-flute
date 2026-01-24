@@ -48,17 +48,14 @@ void FingerController::setFingerPatternForNote(byte midiNote) {
   setFingerPattern(note->fingerPattern);
 
   if (DEBUG) {
-    Serial.print("DEBUG: FingerController - Note: ");
-    Serial.print(note->name);
-    Serial.print(" (MIDI ");
-    Serial.print(midiNote);
-    Serial.println(")");
+    Serial.print("DEBUG: FingerController - Note MIDI: ");
+    Serial.println(midiNote);
   }
 }
 
 void FingerController::closeAllFingers() {
   for (int i = 0; i < NUMBER_SERVOS_FINGER; i++) {
-    setServoAngle(i, closedAngles[i]);
+    setServoAngle(i, FINGERS[i].closedAngle);
   }
 
   if (DEBUG) {
@@ -68,7 +65,7 @@ void FingerController::closeAllFingers() {
 
 void FingerController::openAllFingers() {
   for (int i = 0; i < NUMBER_SERVOS_FINGER; i++) {
-    uint16_t openAngle = calculateServoAngle(i, 1);  // 1 = ouvert
+    uint16_t openAngle = calculateServoAngle(i, true);  // true = ouvert
     setServoAngle(i, openAngle);
   }
 
@@ -78,14 +75,14 @@ void FingerController::openAllFingers() {
 }
 
 uint16_t FingerController::calculateServoAngle(int fingerIndex, bool isOpen) {
-  uint16_t baseAngle = closedAngles[fingerIndex];
+  uint16_t baseAngle = FINGERS[fingerIndex].closedAngle;
 
   if (!isOpen) {
     // Fermé : utiliser l'angle de base
     return baseAngle;
   } else {
     // Ouvert : ajouter/soustraire ANGLE_OPEN selon le sens de rotation
-    int16_t angle = baseAngle + (ANGLE_OPEN * sensRotation[fingerIndex]);
+    int16_t angle = baseAngle + (ANGLE_OPEN * FINGERS[fingerIndex].direction);
 
     // Limiter l'angle entre 0 et 180°
     if (angle < 0) angle = 0;
@@ -96,8 +93,8 @@ uint16_t FingerController::calculateServoAngle(int fingerIndex, bool isOpen) {
 }
 
 void FingerController::setServoAngle(int fingerIndex, uint16_t angle) {
-  // Mapper l'index logique du doigt vers le canal PCA9685 physique
-  int pcaChannel = fingerToPCAChannel[fingerIndex];
+  // Utiliser directement le canal PCA depuis la structure FINGERS
+  int pcaChannel = FINGERS[fingerIndex].pcaChannel;
 
   uint16_t pwmValue = angleToPWM(angle);
   _pwm.setPWM(pcaChannel, 0, pwmValue);

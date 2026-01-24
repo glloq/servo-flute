@@ -50,40 +50,53 @@ void AirflowController::setAirflowVelocity(byte velocity) {
 }
 
 void AirflowController::setAirflowForNote(byte midiNote, byte velocity) {
-  // Rechercher la note pour obtenir son airflow min spécifique
+  // Rechercher la note pour obtenir ses pourcentages airflow
   const NoteDefinition* note = getNoteByMidi(midiNote);
 
   uint16_t angle;
-  uint16_t minAngle = SERVO_AIRFLOW_MIN;  // Valeur par défaut
-
-  // Si la note définit un airflow min custom, l'utiliser
-  if (note != nullptr && note->minAirflow > 0) {
-    minAngle = note->minAirflow;
-  }
 
   if (velocity == 0) {
     angle = SERVO_AIRFLOW_OFF;
+  } else if (note != nullptr) {
+    // Calculer les angles min/max à partir des pourcentages
+    // Formule: angle = SERVO_AIRFLOW_MIN + ((SERVO_AIRFLOW_MAX - SERVO_AIRFLOW_MIN) * percent / 100)
+    uint16_t minAngle = SERVO_AIRFLOW_MIN + ((SERVO_AIRFLOW_MAX - SERVO_AIRFLOW_MIN) * note->airflowMinPercent / 100);
+    uint16_t maxAngle = SERVO_AIRFLOW_MIN + ((SERVO_AIRFLOW_MAX - SERVO_AIRFLOW_MIN) * note->airflowMaxPercent / 100);
+
+    // Mapper la vélocité sur la plage [minAngle, maxAngle] de cette note
+    angle = map(velocity, 1, 127, minAngle, maxAngle);
+
+    if (DEBUG) {
+      Serial.print("DEBUG: AirflowController - Note MIDI: ");
+      Serial.print(midiNote);
+      Serial.print(" | Vel: ");
+      Serial.print(velocity);
+      Serial.print(" | Range: ");
+      Serial.print(note->airflowMinPercent);
+      Serial.print("%-");
+      Serial.print(note->airflowMaxPercent);
+      Serial.print("% (");
+      Serial.print(minAngle);
+      Serial.print("°-");
+      Serial.print(maxAngle);
+      Serial.print("°) | Angle: ");
+      Serial.println(angle);
+    }
   } else {
-    // Mapping avec le minAngle personnalisé pour cette note
-    angle = map(velocity, 1, 127, minAngle, SERVO_AIRFLOW_MAX);
+    // Note non trouvée, utiliser plage par défaut
+    angle = map(velocity, 1, 127, SERVO_AIRFLOW_MIN, SERVO_AIRFLOW_MAX);
+
+    if (DEBUG) {
+      Serial.print("DEBUG: AirflowController - Note MIDI inconnue: ");
+      Serial.print(midiNote);
+      Serial.print(" | Vel: ");
+      Serial.print(velocity);
+      Serial.print(" | Angle défaut: ");
+      Serial.println(angle);
+    }
   }
 
   setAirflowServoAngle(angle);
-
-  if (DEBUG) {
-    Serial.print("DEBUG: AirflowController - Note: ");
-    if (note != nullptr) {
-      Serial.print(note->name);
-    } else {
-      Serial.print(midiNote);
-    }
-    Serial.print(" | Vel: ");
-    Serial.print(velocity);
-    Serial.print(" | Min: ");
-    Serial.print(minAngle);
-    Serial.print(" | Angle: ");
-    Serial.println(angle);
-  }
 }
 
 void AirflowController::openSolenoid() {

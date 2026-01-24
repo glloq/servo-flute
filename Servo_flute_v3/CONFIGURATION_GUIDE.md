@@ -95,10 +95,10 @@ const int fingerToPCAChannel[10] = {
 
 ```cpp
 struct NoteDefinition {
-  byte midiNote;        // Numéro MIDI (72-127)
-  const char* name;     // Nom lisible
-  bool fingerPattern[]; // Doigtés (0=fermé, 1=ouvert)
-  byte minAirflow;      // Angle servo débit min (0=défaut)
+  byte midiNote;                            // Numéro MIDI (72-127)
+  bool fingerPattern[NUMBER_SERVOS_FINGER]; // Doigtés (0=fermé, 1=ouvert)
+  byte airflowMinPercent;                   // % min servo flow (0-100)
+  byte airflowMaxPercent;                   // % max servo flow (0-100)
 };
 ```
 
@@ -106,10 +106,10 @@ struct NoteDefinition {
 
 ```cpp
 const NoteDefinition NOTES[NUMBER_NOTES] = {
-  // MIDI  Nom      Doigtés                        Airflow
-  {  72,  "Do5",  {0,0,0,0,0,0,0,0,0,0},  0  },  // Défaut
-  {  73,  "Do#5", {0,0,0,0,0,0,0,0,0,1},  0  },
-  {  74,  "Re5",  {0,0,0,0,0,0,0,0,1,1},  65 },  // Airflow custom
+  // MIDI  Doigtés                        Min%  Max%
+  {  72,  {0,0,0,0,0,0,0,0,0,0},  0,   50  },  // Do5 grave
+  {  73,  {0,0,0,0,0,0,0,0,0,1},  0,   50  },  // Do#5
+  {  74,  {0,0,0,0,0,0,0,0,1,1},  0,   50  },  // Ré5
   // ...
 };
 ```
@@ -121,24 +121,27 @@ const NoteDefinition NOTES[NUMBER_NOTES] = {
 - Flûte à bec soprano : 72-92 (Do5-Sol#6)
 - Tin whistle D : 74-98 (Ré5-Ré7)
 
-#### 2. `name` (const char*)
-- Nom lisible pour debug
-- Format libre : "Do5", "C5", "Middle C", etc.
-
-#### 3. `fingerPattern[10]` (bool[])
+#### 2. `fingerPattern[10]` (bool[])
 - **0 ou false** = trou fermé
 - **1 ou true** = trou ouvert
 - Index 0 = premier trou, 9 = dernier trou
 - ⚠️ Taille doit correspondre à `NUMBER_SERVOS_FINGER`
 
-#### 4. `minAirflow` (byte)
-- Angle minimum du servo débit pour cette note
-- **0** = utilise `SERVO_AIRFLOW_MIN` global (défaut)
-- **>0** = override : angle minimum custom pour cette note
+#### 3. `airflowMinPercent` (byte 0-100)
+- Pourcentage MINIMUM d'ouverture du servo débit pour cette note
+- Appliqué sur la plage [SERVO_AIRFLOW_MIN, SERVO_AIRFLOW_MAX]
+- Vélocité MIDI 1 → angle = min + (max-min) × airflowMinPercent / 100
+
+#### 4. `airflowMaxPercent` (byte 0-100)
+- Pourcentage MAXIMUM d'ouverture du servo débit pour cette note
+- Appliqué sur la plage [SERVO_AIRFLOW_MIN, SERVO_AIRFLOW_MAX]
+- Vélocité MIDI 127 → angle = min + (max-min) × airflowMaxPercent / 100
 
 **Cas d'usage** :
-- Notes aiguës nécessitent plus de pression : `minAirflow = 70`
-- Notes graves nécessitent moins : `minAirflow = 50`
+- Notes graves (Do5-Si5) : 0%-50% (moins de pression)
+- Notes médium (Do6-Si6) : 20%-80% (pression moyenne)
+- Notes aiguës (Do7+) : 40%-100% (forte pression)
+- Permet gestion du **volume** (vélocité) ET des **octaves** (plage %)
 
 ### Exemple : Tin whistle 6 trous
 
@@ -147,20 +150,20 @@ const NoteDefinition NOTES[NUMBER_NOTES] = {
 #define NUMBER_NOTES 25
 
 const NoteDefinition NOTES[NUMBER_NOTES] = {
-  // MIDI  Nom      Doigtés (6 trous)      Airflow
-  {  74,  "D5",   {0,0,0,0,0,0},  0  },  // Ré5 - Tous fermés
-  {  76,  "E5",   {0,0,0,0,0,1},  0  },  // Mi5
-  {  77,  "F#5",  {0,0,0,0,1,1},  0  },  // Fa#5
-  {  78,  "G5",   {0,0,0,1,1,1},  0  },  // Sol5
-  {  79,  "A5",   {0,0,1,1,1,1},  0  },  // La5
-  {  81,  "B5",   {0,1,1,1,1,1},  0  },  // Si5
-  {  83,  "C#6",  {1,1,1,1,1,1},  0  },  // Do#6
-  {  86,  "D6",   {0,0,0,0,0,1},  70 },  // Ré6 - Octave sup, plus d'air
-  {  88,  "E6",   {0,0,0,0,1,1},  70 },
-  {  90,  "F#6",  {0,0,0,1,1,1},  70 },
-  {  91,  "G6",   {0,0,1,1,1,1},  75 },
-  {  93,  "A6",   {0,1,1,1,1,1},  75 },
-  {  95,  "B6",   {1,1,1,1,1,1},  75 },
+  // MIDI  Doigtés (6 trous)      Min%  Max%
+  {  74,  {0,0,0,0,0,0},  0,   50  },  // Ré5 grave - Tous fermés
+  {  76,  {0,0,0,0,0,1},  0,   50  },  // Mi5
+  {  77,  {0,0,0,0,1,1},  0,   50  },  // Fa#5
+  {  78,  {0,0,0,1,1,1},  0,   60  },  // Sol5
+  {  79,  {0,0,1,1,1,1},  0,   60  },  // La5
+  {  81,  {0,1,1,1,1,1},  0,   60  },  // Si5
+  {  83,  {1,1,1,1,1,1},  0,   70  },  // Do#6
+  {  86,  {0,0,0,0,0,1},  30,  80  },  // Ré6 - Octave sup, +air
+  {  88,  {0,0,0,0,1,1},  30,  80  },  // Mi6
+  {  90,  {0,0,0,1,1,1},  30,  90  },  // Fa#6
+  {  91,  {0,0,1,1,1,1},  40,  90  },  // Sol6
+  {  93,  {0,1,1,1,1,1},  40,  90  },  // La6
+  {  95,  {1,1,1,1,1,1},  40,  100 },  // Si6
   // ... autres notes
 };
 ```
@@ -221,30 +224,41 @@ const int sensRotation[NUMBER_SERVOS_FINGER] = {
 #define SERVO_AIRFLOW_MAX 100     // Angle fortissimo (velocity=127)
 ```
 
-### Mapping vélocité → Angle
+### Mapping vélocité → Angle (système de pourcentages)
 
-```
-Velocity MIDI = 1   → Angle = SERVO_AIRFLOW_MIN (60°)
-Velocity MIDI = 64  → Angle = 80° (interpolation)
-Velocity MIDI = 127 → Angle = SERVO_AIRFLOW_MAX (100°)
-```
+Chaque note définit sa propre plage d'airflow via **airflowMinPercent** et **airflowMaxPercent**.
 
-### Override par note (minAirflow)
-
-Si une note définit `minAirflow > 0`, le mapping devient :
+**Formule** :
 ```
-Velocity = 1   → minAirflow de la note (ex: 70°)
-Velocity = 127 → SERVO_AIRFLOW_MAX (100°)
+minAngle = SERVO_AIRFLOW_MIN + ((SERVO_AIRFLOW_MAX - SERVO_AIRFLOW_MIN) × airflowMinPercent / 100)
+maxAngle = SERVO_AIRFLOW_MIN + ((SERVO_AIRFLOW_MAX - SERVO_AIRFLOW_MIN) × airflowMaxPercent / 100)
+
+Velocity 1   → minAngle
+Velocity 64  → interpolation linéaire
+Velocity 127 → maxAngle
 ```
 
-**Exemple** :
+**Exemple** : Note grave (Do5)
 ```cpp
-{91, "Sol6", {1,1,0,1,1,1,1,1,1,1}, 75}  // minAirflow=75°
+{72, {0,0,0,0,0,0,0,0,0,0}, 0, 50}  // 0%-50% de la plage
 ```
+Si SERVO_AIRFLOW_MIN=60° et SERVO_AIRFLOW_MAX=100° :
+- minAngle = 60 + (40 × 0/100) = 60°
+- maxAngle = 60 + (40 × 50/100) = 80°
+- Velocity 1 → 60°, Velocity 127 → 80°
 
-Pour cette note :
-- Velocity 1 → 75° (au lieu de 60°)
-- Velocity 127 → 100°
+**Exemple** : Note aiguë (Sol6)
+```cpp
+{91, {1,1,0,1,1,1,1,1,1,1}, 40, 100}  // 40%-100% de la plage
+```
+- minAngle = 60 + (40 × 40/100) = 76°
+- maxAngle = 60 + (40 × 100/100) = 100°
+- Velocity 1 → 76°, Velocity 127 → 100°
+
+**Avantages** :
+- Gestion du volume (vélocité) pour chaque note
+- Adaptation automatique selon octave (graves=moins d'air, aigus=plus d'air)
+- Configuration intuitive en pourcentages
 
 ---
 
@@ -317,26 +331,26 @@ const int sensRotation[6] = {
 
 // ===== NOTES =====
 const NoteDefinition NOTES[19] = {
-  // MIDI  Nom      Doigtés (6)        Airflow
-  {  74,  "D5",   {0,0,0,0,0,0},  0  },  // Ré5 grave
-  {  76,  "E5",   {0,0,0,0,0,1},  0  },
-  {  77,  "F#5",  {0,0,0,0,1,1},  0  },
-  {  78,  "G5",   {0,0,0,1,1,1},  0  },
-  {  79,  "A5",   {0,0,1,1,1,1},  0  },
-  {  81,  "B5",   {0,1,1,1,1,1},  0  },
-  {  83,  "C#6",  {1,1,1,1,1,1},  0  },
-  {  86,  "D6",   {0,0,0,0,0,1},  68 },  // Ré6 aigu - +air
-  {  88,  "E6",   {0,0,0,0,1,1},  68 },
-  {  90,  "F#6",  {0,0,0,1,1,1},  70 },
-  {  91,  "G6",   {0,0,1,1,1,1},  72 },
-  {  93,  "A6",   {0,1,1,1,1,1},  74 },
-  {  95,  "B6",   {1,1,1,1,1,1},  76 },
-  {  98,  "D7",   {0,0,0,0,0,1},  80 },  // Ré7 très aigu - beaucoup +air
-  {  100, "E7",   {0,0,0,0,1,1},  80 },
-  {  102, "F#7",  {0,0,0,1,1,1},  82 },
-  {  103, "G7",   {0,0,1,1,1,1},  84 },
-  {  105, "A7",   {0,1,1,1,1,1},  86 },
-  {  107, "B7",   {1,1,1,1,1,1},  88 }
+  // MIDI  Doigtés (6)        Min%  Max%
+  {  74,  {0,0,0,0,0,0},  0,   50  },  // Ré5 grave
+  {  76,  {0,0,0,0,0,1},  0,   50  },  // Mi5
+  {  77,  {0,0,0,0,1,1},  0,   50  },  // Fa#5
+  {  78,  {0,0,0,1,1,1},  0,   60  },  // Sol5
+  {  79,  {0,0,1,1,1,1},  0,   60  },  // La5
+  {  81,  {0,1,1,1,1,1},  0,   60  },  // Si5
+  {  83,  {1,1,1,1,1,1},  0,   70  },  // Do#6
+  {  86,  {0,0,0,0,0,1},  30,  80  },  // Ré6 octave 2 - +air
+  {  88,  {0,0,0,0,1,1},  30,  80  },  // Mi6
+  {  90,  {0,0,0,1,1,1},  30,  90  },  // Fa#6
+  {  91,  {0,0,1,1,1,1},  40,  90  },  // Sol6
+  {  93,  {0,1,1,1,1,1},  40,  90  },  // La6
+  {  95,  {1,1,1,1,1,1},  40,  100 },  // Si6
+  {  98,  {0,0,0,0,0,1},  50,  100 },  // Ré7 très aigu - ++air
+  {  100, {0,0,0,0,1,1},  50,  100 },  // Mi7
+  {  102, {0,0,0,1,1,1},  60,  100 },  // Fa#7
+  {  103, {0,0,1,1,1,1},  60,  100 },  // Sol7
+  {  105, {0,1,1,1,1,1},  70,  100 },  // La7
+  {  107, {1,1,1,1,1,1},  70,  100 }   // Si7
 };
 ```
 
@@ -357,13 +371,14 @@ getNoteIndex(midiNote)   // Retourne index dans NOTES[] ou -1
 
 Avec `DEBUG = 1`, vérifier :
 ```
-DEBUG: FingerController - Note: Do5 (MIDI 72)
-DEBUG: AirflowController - Note: Do5 | Vel: 80 | Min: 60 | Angle: 75
+DEBUG: FingerController - Note MIDI: 72
+DEBUG: AirflowController - Note MIDI: 72 | Vel: 80 | Range: 0%-50% (60°-80°) | Angle: 75
 ```
 
-- **Note name** : Vérifie que la note existe dans NOTES[]
-- **Min** : Affiche minAirflow utilisé (0=défaut, >0=custom)
-- **Angle** : Angle final du servo débit
+- **Note MIDI** : Vérifie que la note existe dans NOTES[]
+- **Range** : Affiche la plage de pourcentages configurée
+- **Angles** : Affiche minAngle-maxAngle calculés à partir des %
+- **Angle** : Angle final du servo débit (mapping de vélocité)
 
 ---
 
