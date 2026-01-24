@@ -113,10 +113,12 @@ InstrumentManager
 
 ### Timing
 ```cpp
-#define SERVO_SETTLE_TIME_MS    100   // Délai déplacement servos doigts
-#define STABILIZATION_TIME_MS   5     // Délai avant ouverture solénoïde
+#define SERVO_TO_SOLENOID_DELAY_MS  105   // Délai total servos → valve (simplifié)
+#define MIN_NOTE_INTERVAL_FOR_VALVE_CLOSE_MS  50  // Seuil pour garder valve ouverte
 #define EVENT_QUEUE_SIZE        16    // Taille buffer événements
 ```
+
+**Optimisation valve** : Si deux notes sont espacées de moins de 50ms, la valve reste ouverte entre elles (économie usure + fluidité). Voir [VALVE_OPTIMIZATION.md](VALVE_OPTIMIZATION.md)
 
 ### Servos doigts
 ```cpp

@@ -23,9 +23,6 @@ void NoteSequencer::update() {
     case STATE_POSITIONING:
       handlePositioning();
       break;
-    case STATE_WAITING_STABLE:
-      handleWaitingStable();
-      break;
     case STATE_PLAYING:
       handlePlaying();
       break;
@@ -51,25 +48,12 @@ void NoteSequencer::handleIdle() {
 }
 
 void NoteSequencer::handlePositioning() {
-  // Vérifier si le délai de positionnement est écoulé
+  // Vérifier si le délai total est écoulé (servos + stabilisation)
   unsigned long elapsed = millis() - _stateStartTime;
 
-  if (elapsed >= SERVO_SETTLE_TIME_MS) {
-    // Transition vers l'attente de stabilisation
-    transitionTo(STATE_WAITING_STABLE);
-  }
-}
-
-void NoteSequencer::handleWaitingStable() {
-  // Vérifier si le délai de stabilisation est écoulé
-  unsigned long elapsed = millis() - _stateStartTime;
-
-  if (elapsed >= STABILIZATION_TIME_MS) {
+  if (elapsed >= SERVO_TO_SOLENOID_DELAY_MS) {
     // Activer le servo de débit selon la vélocité
     _airflowCtrl.setAirflowVelocity(_currentVelocity);
-
-    // Court délai pour le servo de débit (optionnel, géré par update suivant)
-    // Pour l'instant on ouvre directement le solénoïde
 
     // Ouvrir le solénoïde -> SON PRODUIT
     _airflowCtrl.openSolenoid();
@@ -139,7 +123,7 @@ void NoteSequencer::processNextEvent() {
   }
 
   // ANTICIPATION : Calculer le délai mécanique total
-  const unsigned long MECHANICAL_DELAY = SERVO_SETTLE_TIME_MS + STABILIZATION_TIME_MS;
+  const unsigned long MECHANICAL_DELAY = SERVO_TO_SOLENOID_DELAY_MS;
 
   // Pour les NoteOn : démarrer la séquence en avance pour compenser le délai mécanique
   // Pour les NoteOff : exécuter au timing exact
@@ -205,21 +189,67 @@ void NoteSequencer::startNoteSequence(byte note, byte velocity, unsigned long sc
     Serial.print("ms | Son prévu à t=");
     Serial.print(targetTime);
     Serial.print("ms (dans ");
-    Serial.print(SERVO_SETTLE_TIME_MS + STABILIZATION_TIME_MS);
+    Serial.print(SERVO_TO_SOLENOID_DELAY_MS);
     Serial.println("ms)");
   }
 }
 
+bool NoteSequencer::shouldCloseValveBetweenNotes() {
+  // Regarder la prochaine note dans la queue
+  MidiEvent* nextEvent = _eventQueue.peek();
+
+  if (nextEvent == nullptr || nextEvent->type != EVENT_NOTE_ON) {
+    // Pas de note suivante, fermer la valve
+    return true;
+  }
+
+  // Calculer le temps jusqu'à la prochaine note
+  unsigned long currentTime = millis();
+  unsigned long nextNoteTime = _playbackStartTime + nextEvent->timestamp;
+
+  // Si la prochaine note doit démarrer dans moins de MIN_NOTE_INTERVAL_FOR_VALVE_CLOSE_MS
+  // on garde la valve ouverte pour économiser usure et améliorer fluidité
+  if (nextNoteTime > currentTime) {
+    unsigned long interval = nextNoteTime - currentTime;
+
+    if (interval < MIN_NOTE_INTERVAL_FOR_VALVE_CLOSE_MS) {
+      if (DEBUG) {
+        Serial.print("DEBUG: NoteSequencer - Valve GARDÉE ouverte (note suivante dans ");
+        Serial.print(interval);
+        Serial.println("ms)");
+      }
+      return false;  // Ne pas fermer la valve
+    }
+  }
+
+  return true;  // Fermer la valve
+}
+
 void NoteSequencer::stopCurrentNote() {
-  // Fermer le solénoïde immédiatement
-  _airflowCtrl.closeSolenoid();
+  // Vérifier s'il faut fermer la valve ou la garder ouverte
+  bool closeValve = shouldCloseValveBetweenNotes();
 
-  // Optionnel: remettre le servo de débit en position repos
-  _airflowCtrl.setAirflowToRest();
+  if (closeValve) {
+    // Fermer le solénoïde
+    _airflowCtrl.closeSolenoid();
 
-  if (DEBUG) {
-    Serial.print("DEBUG: NoteSequencer - Arrêt note: ");
-    Serial.println(_currentNote);
+    // Optionnel: remettre le servo de débit en position repos
+    _airflowCtrl.setAirflowToRest();
+
+    if (DEBUG) {
+      Serial.print("DEBUG: NoteSequencer - Arrêt note: ");
+      Serial.print(_currentNote);
+      Serial.println(" (valve fermée)");
+    }
+  } else {
+    // Garder la valve ouverte mais réduire le débit
+    _airflowCtrl.setAirflowVelocity(1);  // Débit minimal
+
+    if (DEBUG) {
+      Serial.print("DEBUG: NoteSequencer - Arrêt note: ");
+      Serial.print(_currentNote);
+      Serial.println(" (valve OUVERTE, débit minimal)");
+    }
   }
 
   // Transition vers STOPPING

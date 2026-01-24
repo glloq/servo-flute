@@ -17,9 +17,14 @@ Architecture avec servo débit + solénoïde valve
 /*******************************************************************************
 ---------------------------   TIMING SETTINGS (ms)    ------------------------
 ******************************************************************************/
-#define SERVO_SETTLE_TIME_MS    100   // Temps de déplacement des servos doigts
-#define AIRFLOW_SETTLE_TIME_MS  20    // Temps de déplacement servo débit
-#define STABILIZATION_TIME_MS   5     // Délai avant ouverture solénoïde
+// Délai total entre positionnement servos et activation solénoïde
+// = Temps déplacement servos + stabilisation mécanique
+#define SERVO_TO_SOLENOID_DELAY_MS  105   // Temps total avant ouverture valve
+
+// Si deux notes sont espacées de moins que ce délai, on garde la valve ouverte
+// et on change juste les doigts (économie usure solénoïde + fluidité)
+#define MIN_NOTE_INTERVAL_FOR_VALVE_CLOSE_MS  50
+
 #define MIN_NOTE_DURATION_MS    10    // Durée minimale pour produire un son
 
 /*******************************************************************************

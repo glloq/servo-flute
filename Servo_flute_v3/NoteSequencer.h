@@ -10,8 +10,7 @@
 // États de la machine à états pour une note
 enum NoteState {
   STATE_IDLE,              // Aucune note en cours
-  STATE_POSITIONING,       // Servos doigts en déplacement
-  STATE_WAITING_STABLE,    // Attente stabilisation mécanique
+  STATE_POSITIONING,       // Servos en déplacement + attente stabilisation
   STATE_PLAYING,           // Note active, son produit
   STATE_STOPPING           // Arrêt en cours
 };
@@ -53,11 +52,8 @@ private:
   // Gère l'état IDLE
   void handleIdle();
 
-  // Gère l'état POSITIONING
+  // Gère l'état POSITIONING (servos + attente stabilisation)
   void handlePositioning();
-
-  // Gère l'état WAITING_STABLE
-  void handleWaitingStable();
 
   // Gère l'état PLAYING
   void handlePlaying();
@@ -70,6 +66,9 @@ private:
 
   // Arrête la note en cours
   void stopCurrentNote();
+
+  // Vérifie s'il faut fermer la valve entre deux notes (optimisation)
+  bool shouldCloseValveBetweenNotes();
 };
 
 #endif

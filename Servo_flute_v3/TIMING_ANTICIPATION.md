@@ -28,9 +28,13 @@ Résultat : Les intervalles sont préservés (150ms) mais tout est décalé de 1
 Pour chaque **NoteOn**, on **démarre la séquence EN AVANCE** pour compenser le délai mécanique total.
 
 ```
-Délai mécanique total = SERVO_SETTLE_TIME_MS + STABILIZATION_TIME_MS
-                      = 100ms + 5ms = 105ms
+Délai mécanique total = SERVO_TO_SOLENOID_DELAY_MS
+                      = 105ms (par défaut)
 ```
+
+Ce délai unique englobe :
+- Temps de déplacement des servos doigts (~100ms)
+- Stabilisation mécanique (~5ms)
 
 ### Algorithme
 
@@ -138,7 +142,7 @@ void NoteSequencer::processNextEvent() {
   unsigned long eventAbsoluteTime = _playbackStartTime + event->timestamp;
 
   // Délai mécanique total
-  const unsigned long MECHANICAL_DELAY = SERVO_SETTLE_TIME_MS + STABILIZATION_TIME_MS;
+  const unsigned long MECHANICAL_DELAY = SERVO_TO_SOLENOID_DELAY_MS;
 
   // ANTICIPATION pour NoteOn
   unsigned long startTime;
@@ -187,8 +191,9 @@ Si les servos sont plus rapides/lents que prévu :
 
 ```cpp
 // settings.h
-#define SERVO_SETTLE_TIME_MS    90   // Réduire si servos plus rapides
-#define STABILIZATION_TIME_MS   3    // Réduire si mécanique stable rapidement
+#define SERVO_TO_SOLENOID_DELAY_MS  90   // Réduire si servos plus rapides
+// OU
+#define SERVO_TO_SOLENOID_DELAY_MS  120  // Augmenter si servos plus lents
 ```
 
 ### Mesurer le délai réel
