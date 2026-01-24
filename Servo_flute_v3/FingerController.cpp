@@ -7,12 +7,16 @@ FingerController::FingerController(Adafruit_PWMServoDriver& pwm)
 void FingerController::begin() {
   if (DEBUG) {
     Serial.println("DEBUG: FingerController - Initialisation");
+    Serial.print("DEBUG:   - Nombre de doigts: ");
+    Serial.println(NUMBER_SERVOS_FINGER);
+    Serial.print("DEBUG:   - Nombre de notes: ");
+    Serial.println(NUMBER_NOTES);
   }
   // Fermer tous les doigts au démarrage
   closeAllFingers();
 }
 
-void FingerController::setFingerPattern(const int pattern[NUMBER_SERVOS_FINGER]) {
+void FingerController::setFingerPattern(const bool pattern[NUMBER_SERVOS_FINGER]) {
   for (int i = 0; i < NUMBER_SERVOS_FINGER; i++) {
     uint16_t angle = calculateServoAngle(i, pattern[i]);
     setServoAngle(i, angle);
@@ -29,20 +33,27 @@ void FingerController::setFingerPattern(const int pattern[NUMBER_SERVOS_FINGER])
 }
 
 void FingerController::setFingerPatternForNote(byte midiNote) {
-  // Vérifie si la note est dans la plage jouable
-  if (midiNote < FIRST_MIDI_NOTE || midiNote >= (FIRST_MIDI_NOTE + NUMBER_NOTES)) {
+  // Rechercher la note dans le tableau NOTES
+  const NoteDefinition* note = getNoteByMidi(midiNote);
+
+  if (note == nullptr) {
     if (DEBUG) {
-      Serial.print("DEBUG: FingerController - Note hors plage: ");
+      Serial.print("DEBUG: FingerController - Note non trouvée: ");
       Serial.println(midiNote);
     }
     return;
   }
 
-  // Calcule l'index dans le tableau de doigtés
-  int noteIndex = midiNote - FIRST_MIDI_NOTE;
-
   // Applique le pattern correspondant
-  setFingerPattern(finger_position[noteIndex]);
+  setFingerPattern(note->fingerPattern);
+
+  if (DEBUG) {
+    Serial.print("DEBUG: FingerController - Note: ");
+    Serial.print(note->name);
+    Serial.print(" (MIDI ");
+    Serial.print(midiNote);
+    Serial.println(")");
+  }
 }
 
 void FingerController::closeAllFingers() {
@@ -66,15 +77,15 @@ void FingerController::openAllFingers() {
   }
 }
 
-uint16_t FingerController::calculateServoAngle(int servoIndex, int state) {
-  uint16_t baseAngle = closedAngles[servoIndex];
+uint16_t FingerController::calculateServoAngle(int fingerIndex, bool isOpen) {
+  uint16_t baseAngle = closedAngles[fingerIndex];
 
-  if (state == 0) {
+  if (!isOpen) {
     // Fermé : utiliser l'angle de base
     return baseAngle;
   } else {
     // Ouvert : ajouter/soustraire ANGLE_OPEN selon le sens de rotation
-    int16_t angle = baseAngle + (ANGLE_OPEN * sensRotation[servoIndex]);
+    int16_t angle = baseAngle + (ANGLE_OPEN * sensRotation[fingerIndex]);
 
     // Limiter l'angle entre 0 et 180°
     if (angle < 0) angle = 0;
@@ -84,9 +95,12 @@ uint16_t FingerController::calculateServoAngle(int servoIndex, int state) {
   }
 }
 
-void FingerController::setServoAngle(int servoIndex, uint16_t angle) {
+void FingerController::setServoAngle(int fingerIndex, uint16_t angle) {
+  // Mapper l'index logique du doigt vers le canal PCA9685 physique
+  int pcaChannel = fingerToPCAChannel[fingerIndex];
+
   uint16_t pwmValue = angleToPWM(angle);
-  _pwm.setPWM(servoIndex, 0, pwmValue);
+  _pwm.setPWM(pcaChannel, 0, pwmValue);
 }
 
 uint16_t FingerController::angleToPWM(uint16_t angle) {

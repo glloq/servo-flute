@@ -52,8 +52,8 @@ void NoteSequencer::handlePositioning() {
   unsigned long elapsed = millis() - _stateStartTime;
 
   if (elapsed >= SERVO_TO_SOLENOID_DELAY_MS) {
-    // Activer le servo de débit selon la vélocité
-    _airflowCtrl.setAirflowVelocity(_currentVelocity);
+    // Activer le servo de débit selon la note et la vélocité
+    _airflowCtrl.setAirflowForNote(_currentNote, _currentVelocity);
 
     // Ouvrir le solénoïde -> SON PRODUIT
     _airflowCtrl.openSolenoid();

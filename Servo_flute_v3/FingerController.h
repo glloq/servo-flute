@@ -12,8 +12,8 @@ public:
   // Initialise les servos en position fermée
   void begin();
 
-  // Applique un pattern de doigtés binaire (0=fermé, 1=ouvert)
-  void setFingerPattern(const int pattern[NUMBER_SERVOS_FINGER]);
+  // Applique un pattern de doigtés binaire (false=fermé, true=ouvert)
+  void setFingerPattern(const bool pattern[NUMBER_SERVOS_FINGER]);
 
   // Applique un pattern pour une note MIDI spécifique
   void setFingerPatternForNote(byte midiNote);
@@ -27,8 +27,8 @@ public:
 private:
   Adafruit_PWMServoDriver& _pwm;
 
-  // Calcule l'angle pour un servo donné selon son état (0 ou 1)
-  uint16_t calculateServoAngle(int servoIndex, int state);
+  // Calcule l'angle pour un servo donné selon son état (false=fermé, true=ouvert)
+  uint16_t calculateServoAngle(int fingerIndex, bool isOpen);
 
   // Envoie une commande d'angle à un servo spécifique
   void setServoAngle(int servoIndex, uint16_t angle);

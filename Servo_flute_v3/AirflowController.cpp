@@ -49,6 +49,43 @@ void AirflowController::setAirflowVelocity(byte velocity) {
   }
 }
 
+void AirflowController::setAirflowForNote(byte midiNote, byte velocity) {
+  // Rechercher la note pour obtenir son airflow min spécifique
+  const NoteDefinition* note = getNoteByMidi(midiNote);
+
+  uint16_t angle;
+  uint16_t minAngle = SERVO_AIRFLOW_MIN;  // Valeur par défaut
+
+  // Si la note définit un airflow min custom, l'utiliser
+  if (note != nullptr && note->minAirflow > 0) {
+    minAngle = note->minAirflow;
+  }
+
+  if (velocity == 0) {
+    angle = SERVO_AIRFLOW_OFF;
+  } else {
+    // Mapping avec le minAngle personnalisé pour cette note
+    angle = map(velocity, 1, 127, minAngle, SERVO_AIRFLOW_MAX);
+  }
+
+  setAirflowServoAngle(angle);
+
+  if (DEBUG) {
+    Serial.print("DEBUG: AirflowController - Note: ");
+    if (note != nullptr) {
+      Serial.print(note->name);
+    } else {
+      Serial.print(midiNote);
+    }
+    Serial.print(" | Vel: ");
+    Serial.print(velocity);
+    Serial.print(" | Min: ");
+    Serial.print(minAngle);
+    Serial.print(" | Angle: ");
+    Serial.println(angle);
+  }
+}
+
 void AirflowController::openSolenoid() {
   #if SOLENOID_USE_PWM
     // Mode PWM : démarrer à pleine puissance pour ouverture rapide

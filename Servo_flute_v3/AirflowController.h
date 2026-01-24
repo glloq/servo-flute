@@ -15,6 +15,9 @@ public:
   // Définit le débit d'air selon la vélocité MIDI (1-127)
   void setAirflowVelocity(byte velocity);
 
+  // Définit le débit d'air pour une note spécifique avec vélocité
+  void setAirflowForNote(byte midiNote, byte velocity);
+
   // Ouvre le solénoïde (permet circulation d'air)
   void openSolenoid();
 

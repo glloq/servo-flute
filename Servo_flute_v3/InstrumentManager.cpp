@@ -102,7 +102,8 @@ void InstrumentManager::noteOff(byte midiNote) {
 }
 
 bool InstrumentManager::isNotePlayable(byte midiNote) const {
-  return (midiNote >= FIRST_MIDI_NOTE && midiNote < (FIRST_MIDI_NOTE + NUMBER_NOTES));
+  // Vérifier si la note existe dans le tableau NOTES
+  return (getNoteByMidi(midiNote) != nullptr);
 }
 
 NoteSequencer& InstrumentManager::getSequencer() {
