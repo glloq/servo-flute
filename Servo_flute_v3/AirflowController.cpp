@@ -1,7 +1,8 @@
 #include "AirflowController.h"
 
 AirflowController::AirflowController(Adafruit_PWMServoDriver& pwm)
-  : _pwm(pwm), _solenoidOpen(false), _solenoidOpenTime(0) {
+  : _pwm(pwm), _solenoidOpen(false), _solenoidOpenTime(0),
+    _ccVolume(127), _ccExpression(127), _ccModulation(0) {
 }
 
 void AirflowController::begin() {
@@ -66,37 +67,60 @@ void AirflowController::setAirflowForNote(byte midiNote, byte velocity) {
     // Mapper la vélocité sur la plage [minAngle, maxAngle] de cette note
     angle = map(velocity, 1, 127, minAngle, maxAngle);
 
-    if (DEBUG) {
-      Serial.print("DEBUG: AirflowController - Note MIDI: ");
-      Serial.print(midiNote);
-      Serial.print(" | Vel: ");
-      Serial.print(velocity);
-      Serial.print(" | Range: ");
-      Serial.print(note->airflowMinPercent);
-      Serial.print("%-");
-      Serial.print(note->airflowMaxPercent);
-      Serial.print("% (");
-      Serial.print(minAngle);
-      Serial.print("°-");
-      Serial.print(maxAngle);
-      Serial.print("°) | Angle: ");
-      Serial.println(angle);
-    }
   } else {
     // Note non trouvée, utiliser plage par défaut
-    angle = map(velocity, 1, 127, SERVO_AIRFLOW_MIN, SERVO_AIRFLOW_MAX);
-
-    if (DEBUG) {
-      Serial.print("DEBUG: AirflowController - Note MIDI inconnue: ");
-      Serial.print(midiNote);
-      Serial.print(" | Vel: ");
-      Serial.print(velocity);
-      Serial.print(" | Angle défaut: ");
-      Serial.println(angle);
-    }
+    uint16_t minAngle = SERVO_AIRFLOW_MIN;
+    uint16_t maxAngle = SERVO_AIRFLOW_MAX;
+    angle = map(velocity, 1, 127, minAngle, maxAngle);
   }
 
-  setAirflowServoAngle(angle);
+  // ===== APPLICATION DES CONTROL CHANGE =====
+
+  // 1. Appliquer CC7 (Volume) - multiplicateur global
+  float finalAngle = (float)angle * (_ccVolume / 127.0);
+
+  // 2. Appliquer CC11 (Expression) - expression dynamique
+  finalAngle = finalAngle * (_ccExpression / 127.0);
+
+  // 3. Appliquer CC1 (Modulation) - vibrato
+  if (_ccModulation > 0) {
+    // Vibrato : oscillation sinusoïdale
+    // Fréquence ~6 Hz (période 166ms)
+    float vibratoFreq = 6.0;
+    float time = millis() / 1000.0;  // Temps en secondes
+
+    // Amplitude du vibrato (max ±8° pour CC1=127)
+    float vibratoAmplitude = (_ccModulation / 127.0) * 8.0;
+
+    // Offset sinusoïdal
+    float vibratoOffset = sin(2.0 * PI * vibratoFreq * time) * vibratoAmplitude;
+
+    finalAngle += vibratoOffset;
+  }
+
+  // Limiter l'angle final dans les bornes valides
+  if (finalAngle < SERVO_AIRFLOW_MIN) finalAngle = SERVO_AIRFLOW_MIN;
+  if (finalAngle > SERVO_AIRFLOW_MAX) finalAngle = SERVO_AIRFLOW_MAX;
+
+  if (DEBUG) {
+    Serial.print("DEBUG: AirflowController - Note MIDI: ");
+    Serial.print(midiNote);
+    Serial.print(" | Vel: ");
+    Serial.print(velocity);
+    Serial.print(" | BaseAngle: ");
+    Serial.print(angle);
+    Serial.print("° | CC7: ");
+    Serial.print(_ccVolume);
+    Serial.print(" | CC11: ");
+    Serial.print(_ccExpression);
+    Serial.print(" | CC1: ");
+    Serial.print(_ccModulation);
+    Serial.print(" | FinalAngle: ");
+    Serial.print((uint16_t)finalAngle);
+    Serial.println("°");
+  }
+
+  setAirflowServoAngle((uint16_t)finalAngle);
 }
 
 void AirflowController::openSolenoid() {
@@ -209,4 +233,10 @@ void AirflowController::setSolenoidPWM(uint8_t pwmValue) {
       analogWrite(SOLENOID_PIN, 255 - pwmValue);  // Inverser si active low
     }
   #endif
+}
+
+void AirflowController::setCCValues(byte ccVolume, byte ccExpression, byte ccModulation) {
+  _ccVolume = ccVolume;
+  _ccExpression = ccExpression;
+  _ccModulation = ccModulation;
 }

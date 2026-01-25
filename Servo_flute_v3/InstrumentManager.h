@@ -31,6 +31,17 @@ public:
   // Retourne le séquenceur (pour debug/monitoring)
   NoteSequencer& getSequencer();
 
+  // Gère les Control Change MIDI
+  void handleControlChange(byte ccNumber, byte ccValue);
+
+  // Accesseurs pour les valeurs CC (pour AirflowController)
+  byte getCCVolume() const { return _ccVolume; }
+  byte getCCExpression() const { return _ccExpression; }
+  byte getCCModulation() const { return _ccModulation; }
+
+  // All Sound Off
+  void allSoundOff();
+
 private:
   Adafruit_PWMServoDriver _pwm;
   EventQueue _eventQueue;
@@ -40,6 +51,11 @@ private:
 
   unsigned long _lastActivityTime;
   bool _servosPowered;
+
+  // Valeurs Control Change MIDI
+  byte _ccVolume;       // CC 7  (défaut: 127 = 100%)
+  byte _ccExpression;   // CC 11 (défaut: 127 = 100%)
+  byte _ccModulation;   // CC 1  (défaut: 0 = pas de modulation)
 
   // Gère l'alimentation des servos (power management)
   void managePower();

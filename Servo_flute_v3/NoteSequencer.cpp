@@ -265,3 +265,14 @@ void NoteSequencer::transitionTo(NoteState newState) {
     Serial.println(newState);
   }
 }
+
+void NoteSequencer::stop() {
+  // Forcer l'arrêt immédiat (pour All Sound Off)
+  _currentNote = 0;
+  _currentVelocity = 0;
+  transitionTo(STATE_IDLE);
+
+  if (DEBUG) {
+    Serial.println("DEBUG: NoteSequencer - STOP forcé (All Sound Off)");
+  }
+}
