@@ -52,7 +52,11 @@ void MidiHandler::processMidiEvent(midiEventPacket_t midiEvent) {
       break;
 
     case 0xB0:  // Control Change
-      // Non implémenté pour l'instant
+      {
+        byte ccNumber = midiEvent.byte2;
+        byte ccValue = midiEvent.byte3;
+        _instrument.handleControlChange(ccNumber, ccValue);
+      }
       break;
 
     case 0xF0:  // System Common or System Real-Time

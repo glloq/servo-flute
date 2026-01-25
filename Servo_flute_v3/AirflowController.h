@@ -33,10 +33,18 @@ public:
   // Méthode update pour gestion PWM solénoïde (appeler dans loop)
   void update();
 
+  // Met à jour les valeurs CC (appelé par InstrumentManager)
+  void setCCValues(byte ccVolume, byte ccExpression, byte ccModulation);
+
 private:
   Adafruit_PWMServoDriver& _pwm;
   bool _solenoidOpen;
   unsigned long _solenoidOpenTime;  // Timestamp ouverture solénoïde (pour PWM)
+
+  // Valeurs Control Change MIDI
+  byte _ccVolume;       // CC 7  (multiplicateur global)
+  byte _ccExpression;   // CC 11 (expression dynamique)
+  byte _ccModulation;   // CC 1  (vibrato)
 
   // Positionne le servo de débit à un angle spécifique
   void setAirflowServoAngle(uint16_t angle);

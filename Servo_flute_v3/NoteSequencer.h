@@ -31,6 +31,9 @@ public:
   // Retourne true si une note est en train d'être jouée
   bool isPlaying() const;
 
+  // Arrête immédiatement toute lecture (pour All Sound Off)
+  void stop();
+
 private:
   EventQueue& _eventQueue;
   FingerController& _fingerCtrl;

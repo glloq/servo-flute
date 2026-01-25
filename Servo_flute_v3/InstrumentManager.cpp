@@ -7,7 +7,10 @@ InstrumentManager::InstrumentManager()
     _airflowCtrl(_pwm),
     _sequencer(_eventQueue, _fingerCtrl, _airflowCtrl),
     _lastActivityTime(0),
-    _servosPowered(false) {
+    _servosPowered(false),
+    _ccVolume(127),        // Volume max par défaut
+    _ccExpression(127),    // Expression max par défaut
+    _ccModulation(0) {     // Pas de modulation par défaut
 }
 
 void InstrumentManager::begin() {
@@ -29,6 +32,9 @@ void InstrumentManager::begin() {
   // Initialiser les contrôleurs
   _fingerCtrl.begin();
   _airflowCtrl.begin();
+
+  // Initialiser les valeurs CC dans AirflowController
+  _airflowCtrl.setCCValues(_ccVolume, _ccExpression, _ccModulation);
 
   // Initialiser le séquenceur
   _sequencer.begin();
@@ -141,5 +147,68 @@ void InstrumentManager::powerOffServos() {
 
   if (DEBUG) {
     Serial.println("DEBUG: InstrumentManager - Servos DÉSACTIVÉS (anti-bruit)");
+  }
+}
+
+void InstrumentManager::handleControlChange(byte ccNumber, byte ccValue) {
+  switch (ccNumber) {
+    case 1:  // Modulation
+      _ccModulation = ccValue;
+      _airflowCtrl.setCCValues(_ccVolume, _ccExpression, _ccModulation);
+      if (DEBUG) {
+        Serial.print("DEBUG: CC 1 (Modulation) = ");
+        Serial.println(ccValue);
+      }
+      break;
+
+    case 7:  // Volume
+      _ccVolume = ccValue;
+      _airflowCtrl.setCCValues(_ccVolume, _ccExpression, _ccModulation);
+      if (DEBUG) {
+        Serial.print("DEBUG: CC 7 (Volume) = ");
+        Serial.println(ccValue);
+      }
+      break;
+
+    case 11: // Expression
+      _ccExpression = ccValue;
+      _airflowCtrl.setCCValues(_ccVolume, _ccExpression, _ccModulation);
+      if (DEBUG) {
+        Serial.print("DEBUG: CC 11 (Expression) = ");
+        Serial.println(ccValue);
+      }
+      break;
+
+    case 120: // All Sound Off
+      if (DEBUG) {
+        Serial.println("DEBUG: CC 120 (All Sound Off)");
+      }
+      allSoundOff();
+      break;
+
+    default:
+      // CC non supporté, ignorer silencieusement
+      break;
+  }
+}
+
+void InstrumentManager::allSoundOff() {
+  // Vider la queue d'événements
+  while (!_eventQueue.isEmpty()) {
+    _eventQueue.dequeue();
+  }
+
+  // Stopper le séquenceur
+  _sequencer.stop();
+
+  // Fermer la valve et mettre airflow au repos
+  _airflowCtrl.closeSolenoid();
+  _airflowCtrl.setAirflowToRest();
+
+  // Mettre tous les servos doigts en position repos (tous fermés)
+  _fingerCtrl.closeAllFingers();
+
+  if (DEBUG) {
+    Serial.println("DEBUG: InstrumentManager - All Sound Off exécuté");
   }
 }
