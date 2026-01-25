@@ -54,35 +54,39 @@ void AirflowController::setAirflowForNote(byte midiNote, byte velocity) {
   // Rechercher la note pour obtenir ses pourcentages airflow
   const NoteDefinition* note = getNoteByMidi(midiNote);
 
-  uint16_t angle;
+  uint16_t minAngle, maxAngle;
+  uint16_t baseAngle;
 
   if (velocity == 0) {
-    angle = SERVO_AIRFLOW_OFF;
-  } else if (note != nullptr) {
-    // Calculer les angles min/max à partir des pourcentages
-    // Formule: angle = SERVO_AIRFLOW_MIN + ((SERVO_AIRFLOW_MAX - SERVO_AIRFLOW_MIN) * percent / 100)
-    uint16_t minAngle = SERVO_AIRFLOW_MIN + ((SERVO_AIRFLOW_MAX - SERVO_AIRFLOW_MIN) * note->airflowMinPercent / 100);
-    uint16_t maxAngle = SERVO_AIRFLOW_MIN + ((SERVO_AIRFLOW_MAX - SERVO_AIRFLOW_MIN) * note->airflowMaxPercent / 100);
+    setAirflowServoAngle(SERVO_AIRFLOW_OFF);
+    return;
+  }
 
-    // Mapper la vélocité sur la plage [minAngle, maxAngle] de cette note
-    angle = map(velocity, 1, 127, minAngle, maxAngle);
-
+  // Calculer les angles min/max de la note
+  if (note != nullptr) {
+    minAngle = SERVO_AIRFLOW_MIN + ((SERVO_AIRFLOW_MAX - SERVO_AIRFLOW_MIN) * note->airflowMinPercent / 100);
+    maxAngle = SERVO_AIRFLOW_MIN + ((SERVO_AIRFLOW_MAX - SERVO_AIRFLOW_MIN) * note->airflowMaxPercent / 100);
   } else {
     // Note non trouvée, utiliser plage par défaut
-    uint16_t minAngle = SERVO_AIRFLOW_MIN;
-    uint16_t maxAngle = SERVO_AIRFLOW_MAX;
-    angle = map(velocity, 1, 127, minAngle, maxAngle);
+    minAngle = SERVO_AIRFLOW_MIN;
+    maxAngle = SERVO_AIRFLOW_MAX;
   }
+
+  // 1. VELOCITY définit l'angle de base dans [minAngle, maxAngle]
+  baseAngle = map(velocity, 1, 127, minAngle, maxAngle);
 
   // ===== APPLICATION DES CONTROL CHANGE =====
 
-  // 1. Appliquer CC7 (Volume) - multiplicateur global
-  float finalAngle = (float)angle * (_ccVolume / 127.0);
+  // 2. CC11 (Expression) module DANS la plage [minAngle, baseAngle]
+  //    CC11 = 127 → baseAngle (pleine expression selon velocity)
+  //    CC11 = 0   → minAngle (expression minimum de la note)
+  float expressionFactor = _ccExpression / 127.0;
+  float modulatedAngle = minAngle + (baseAngle - minAngle) * expressionFactor;
 
-  // 2. Appliquer CC11 (Expression) - expression dynamique
-  finalAngle = finalAngle * (_ccExpression / 127.0);
+  // 3. CC7 (Volume) - multiplicateur global
+  float finalAngle = modulatedAngle * (_ccVolume / 127.0);
 
-  // 3. Appliquer CC1 (Modulation) - vibrato
+  // 4. CC1 (Modulation) - vibrato
   if (_ccModulation > 0) {
     // Vibrato : oscillation sinusoïdale
     // Fréquence ~6 Hz (période 166ms)
@@ -98,7 +102,7 @@ void AirflowController::setAirflowForNote(byte midiNote, byte velocity) {
     finalAngle += vibratoOffset;
   }
 
-  // Limiter l'angle final dans les bornes valides
+  // 5. Limiter l'angle final dans les bornes valides
   if (finalAngle < SERVO_AIRFLOW_MIN) finalAngle = SERVO_AIRFLOW_MIN;
   if (finalAngle > SERVO_AIRFLOW_MAX) finalAngle = SERVO_AIRFLOW_MAX;
 
@@ -107,12 +111,18 @@ void AirflowController::setAirflowForNote(byte midiNote, byte velocity) {
     Serial.print(midiNote);
     Serial.print(" | Vel: ");
     Serial.print(velocity);
-    Serial.print(" | BaseAngle: ");
-    Serial.print(angle);
+    Serial.print(" | Range: ");
+    Serial.print(minAngle);
+    Serial.print("°-");
+    Serial.print(maxAngle);
+    Serial.print("° | BaseAngle: ");
+    Serial.print(baseAngle);
+    Serial.print("° | CC11: ");
+    Serial.print(_ccExpression);
+    Serial.print(" → ");
+    Serial.print((uint16_t)modulatedAngle);
     Serial.print("° | CC7: ");
     Serial.print(_ccVolume);
-    Serial.print(" | CC11: ");
-    Serial.print(_ccExpression);
     Serial.print(" | CC1: ");
     Serial.print(_ccModulation);
     Serial.print(" | FinalAngle: ");

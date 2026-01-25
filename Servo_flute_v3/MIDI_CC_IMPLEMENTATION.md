@@ -20,11 +20,12 @@
 
 ### CC 11 - Expression
 - **Valeur :** 0-127
-- **Fonction :** Contrôle d'expression dynamique temps réel
+- **Fonction :** Contrôle d'expression dynamique temps réel **DANS les bornes de la note**
 - **Effet :**
-  - 0 = Minimum expression (0% airflow)
-  - 127 = Maximum expression (100%, défaut)
+  - 0 = Expression minimale (airflowMinPercent de la note)
+  - 127 = Pleine expression (angle défini par velocity, défaut)
 - **Usage :** Crescendo/diminuendo pendant performance
+- **Important :** CC11 respecte toujours les limites airflowMinPercent/MaxPercent de la note jouée
 
 ### CC 120 - All Sound Off
 - **Valeur :** Toutes (déclenchement immédiat)
@@ -35,6 +36,65 @@
   - Ferme la valve solénoïde
   - Met l'airflow au repos
   - Ferme tous les servos doigts
+
+---
+
+## 🎯 Différence CC7 vs CC11
+
+### CC11 (Expression) - Respecte les bornes de la note
+```
+Note C6: airflowMinPercent = 20%, airflowMaxPercent = 75%
+→ Plage absolue: [68°, 90°]
+
+Velocity 100 → baseAngle = 86°
+
+CC11 = 127 → modulatedAngle = 86° (pleine expression)
+CC11 = 0   → modulatedAngle = 68° (min de la note)
+
+✓ CC11 module dans [minAngle, baseAngle] = [68°, 86°]
+✓ Ne peut PAS descendre sous 68° (airflowMinPercent)
+```
+
+### CC7 (Volume) - Multiplicateur global
+```
+Après CC11, on a modulatedAngle = 77°
+
+CC7 = 127 → finalAngle = 77 × 1.0 = 77°
+CC7 = 64  → finalAngle = 77 × 0.5 = 38.5°
+
+✗ CC7 PEUT descendre sous minAngle de la note
+→ C'est un contrôle de volume "master"
+```
+
+### Cas pratique : Crescendo naturel
+```
+Velocity 127, Note C6 [68°-90°]
+
+1. CC11 = 0, CC7 = 127
+   → modulatedAngle = 68° (pianissimo naturel de la note)
+   → finalAngle = 68°
+
+2. CC11 = 64, CC7 = 127
+   → modulatedAngle = 79° (mezzo-forte)
+   → finalAngle = 79°
+
+3. CC11 = 127, CC7 = 127
+   → modulatedAngle = 90° (fortissimo)
+   → finalAngle = 90°
+
+✓ Crescendo respecte la physique de la note (reste dans [68°, 90°])
+```
+
+### Cas pratique : Réduction volume globale
+```
+Velocity 127, Note C6, CC11 = 127
+→ modulatedAngle = 90°
+
+CC7 = 127 → finalAngle = 90° (volume normal)
+CC7 = 64  → finalAngle = 45° (volume réduit de moitié)
+
+→ Utile pour ajuster volume global sans modifier expression
+```
 
 ---
 
@@ -121,16 +181,19 @@ void setCCValues(byte ccVolume, byte ccExpression, byte ccModulation);
 
 **Logique dans `setAirflowForNote()` :**
 ```cpp
-// 1. Calcul angle de base (velocity + note config)
+// 1. Calcul angle de base (velocity dans plage note)
 uint16_t baseAngle = map(velocity, 1, 127, minAngle, maxAngle);
 
-// 2. Appliquer CC7 (Volume)
-float finalAngle = baseAngle * (ccVolume / 127.0);
+// 2. CC11 (Expression) module DANS [minAngle, baseAngle]
+//    CC11 = 127 → baseAngle (pleine expression selon velocity)
+//    CC11 = 0   → minAngle (expression minimale de la note)
+float expressionFactor = CC11 / 127.0;
+float modulatedAngle = minAngle + (baseAngle - minAngle) × expressionFactor;
 
-// 3. Appliquer CC11 (Expression)
-finalAngle *= (ccExpression / 127.0);
+// 3. CC7 (Volume) - multiplicateur global
+float finalAngle = modulatedAngle × (CC7 / 127.0);
 
-// 4. Appliquer CC1 (Vibrato)
+// 4. CC1 (Vibrato)
 if (ccModulation > 0) {
   float vibratoFreq = 6.0;  // Hz
   float amplitude = (ccModulation / 127.0) * 8.0;  // Max ±8°
@@ -167,23 +230,35 @@ void NoteSequencer::stop() {
 
 ### Angle final airflow
 
+**IMPORTANT :** CC11 respecte les bornes de la note (airflowMinPercent/MaxPercent)
+
 ```
-1. baseAngle = map(velocity, 1, 127, minAngle, maxAngle)
-   Où minAngle/maxAngle sont calculés depuis airflowMinPercent/MaxPercent
+1. Calcul plage de la note
+   minAngle = SERVO_AIRFLOW_MIN + (plage × airflowMinPercent / 100)
+   maxAngle = SERVO_AIRFLOW_MIN + (plage × airflowMaxPercent / 100)
 
-2. volumeMultiplier = CC7 / 127
-   Range: 0.0 à 1.0
+2. Velocity → angle de base DANS [minAngle, maxAngle]
+   baseAngle = map(velocity, 1, 127, minAngle, maxAngle)
 
-3. expressionMultiplier = CC11 / 127
-   Range: 0.0 à 1.0
+3. CC11 (Expression) module DANS [minAngle, baseAngle]
+   expressionFactor = CC11 / 127
+   modulatedAngle = minAngle + (baseAngle - minAngle) × expressionFactor
 
-4. angle = baseAngle × volumeMultiplier × expressionMultiplier
+   Comportement:
+   - CC11 = 127 → modulatedAngle = baseAngle (pleine expression)
+   - CC11 = 64  → modulatedAngle au milieu entre minAngle et baseAngle
+   - CC11 = 0   → modulatedAngle = minAngle (expression minimale)
 
-5. Si CC1 > 0:
+4. CC7 (Volume) - multiplicateur global
+   angle = modulatedAngle × (CC7 / 127)
+
+5. CC1 (Vibrato)
+   Si CC1 > 0:
      vibratoOffset = sin(2π × 6Hz × time) × (CC1/127 × 8°)
      angle += vibratoOffset
 
-6. finalAngle = constrain(angle, SERVO_AIRFLOW_MIN, SERVO_AIRFLOW_MAX)
+6. Clamp final
+   finalAngle = constrain(angle, SERVO_AIRFLOW_MIN, SERVO_AIRFLOW_MAX)
 ```
 
 ### Exemple concret
@@ -197,24 +272,40 @@ void NoteSequencer::stop() {
 
 **Calcul :**
 ```
-minAngle = 60 + (40 × 20/100) = 68°
-maxAngle = 60 + (40 × 75/100) = 90°
+Plage servo absolue: 100 - 60 = 40°
 
-Velocity = 100
-baseAngle = map(100, 1, 127, 68, 90) = 86°
+1. Plage de la note C6
+   minAngle = 60 + (40 × 20/100) = 68°
+   maxAngle = 60 + (40 × 75/100) = 90°
 
-CC7 = 80 (63% volume)
-angle = 86 × (80/127) = 54°
+2. Velocity = 100
+   baseAngle = map(100, 1, 127, 68, 90) = 86°
 
-CC11 = 127 (100% expression)
-angle = 54 × (127/127) = 54°
+3. CC11 = 64 (50% expression)
+   expressionFactor = 64/127 = 0.50
+   modulatedAngle = 68 + (86 - 68) × 0.50 = 68 + 9 = 77°
+   ✓ Respecte la borne: 68° ≤ 77° ≤ 86°
 
-CC1 = 40 (vibrato modéré)
-vibratoAmplitude = (40/127) × 8 = 2.5°
-vibratoOffset = sin(...) × 2.5  // Varie entre -2.5° et +2.5°
+4. CC7 = 100 (79% volume)
+   angle = 77 × (100/127) = 61°
 
-finalAngle = 54 ± 2.5°  (varie avec le temps)
-→ Oscillation entre 51.5° et 56.5°
+5. CC1 = 40 (vibrato modéré)
+   vibratoAmplitude = (40/127) × 8 = 2.5°
+   vibratoOffset = sin(...) × 2.5  // Varie entre -2.5° et +2.5°
+
+6. finalAngle = 61 ± 2.5°
+   → Oscillation entre 58.5° et 63.5°
+```
+
+**Comparaison CC11 :**
+```
+Avec velocity 100 (baseAngle = 86°), plage note [68°, 90°]
+
+CC11 = 127 (100%) → modulatedAngle = 68 + (86-68)×1.0 = 86° (max)
+CC11 = 64  (50%)  → modulatedAngle = 68 + (86-68)×0.5 = 77° (milieu)
+CC11 = 0   (0%)   → modulatedAngle = 68 + (86-68)×0.0 = 68° (min note)
+
+✓ CC11 reste TOUJOURS dans [68°, 86°] (bornes de la note pour cette velocity)
 ```
 
 ---
@@ -231,13 +322,23 @@ Message MIDI: CC 7, valeur 100
 ### Scénario 2 : Crescendo pendant note
 ```
 1. Note On: C6, velocity 100
-2. CC 11 = 40 (pianissimo)
-   → Airflow réduit à 31% (40/127)
-3. CC 11 = 80 (crescendo)
-   → Airflow monte à 63%
+   → baseAngle = 86° (dans plage [68°, 90°])
+
+2. CC 11 = 0 (pianissimo)
+   → modulatedAngle = 68° (minimum de la note)
+   → Avec CC7=127: finalAngle ≈ 68°
+
+3. CC 11 = 64 (crescendo progressif)
+   → modulatedAngle = 77° (milieu entre min et base)
+   → Avec CC7=127: finalAngle ≈ 77°
+
 4. CC 11 = 127 (fortissimo)
-   → Airflow à 100%
+   → modulatedAngle = 86° (pleine expression selon velocity)
+   → Avec CC7=127: finalAngle ≈ 86°
+
 5. Note Off: C6
+
+✓ L'expression module DANS la plage [68°, 86°] définie par la note
 ```
 
 ### Scénario 3 : Vibrato expressif
