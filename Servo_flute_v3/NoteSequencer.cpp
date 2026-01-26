@@ -113,14 +113,14 @@ void NoteSequencer::processNextEvent() {
     return;
   }
 
+  // Si c'est le premier événement, initialiser le playback start time
+  // avec la référence temporelle de EventQueue pour synchronisation correcte
+  if (_playbackStartTime == 0) {
+    _playbackStartTime = _eventQueue.getReferenceTime();
+  }
+
   // Calculer le timestamp absolu de l'événement
   unsigned long eventAbsoluteTime = _playbackStartTime + event->timestamp;
-
-  // Si c'est le premier événement, initialiser le playback start time
-  if (_playbackStartTime == 0) {
-    _playbackStartTime = millis();
-    eventAbsoluteTime = _playbackStartTime + event->timestamp;
-  }
 
   // ANTICIPATION : Calculer le délai mécanique total
   const unsigned long MECHANICAL_DELAY = SERVO_TO_SOLENOID_DELAY_MS;
