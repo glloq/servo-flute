@@ -19,9 +19,7 @@ Ce dossier contient toute la documentation technique du projet Servo Flute V3.
 
 ### Optimisations système
 - **[SOLENOID_PWM.md](SOLENOID_PWM.md)** - Gestion PWM solénoïde (deux phases)
-- **[TIMING_ANTICIPATION.md](TIMING_ANTICIPATION.md)** - Système anticipation timing servo
-- **[TIMING_ISSUE_ANALYSIS.md](TIMING_ISSUE_ANALYSIS.md)** - Analyse problème timing MIDI temps réel
-- **[TIMING_FIX_SOLUTION1.md](TIMING_FIX_SOLUTION1.md)** - ✅ Correction timing implémentée
+- **[TIMING_ANTICIPATION.md](TIMING_ANTICIPATION.md)** - Délai fixe 105ms pour positionnement servos
 - **[VALVE_OPTIMIZATION.md](VALVE_OPTIMIZATION.md)** - Optimisation ouverture/fermeture valve
 
 ---
@@ -40,20 +38,13 @@ Ce dossier contient toute la documentation technique du projet Servo Flute V3.
 
 ### Pour optimiser/débugger
 1. **CC_AUDIT_REPORT.md** - Points d'amélioration identifiés
-2. **TIMING_ANTICIPATION.md** - Comprendre gestion timing
-3. **TIMING_FIX_SOLUTION1.md** - Correction timing MIDI temps réel
-4. **VALVE_OPTIMIZATION.md** - Optimisations valve
-5. **SOLENOID_PWM.md** - Gestion avancée solénoïde
+2. **TIMING_ANTICIPATION.md** - Comprendre délai mécanique 105ms
+3. **VALVE_OPTIMIZATION.md** - Optimisations valve
+4. **SOLENOID_PWM.md** - Gestion avancée solénoïde
 
 ---
 
 ## 📊 Historique des correctifs
-
-### 2026-01-26 - Fix timing MIDI temps réel
-- ✅ Correction anticipation pour MIDI temps réel (Solution 1)
-- ✅ Persistance _referenceTime dans EventQueue
-- ✅ Synchronisation _playbackStartTime avec EventQueue.getReferenceTime()
-- ✅ Anticipation fonctionnelle : erreur 0ms pour notes après la première
 
 ### 2026-01-26 - Nettoyage documentation
 - 🗑️ Suppression 3 documents préliminaires obsolètes (remplacés par MIDI_CC_IMPLEMENTATION.md)
@@ -93,8 +84,6 @@ Ce dossier contient toute la documentation technique du projet Servo Flute V3.
 ### Optimisations système
 - SOLENOID_PWM.md
 - TIMING_ANTICIPATION.md
-- TIMING_ISSUE_ANALYSIS.md (analyse problème)
-- TIMING_FIX_SOLUTION1.md (correction implémentée)
 - VALVE_OPTIMIZATION.md
 
 ### Guides utilisateur

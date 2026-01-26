@@ -45,10 +45,11 @@ void EventQueue::dequeue() {
   _tail = (_tail + 1) % _capacity;
   _count--;
 
-  // NOTE : Ne PAS reset _referenceTime pour MIDI temps réel
-  // La référence temporelle reste persistante pour maintenir cohérence
-  // temporelle entre notes successives et permettre anticipation
-  // Reset uniquement via clear() pour séquences pré-enregistrées
+  // Si la queue devient vide, reset la référence temporelle
+  if (_count == 0) {
+    _hasReference = false;
+    _referenceTime = 0;
+  }
 }
 
 bool EventQueue::isEmpty() const {
