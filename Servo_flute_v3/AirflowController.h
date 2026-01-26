@@ -46,6 +46,10 @@ private:
   byte _ccExpression;   // CC 11 (expression dynamique)
   byte _ccModulation;   // CC 1  (vibrato)
 
+  // Gestion vibrato
+  uint16_t _baseAngleWithoutVibrato;  // Angle calculé sans vibrato (pour update continu)
+  bool _vibratoActive;                 // True si vibrato doit être appliqué
+
   // Positionne le servo de débit à un angle spécifique
   void setAirflowServoAngle(uint16_t angle);
 

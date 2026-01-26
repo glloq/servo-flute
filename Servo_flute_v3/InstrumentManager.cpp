@@ -151,6 +151,15 @@ void InstrumentManager::powerOffServos() {
 }
 
 void InstrumentManager::handleControlChange(byte ccNumber, byte ccValue) {
+  // Validation sécurité: ccValue doit être dans [0, 127]
+  if (ccValue > 127) {
+    if (DEBUG) {
+      Serial.print("ERREUR: CC invalide - valeur hors range: ");
+      Serial.println(ccValue);
+    }
+    return;  // Ignorer message invalide
+  }
+
   switch (ccNumber) {
     case 1:  // Modulation
       _ccModulation = ccValue;
