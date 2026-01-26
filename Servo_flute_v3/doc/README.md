@@ -12,14 +12,12 @@ Ce dossier contient toute la documentation technique du projet Servo Flute V3.
 - **[INSTRUMENTS_GUIDE.md](INSTRUMENTS_GUIDE.md)** - Guide multi-instruments
 
 ### MIDI Control Change (CC)
-- **[MIDI_CC_IMPLEMENTATION.md](MIDI_CC_IMPLEMENTATION.md)** - Documentation complète CC 1, 7, 11, 120
-- **[CC11_LOGIC_UPDATE.md](CC11_LOGIC_UPDATE.md)** - Fix CC11 respect des bornes note
+- **[MIDI_CC_IMPLEMENTATION.md](MIDI_CC_IMPLEMENTATION.md)** - Documentation complète CC + historique correctifs
 - **[CC_AUDIT_REPORT.md](CC_AUDIT_REPORT.md)** - Audit 46 points ✅ 4 critiques RÉSOLUS
-- **[CC_CRITICAL_FIXES.md](CC_CRITICAL_FIXES.md)** - Implémentation 4 correctifs critiques
 
 ### Optimisations système
 - **[SOLENOID_PWM.md](SOLENOID_PWM.md)** - Gestion PWM solénoïde (deux phases)
-- **[TIMING_ANTICIPATION.md](TIMING_ANTICIPATION.md)** - Système anticipation timing servo
+- **[TIMING_ANTICIPATION.md](TIMING_ANTICIPATION.md)** - Délai fixe 105ms pour positionnement servos
 - **[VALVE_OPTIMIZATION.md](VALVE_OPTIMIZATION.md)** - Optimisation ouverture/fermeture valve
 
 ---
@@ -32,19 +30,24 @@ Ce dossier contient toute la documentation technique du projet Servo Flute V3.
 3. **INSTRUMENTS_GUIDE.md** - Adapter à différents instruments
 
 ### Pour utiliser MIDI CC
-1. **MIDI_CC_IMPLEMENTATION.md** - Documentation complète utilisation
-2. **CC11_LOGIC_UPDATE.md** - Comprendre logique CC11 (important!)
-3. **CC_CRITICAL_FIXES.md** - Améliorations récentes
+1. **MIDI_CC_IMPLEMENTATION.md** - Documentation complète + historique correctifs
+2. **CC_AUDIT_REPORT.md** - Audit et optimisations identifiées
 
 ### Pour optimiser/débugger
 1. **CC_AUDIT_REPORT.md** - Points d'amélioration identifiés
-2. **TIMING_ANTICIPATION.md** - Comprendre gestion timing
+2. **TIMING_ANTICIPATION.md** - Comprendre délai mécanique 105ms
 3. **VALVE_OPTIMIZATION.md** - Optimisations valve
 4. **SOLENOID_PWM.md** - Gestion avancée solénoïde
 
 ---
 
 ## 📊 Historique des correctifs
+
+### 2026-01-26 - Consolidation documentation
+- 🗑️ Suppression CC11_LOGIC_UPDATE.md et CC_CRITICAL_FIXES.md (redondants)
+- ✅ Historique intégré dans MIDI_CC_IMPLEMENTATION.md
+- ✅ Documentation simplifiée : 9 docs au lieu de 11
+- ✅ Pas de perte d'information (tout consolidé)
 
 ### 2026-01-26 - Nettoyage documentation
 - 🗑️ Suppression 3 documents préliminaires obsolètes (remplacés par MIDI_CC_IMPLEMENTATION.md)
@@ -73,13 +76,9 @@ Ce dossier contient toute la documentation technique du projet Servo Flute V3.
 
 ## 🎯 Fichiers par catégorie
 
-### Documentation de référence (post-implémentation)
-- MIDI_CC_IMPLEMENTATION.md
-- CC11_LOGIC_UPDATE.md
-- CC_CRITICAL_FIXES.md
-
-### Audits et améliorations
-- CC_AUDIT_REPORT.md
+### Documentation de référence
+- MIDI_CC_IMPLEMENTATION.md (utilisation + historique)
+- CC_AUDIT_REPORT.md (audit + résolutions)
 
 ### Optimisations système
 - SOLENOID_PWM.md

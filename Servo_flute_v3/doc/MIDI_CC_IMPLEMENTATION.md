@@ -531,6 +531,68 @@ float vibratoAmplitude = ... * 8.0;  // Amplitude max en degrés (modifiable)
 
 ---
 
+## 📜 Historique et correctifs
+
+### 2026-01-26 : Correctifs critiques CC
+
+**4 problèmes critiques résolus** (voir CC_AUDIT_REPORT.md pour détails) :
+
+1. ✅ **Vibrato fonctionnel** - Update continu implémenté
+   - Ajout variables d'état dans AirflowController
+   - update() appelé en boucle pour appliquer vibrato
+   - sin() LUT pour optimisation (gain 25x performance)
+
+2. ✅ **Optimisation sin()** - Lookup table 256 entrées
+   - SIN_LUT[256] en PROGMEM
+   - Réduction CPU : 5-7% → 0.2%
+
+3. ✅ **Validation CC** - Sécurité valeurs entrantes
+   - Vérification ccValue ≤ 127
+   - Protection overflow et dommages matériel
+
+4. ✅ **Fix overflow millis()** - Stabilité long terme
+   - Modulo dans calcul phase vibrato
+   - Fonctionnement stable 49+ jours
+
+### 2026-01-25 : Correctif CC11 (Expression)
+
+**Problème initial :**
+- CC11 multiplicatif pouvait descendre sous `airflowMinPercent`
+- Exemple : Note avec min 20%, CC11=50 → 10% (invalide!)
+
+**Solution - Option A Proposition 2 :**
+```cpp
+// 1. Velocity définit baseAngle (dans [minAngle, maxAngle])
+baseAngle = minAngle + (maxAngle - minAngle) × (velocity / 127.0)
+
+// 2. CC11 module DANS [minAngle, baseAngle]
+modulatedAngle = minAngle + (baseAngle - minAngle) × (CC11 / 127.0)
+
+// 3. CC7 multiplie globalement
+finalAngle = modulatedAngle × (CC7 / 127.0)
+```
+
+**Résultat :**
+- ✅ CC11 ne peut jamais descendre sous minAngle
+- ✅ CC7 (Volume) agit globalement
+- ✅ CC11 (Expression) reste dans bornes de la note
+
+### 2026-01-25 : Implémentation initiale
+
+**CC implémentés :**
+- CC 1 (Modulation/Vibrato)
+- CC 7 (Volume)
+- CC 11 (Expression)
+- CC 120 (All Sound Off)
+
+**Architecture :**
+- Réception dans MidiHandler
+- Gestion centralisée InstrumentManager
+- Application dans AirflowController
+- Stop d'urgence NoteSequencer
+
+---
+
 ## ✅ Résumé implémentation
 
 **Fichiers modifiés :**

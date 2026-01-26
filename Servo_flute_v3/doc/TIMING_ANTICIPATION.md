@@ -205,6 +205,20 @@ Observer les messages debug "Erreur:" :
 
 ## Conclusion
 
-L'anticipation automatique permet de **respecter le timing MIDI original** avec une précision de quelques millisecondes, transformant le servo-flute en un instrument synchronisé et prévisible.
+Le système utilise un délai fixe de **105ms** pour permettre aux servos de se positionner avant l'ouverture de la valve d'air.
 
-**Seule exception** : La toute première note aura toujours un retard égal au délai mécanique (105ms par défaut).
+**Comportement normal :**
+- **Toutes les notes** (y compris la première) ont un retard de ~105ms
+- Les intervalles entre notes MIDI sont préservés
+- Le décalage de 105ms est voulu et nécessaire pour le positionnement mécanique
+
+**Exemple :**
+```
+Note MIDI reçue à t=0ms
+  → Servos bougent immédiatement
+  → Attente 105ms (positionnement)
+  → Valve s'ouvre à t=105ms
+  → Son produit à t=105ms ✅
+```
+
+Ce délai transforme le servo-flute en un instrument avec une latence mécanique fixe et prévisible de ~105ms.
