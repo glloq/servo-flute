@@ -14,11 +14,8 @@ Ce dossier contient toute la documentation technique du projet Servo Flute V3.
 ### MIDI Control Change (CC)
 - **[MIDI_CC_IMPLEMENTATION.md](MIDI_CC_IMPLEMENTATION.md)** - Documentation complète CC 1, 7, 11, 120
 - **[CC11_LOGIC_UPDATE.md](CC11_LOGIC_UPDATE.md)** - Fix CC11 respect des bornes note
-- **[CC_AUDIT_REPORT.md](CC_AUDIT_REPORT.md)** - Audit 46 points (4 critiques, 15 high, 18 medium, 9 low)
+- **[CC_AUDIT_REPORT.md](CC_AUDIT_REPORT.md)** - Audit 46 points ✅ 4 critiques RÉSOLUS
 - **[CC_CRITICAL_FIXES.md](CC_CRITICAL_FIXES.md)** - Implémentation 4 correctifs critiques
-- **[MIDI_CC_ANALYSIS.md](MIDI_CC_ANALYSIS.md)** - Analyse options CC (analyse préliminaire)
-- **[MIDI_IMPLEMENTATION_CHOICES.md](MIDI_IMPLEMENTATION_CHOICES.md)** - Choix implémentation CC (analyse préliminaire)
-- **[MIDI_MESSAGES_ANALYSIS.md](MIDI_MESSAGES_ANALYSIS.md)** - Analyse autres messages MIDI
 
 ### Optimisations système
 - **[SOLENOID_PWM.md](SOLENOID_PWM.md)** - Gestion PWM solénoïde (deux phases)
@@ -49,6 +46,10 @@ Ce dossier contient toute la documentation technique du projet Servo Flute V3.
 
 ## 📊 Historique des correctifs
 
+### 2026-01-26 - Nettoyage documentation
+- 🗑️ Suppression 3 documents préliminaires obsolètes (remplacés par MIDI_CC_IMPLEMENTATION.md)
+- ✅ Mise à jour CC_AUDIT_REPORT.md : 4 problèmes critiques marqués comme résolus
+
 ### 2026-01-26 - Correctifs critiques CC
 - ✅ Vibrato fonctionnel (update continu)
 - ✅ Optimisation sin() LUT (gain 25x performance)
@@ -71,11 +72,6 @@ Ce dossier contient toute la documentation technique du projet Servo Flute V3.
 ---
 
 ## 🎯 Fichiers par catégorie
-
-### Analyse et conception (avant implémentation)
-- MIDI_CC_ANALYSIS.md
-- MIDI_IMPLEMENTATION_CHOICES.md
-- MIDI_MESSAGES_ANALYSIS.md
 
 ### Documentation de référence (post-implémentation)
 - MIDI_CC_IMPLEMENTATION.md
