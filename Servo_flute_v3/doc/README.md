@@ -13,6 +13,7 @@ Ce dossier contient toute la documentation technique du projet Servo Flute V3.
 
 ### MIDI Control Change (CC)
 - **[MIDI_CC_IMPLEMENTATION.md](MIDI_CC_IMPLEMENTATION.md)** - Documentation complète CC + historique correctifs
+- **[CC7_VIBRATO_FIX.md](CC7_VIBRATO_FIX.md)** - Fix CC7/vibrato : respect bornes note
 - **[CC_AUDIT_REPORT.md](CC_AUDIT_REPORT.md)** - Audit 46 points ✅ 4 critiques RÉSOLUS
 
 ### Optimisations système
@@ -42,6 +43,12 @@ Ce dossier contient toute la documentation technique du projet Servo Flute V3.
 ---
 
 ## 📊 Historique des correctifs
+
+### 2026-01-26 - Fix CC7 et vibrato : Respect bornes note
+- ✅ CC7 module maintenant dans [minAngle, modulatedAngle] (au lieu de multiplier globalement)
+- ✅ Vibrato limité aux bornes de la note en cours
+- ✅ Garantie : servo toujours dans intervalle [airflowMinPercent, airflowMaxPercent]
+- ✅ Protection matériel : CC7=0 ou vibrato fort ne peuvent plus forcer servo hors limites
 
 ### 2026-01-26 - Consolidation documentation
 - 🗑️ Suppression CC11_LOGIC_UPDATE.md et CC_CRITICAL_FIXES.md (redondants)

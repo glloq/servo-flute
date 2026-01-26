@@ -55,15 +55,16 @@ CC11 = 0   → modulatedAngle = 68° (min de la note)
 ✓ Ne peut PAS descendre sous 68° (airflowMinPercent)
 ```
 
-### CC7 (Volume) - Multiplicateur global
+### CC7 (Volume) - Modulation dans intervalle note
 ```
-Après CC11, on a modulatedAngle = 77°
+Après CC11, on a modulatedAngle = 77° (note: minAngle = 68°)
 
-CC7 = 127 → finalAngle = 77 × 1.0 = 77°
-CC7 = 64  → finalAngle = 77 × 0.5 = 38.5°
+CC7 = 127 → finalAngle = 68 + (77 - 68) × 1.0 = 77°
+CC7 = 64  → finalAngle = 68 + (77 - 68) × 0.5 = 72.5°
+CC7 = 0   → finalAngle = 68° (jamais en dessous de minAngle!)
 
-✗ CC7 PEUT descendre sous minAngle de la note
-→ C'est un contrôle de volume "master"
+✓ CC7 module dans [minAngle, modulatedAngle]
+✓ Garantit que servo ne descend JAMAIS sous airflowMinPercent
 ```
 
 ### Cas pratique : Crescendo naturel
@@ -190,8 +191,11 @@ uint16_t baseAngle = map(velocity, 1, 127, minAngle, maxAngle);
 float expressionFactor = CC11 / 127.0;
 float modulatedAngle = minAngle + (baseAngle - minAngle) × expressionFactor;
 
-// 3. CC7 (Volume) - multiplicateur global
-float finalAngle = modulatedAngle × (CC7 / 127.0);
+// 3. CC7 (Volume) module DANS [minAngle, modulatedAngle]
+//    CC7 = 127 → modulatedAngle (plein volume)
+//    CC7 = 0   → minAngle (silence minimum de la note)
+float volumeFactor = CC7 / 127.0;
+float finalAngle = minAngle + (modulatedAngle - minAngle) × volumeFactor;
 
 // 4. CC1 (Vibrato)
 if (ccModulation > 0) {
@@ -249,8 +253,9 @@ void NoteSequencer::stop() {
    - CC11 = 64  → modulatedAngle au milieu entre minAngle et baseAngle
    - CC11 = 0   → modulatedAngle = minAngle (expression minimale)
 
-4. CC7 (Volume) - multiplicateur global
-   angle = modulatedAngle × (CC7 / 127)
+4. CC7 (Volume) module DANS [minAngle, modulatedAngle]
+   volumeFactor = CC7 / 127
+   angle = minAngle + (modulatedAngle - minAngle) × volumeFactor
 
 5. CC1 (Vibrato)
    Si CC1 > 0:
@@ -523,7 +528,7 @@ float vibratoAmplitude = ... * 8.0;  // Amplitude max en degrés (modifiable)
 
 ## 📝 Notes importantes
 
-1. **Ordre d'application :** CC7 → CC11 → CC1 (vibrato en dernier)
+1. **Ordre d'application :** Velocity → CC11 → CC7 → CC1 (vibrato en dernier). Tous respectent les bornes [airflowMinPercent, airflowMaxPercent] de la note.
 2. **Performance :** Vibrato utilise `sin()` à chaque calcul (léger impact CPU)
 3. **Valeurs par défaut :** CC7=127, CC11=127, CC1=0 (son normal)
 4. **All Sound Off :** Priorité absolue (interrompt tout)
@@ -532,6 +537,26 @@ float vibratoAmplitude = ... * 8.0;  // Amplitude max en degrés (modifiable)
 ---
 
 ## 📜 Historique et correctifs
+
+### 2026-01-26 : Fix CC7 et vibrato - Respect bornes note
+
+**Problème :** CC7 et vibrato pouvaient sortir de l'intervalle [airflowMinPercent, airflowMaxPercent]
+
+**Solution :**
+- CC7 module maintenant DANS [minAngle, modulatedAngle] au lieu de multiplier globalement
+- Vibrato limité aux bornes de la note en cours
+- Garantie absolue : servo toujours dans l'intervalle défini par la note
+
+**Nouvelle formule CC7 :**
+```cpp
+// AVANT (bug) : multiplication globale
+finalAngle = modulatedAngle × (CC7 / 127.0)  // Pouvait descendre sous minAngle!
+
+// APRÈS (fix) : modulation dans intervalle
+finalAngle = minAngle + (modulatedAngle - minAngle) × (CC7 / 127.0)  // Jamais sous minAngle ✅
+```
+
+Détails complets : voir CC7_VIBRATO_FIX.md
 
 ### 2026-01-26 : Correctifs critiques CC
 
@@ -568,14 +593,15 @@ baseAngle = minAngle + (maxAngle - minAngle) × (velocity / 127.0)
 // 2. CC11 module DANS [minAngle, baseAngle]
 modulatedAngle = minAngle + (baseAngle - minAngle) × (CC11 / 127.0)
 
-// 3. CC7 multiplie globalement
-finalAngle = modulatedAngle × (CC7 / 127.0)
+// 3. CC7 module DANS [minAngle, modulatedAngle]
+finalAngle = minAngle + (modulatedAngle - minAngle) × (CC7 / 127.0)
 ```
 
 **Résultat :**
 - ✅ CC11 ne peut jamais descendre sous minAngle
-- ✅ CC7 (Volume) agit globalement
-- ✅ CC11 (Expression) reste dans bornes de la note
+- ✅ CC7 ne peut jamais descendre sous minAngle
+- ✅ CC1 (Vibrato) limité aux bornes de la note
+- ✅ Tous les CC respectent l'intervalle [airflowMinPercent, airflowMaxPercent]
 
 ### 2026-01-25 : Implémentation initiale
 
