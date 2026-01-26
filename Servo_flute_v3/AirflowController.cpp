@@ -1,8 +1,41 @@
 #include "AirflowController.h"
 
+// Lookup table pour sin() - 256 entrées pour une période complète [0, 2π]
+// Valeurs: -127 à +127 (représente -1.0 à +1.0)
+const int8_t SIN_LUT[256] PROGMEM = {
+  0, 3, 6, 9, 12, 16, 19, 22, 25, 28, 31, 34, 37, 40, 43, 46,
+  49, 51, 54, 57, 60, 63, 65, 68, 71, 73, 76, 78, 81, 83, 85, 88,
+  90, 92, 94, 96, 98, 100, 102, 104, 106, 107, 109, 111, 112, 113, 115, 116,
+  117, 118, 120, 121, 122, 122, 123, 124, 125, 125, 126, 126, 126, 127, 127, 127,
+  127, 127, 127, 127, 126, 126, 126, 125, 125, 124, 123, 122, 122, 121, 120, 118,
+  117, 116, 115, 113, 112, 111, 109, 107, 106, 104, 102, 100, 98, 96, 94, 92,
+  90, 88, 85, 83, 81, 78, 76, 73, 71, 68, 65, 63, 60, 57, 54, 51,
+  49, 46, 43, 40, 37, 34, 31, 28, 25, 22, 19, 16, 12, 9, 6, 3,
+  0, -3, -6, -9, -12, -16, -19, -22, -25, -28, -31, -34, -37, -40, -43, -46,
+  -49, -51, -54, -57, -60, -63, -65, -68, -71, -73, -76, -78, -81, -83, -85, -88,
+  -90, -92, -94, -96, -98, -100, -102, -104, -106, -107, -109, -111, -112, -113, -115, -116,
+  -117, -118, -120, -121, -122, -122, -123, -124, -125, -125, -126, -126, -126, -127, -127, -127,
+  -127, -127, -127, -127, -126, -126, -126, -125, -125, -124, -123, -122, -122, -121, -120, -118,
+  -117, -116, -115, -113, -112, -111, -109, -107, -106, -104, -102, -100, -98, -96, -94, -92,
+  -90, -88, -85, -83, -81, -78, -76, -73, -71, -68, -65, -63, -60, -57, -54, -51,
+  -49, -46, -43, -40, -37, -34, -31, -28, -25, -22, -19, -16, -12, -9, -6, -3
+};
+
+// Fonction helper pour lookup rapide sin()
+inline float fastSin(unsigned long timeMs, float frequency) {
+  // Calculer phase avec modulo pour éviter overflow
+  // Phase en degrés [0, 360) -> index [0, 256)
+  unsigned long period = (unsigned long)(1000.0 / frequency);  // Période en ms
+  unsigned long phase = timeMs % period;  // Position dans période
+  uint8_t index = (uint8_t)((phase * 256UL) / period);  // Index LUT
+
+  return pgm_read_byte(&SIN_LUT[index]) / 127.0;  // Retour -1.0 à +1.0
+}
+
 AirflowController::AirflowController(Adafruit_PWMServoDriver& pwm)
   : _pwm(pwm), _solenoidOpen(false), _solenoidOpenTime(0),
-    _ccVolume(127), _ccExpression(127), _ccModulation(0) {
+    _ccVolume(127), _ccExpression(127), _ccModulation(0),
+    _baseAngleWithoutVibrato(SERVO_AIRFLOW_OFF), _vibratoActive(false) {
 }
 
 void AirflowController::begin() {
@@ -84,27 +117,17 @@ void AirflowController::setAirflowForNote(byte midiNote, byte velocity) {
   float modulatedAngle = minAngle + (baseAngle - minAngle) * expressionFactor;
 
   // 3. CC7 (Volume) - multiplicateur global
-  float finalAngle = modulatedAngle * (_ccVolume / 127.0);
+  float finalAngleWithoutVibrato = modulatedAngle * (_ccVolume / 127.0);
 
-  // 4. CC1 (Modulation) - vibrato
-  if (_ccModulation > 0) {
-    // Vibrato : oscillation sinusoïdale
-    // Fréquence ~6 Hz (période 166ms)
-    float vibratoFreq = 6.0;
-    float time = millis() / 1000.0;  // Temps en secondes
+  // 4. Limiter dans les bornes valides
+  if (finalAngleWithoutVibrato < SERVO_AIRFLOW_MIN) finalAngleWithoutVibrato = SERVO_AIRFLOW_MIN;
+  if (finalAngleWithoutVibrato > SERVO_AIRFLOW_MAX) finalAngleWithoutVibrato = SERVO_AIRFLOW_MAX;
 
-    // Amplitude du vibrato (max ±8° pour CC1=127)
-    float vibratoAmplitude = (_ccModulation / 127.0) * 8.0;
+  // Stocker l'angle de base (sans vibrato) pour update continu
+  _baseAngleWithoutVibrato = (uint16_t)(finalAngleWithoutVibrato + 0.5);  // Arrondi
 
-    // Offset sinusoïdal
-    float vibratoOffset = sin(2.0 * PI * vibratoFreq * time) * vibratoAmplitude;
-
-    finalAngle += vibratoOffset;
-  }
-
-  // 5. Limiter l'angle final dans les bornes valides
-  if (finalAngle < SERVO_AIRFLOW_MIN) finalAngle = SERVO_AIRFLOW_MIN;
-  if (finalAngle > SERVO_AIRFLOW_MAX) finalAngle = SERVO_AIRFLOW_MAX;
+  // Activer vibrato si CC1 > 0
+  _vibratoActive = (_ccModulation > 0);
 
   if (DEBUG) {
     Serial.print("DEBUG: AirflowController - Note MIDI: ");
@@ -123,14 +146,23 @@ void AirflowController::setAirflowForNote(byte midiNote, byte velocity) {
     Serial.print((uint16_t)modulatedAngle);
     Serial.print("° | CC7: ");
     Serial.print(_ccVolume);
-    Serial.print(" | CC1: ");
+    Serial.print(" | Base(no vib): ");
+    Serial.print(_baseAngleWithoutVibrato);
+    Serial.print("° | CC1: ");
     Serial.print(_ccModulation);
-    Serial.print(" | FinalAngle: ");
-    Serial.print((uint16_t)finalAngle);
-    Serial.println("°");
+    if (_vibratoActive) {
+      Serial.print(" (vibrato ON)");
+    }
+    Serial.println();
   }
 
-  setAirflowServoAngle((uint16_t)finalAngle);
+  // Appliquer immédiatement (update() ajoutera vibrato si nécessaire)
+  if (_vibratoActive) {
+    // update() gérera le vibrato en continu
+    update();  // Premier calcul immédiat
+  } else {
+    setAirflowServoAngle(_baseAngleWithoutVibrato);
+  }
 }
 
 void AirflowController::openSolenoid() {
@@ -212,6 +244,28 @@ void AirflowController::update() {
     }
   }
   #endif
+
+  // Appliquer vibrato si actif
+  if (_vibratoActive && _ccModulation > 0 && _solenoidOpen) {
+    // Fréquence vibrato: ~6 Hz (standard musical)
+    const float VIBRATO_FREQUENCY = 6.0;
+
+    // Amplitude max: ±8° (modulation 127 = ±8°, modulation 64 = ±4°, etc.)
+    float vibratoAmplitude = (_ccModulation / 127.0) * 8.0;
+
+    // Calculer offset vibrato avec sin() optimisé
+    float vibratoOffset = fastSin(millis(), VIBRATO_FREQUENCY) * vibratoAmplitude;
+
+    // Appliquer vibrato à l'angle de base
+    int16_t finalAngle = _baseAngleWithoutVibrato + (int16_t)(vibratoOffset + 0.5);
+
+    // Limiter dans les bornes servo valides
+    if (finalAngle < SERVO_AIRFLOW_MIN) finalAngle = SERVO_AIRFLOW_MIN;
+    if (finalAngle > SERVO_AIRFLOW_MAX) finalAngle = SERVO_AIRFLOW_MAX;
+
+    // Mettre à jour position servo
+    setAirflowServoAngle((uint16_t)finalAngle);
+  }
 }
 
 void AirflowController::setAirflowServoAngle(uint16_t angle) {
