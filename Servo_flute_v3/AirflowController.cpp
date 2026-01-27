@@ -35,7 +35,8 @@ inline float fastSin(unsigned long timeMs, float frequency) {
 AirflowController::AirflowController(Adafruit_PWMServoDriver& pwm)
   : _pwm(pwm), _solenoidOpen(false), _solenoidOpenTime(0),
     _ccVolume(127), _ccExpression(127), _ccModulation(0),
-    _baseAngleWithoutVibrato(SERVO_AIRFLOW_OFF), _vibratoActive(false) {
+    _baseAngleWithoutVibrato(SERVO_AIRFLOW_OFF), _vibratoActive(false),
+    _currentMinAngle(SERVO_AIRFLOW_MIN), _currentMaxAngle(SERVO_AIRFLOW_MAX) {
 }
 
 void AirflowController::begin() {
@@ -105,6 +106,10 @@ void AirflowController::setAirflowForNote(byte midiNote, byte velocity) {
     maxAngle = SERVO_AIRFLOW_MAX;
   }
 
+  // Stocker les bornes pour limiter le vibrato ultérieurement
+  _currentMinAngle = minAngle;
+  _currentMaxAngle = maxAngle;
+
   // 1. VELOCITY définit l'angle de base dans [minAngle, maxAngle]
   baseAngle = map(velocity, 1, 127, minAngle, maxAngle);
 
@@ -116,8 +121,12 @@ void AirflowController::setAirflowForNote(byte midiNote, byte velocity) {
   float expressionFactor = _ccExpression / 127.0;
   float modulatedAngle = minAngle + (baseAngle - minAngle) * expressionFactor;
 
-  // 3. CC7 (Volume) - multiplicateur global
-  float finalAngleWithoutVibrato = modulatedAngle * (_ccVolume / 127.0);
+  // 3. CC7 (Volume) module DANS la plage [minAngle, modulatedAngle]
+  //    CC7 = 127 → modulatedAngle (plein volume)
+  //    CC7 = 0   → minAngle (silence minimum de la note)
+  //    Garantit que l'angle ne descend JAMAIS sous minAngle
+  float volumeFactor = _ccVolume / 127.0;
+  float finalAngleWithoutVibrato = minAngle + (modulatedAngle - minAngle) * volumeFactor;
 
   // 4. Limiter dans les bornes valides
   if (finalAngleWithoutVibrato < SERVO_AIRFLOW_MIN) finalAngleWithoutVibrato = SERVO_AIRFLOW_MIN;
@@ -259,9 +268,9 @@ void AirflowController::update() {
     // Appliquer vibrato à l'angle de base
     int16_t finalAngle = _baseAngleWithoutVibrato + (int16_t)(vibratoOffset + 0.5);
 
-    // Limiter dans les bornes servo valides
-    if (finalAngle < SERVO_AIRFLOW_MIN) finalAngle = SERVO_AIRFLOW_MIN;
-    if (finalAngle > SERVO_AIRFLOW_MAX) finalAngle = SERVO_AIRFLOW_MAX;
+    // Limiter dans les bornes de la note en cours (pas les bornes servo globales)
+    if (finalAngle < (int16_t)_currentMinAngle) finalAngle = _currentMinAngle;
+    if (finalAngle > (int16_t)_currentMaxAngle) finalAngle = _currentMaxAngle;
 
     // Mettre à jour position servo
     setAirflowServoAngle((uint16_t)finalAngle);

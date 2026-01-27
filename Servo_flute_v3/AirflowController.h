@@ -49,6 +49,8 @@ private:
   // Gestion vibrato
   uint16_t _baseAngleWithoutVibrato;  // Angle calculé sans vibrato (pour update continu)
   bool _vibratoActive;                 // True si vibrato doit être appliqué
+  uint16_t _currentMinAngle;           // Angle minimum de la note en cours
+  uint16_t _currentMaxAngle;           // Angle maximum de la note en cours
 
   // Positionne le servo de débit à un angle spécifique
   void setAirflowServoAngle(uint16_t angle);
