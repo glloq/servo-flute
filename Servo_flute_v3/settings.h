@@ -177,4 +177,16 @@ const uint16_t SERVO_PULSE_MIN = 550;
 const uint16_t SERVO_PULSE_MAX = 2450;
 const uint16_t SERVO_FREQUENCY = 50;
 
+/*******************************************************************************
+-----------------------  CONTROL CHANGE (CC) SETTINGS  -----------------------
+******************************************************************************/
+// Vibrato (CC1 - Modulation)
+#define VIBRATO_FREQUENCY_HZ 6.0          // Fréquence vibrato en Hz (standard musical)
+#define VIBRATO_MAX_AMPLITUDE_DEG 8.0     // Amplitude maximale vibrato en degrés (CC1=127)
+
+// Valeurs par défaut CC au démarrage
+#define CC_VOLUME_DEFAULT 127             // CC7 - Volume (0-127)
+#define CC_EXPRESSION_DEFAULT 127         // CC11 - Expression (0-127)
+#define CC_MODULATION_DEFAULT 0           // CC1 - Modulation/Vibrato (0-127)
+
 #endif
