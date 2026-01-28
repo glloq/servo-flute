@@ -34,7 +34,7 @@ inline float fastSin(unsigned long timeMs, float frequency) {
 
 AirflowController::AirflowController(Adafruit_PWMServoDriver& pwm)
   : _pwm(pwm), _solenoidOpen(false), _solenoidOpenTime(0),
-    _ccVolume(127), _ccExpression(127), _ccModulation(0),
+    _ccVolume(CC_VOLUME_DEFAULT), _ccExpression(CC_EXPRESSION_DEFAULT), _ccModulation(CC_MODULATION_DEFAULT),
     _baseAngleWithoutVibrato(SERVO_AIRFLOW_OFF), _vibratoActive(false),
     _currentMinAngle(SERVO_AIRFLOW_MIN), _currentMaxAngle(SERVO_AIRFLOW_MAX) {
 }
@@ -257,10 +257,10 @@ void AirflowController::update() {
   // Appliquer vibrato si actif
   if (_vibratoActive && _ccModulation > 0 && _solenoidOpen) {
     // Fréquence vibrato: ~6 Hz (standard musical)
-    const float VIBRATO_FREQUENCY = 6.0;
+    const float VIBRATO_FREQUENCY = VIBRATO_FREQUENCY_HZ;
 
     // Amplitude max: ±8° (modulation 127 = ±8°, modulation 64 = ±4°, etc.)
-    float vibratoAmplitude = (_ccModulation / 127.0) * 8.0;
+    float vibratoAmplitude = (_ccModulation / 127.0) * VIBRATO_MAX_AMPLITUDE_DEG;
 
     // Calculer offset vibrato avec sin() optimisé
     float vibratoOffset = fastSin(millis(), VIBRATO_FREQUENCY) * vibratoAmplitude;
