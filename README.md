@@ -1,35 +1,31 @@
 # servo flute
 
-> [!WARNING]
-> projet en cours de construction.
-
 ## presentation du projet
 
-Le systeme est concu pour jouer de la flute a bec automatiquement en fonction des messages midi recu (par usb uniquement mais le code est facilement adaptable).
+Le systeme est concu pour jouer de la flute en fonction des messages midi recu 
+
 dans le cas d'un message midi NoteOn, si la note peut etre jouée le systeme va :
 - deplacer les doigts pour faire l'accord voulu
 - deplacer le servo airFlow vers la plute entre l'angle MIN_SERVO_AIR_FLOW et MAX_SERVO_AIR_FLOW en fonction de la note demandée et de la velocité 
-- ouvrir la vanne air vers la flute
+- ouvrir la vanne air vers la flute après un delais pour laisser le temps au servomoteur de se mettre en position
 
 Dans le cas d'un message midi NoteOff, si la note peut etre jouée le systeme :
 - fermer la vanne air vers la flute
-- gestion du vibrato/modulation wheel => software avec servoFlow
-- gestion du volume (en gros augmenter/reduire le debit d'air)  => software avec servoFlow
 
-Ajout possible : 
-- une boucle de rétroaction pour un meilleur controle des notes jouée
+  options supplementaire :
+- CC1 : gestion du vibrato/modulation wheel => software avec servoFlow
+- CC7/CC11 : gestion du volume (en gros augmenter/reduire le debit d'air)  => software avec servoFlow
+- CC120 : all note Off / arret urgence
+
   
 ## Schema principe
 
 #### Servo Finger
-l'objectif est d'avoir quelque chose de simple (sans soudures) qui utilise au mieux un systeme de bras de levier afin d'avoir un controle plus precis du mouvement de chaque doigts.
-Si on par du principe que tout les doigts vont etre deplacé en meme temps, il faudra au moins 8A prevu juste pour les servomoteurs
-> [!WARNING]
-> je garde les doigts mais je change la partie pompe => schema a refaire avec partie pompe separée
-![Schema de principe](https://github.com/glloq/servo-flute/blob/main/img/schemasv4.png?raw=true)
+l'objectif est d'avoir quelque chose de simple (sans soudures), adaptable a plusieurs type d'instrument a vent similaire ( avec gestion air + 15 doigts max )
+On utilisera une carte PCA9685 pour le controle des servomoteurs.
+On utilisera un mofset avec un diode de roue libre pour la valve d'air 
+Il faudra prevoir l'ajout d'un condessateur de decouplage adapté sur l'alimentation 5v pour limiter les chute de tension (470/1000nF) 
 
-L'idée est d'utiliser des fils de fers de 1 a 1.5mm de diametre pour relier les servomoteurs a chaque doigts, ce design permet l'ajout de "ressorts" en pliant les fil de fers en Z => ca reduit les risque de casse et permet d'appuyer un peut plus sur le trou.  
-Il faut garder environ 10cm de chaque coté de la flute pour permetre le placement des servo
 
 ## materiel necessaire 
 #### Electronique :
