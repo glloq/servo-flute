@@ -23,6 +23,7 @@
 #include <Wire.h>
 #include <Adafruit_PWMServoDriver.h>
 #include <MIDIUSB.h>
+#include <avr/wdt.h>  // Watchdog timer pour sécurité (P23)
 
 #include "settings.h"
 #include "EventQueue.h"
@@ -36,7 +37,42 @@
 InstrumentManager* instrument = nullptr;
 MidiHandler* midiHandler = nullptr;
 
+/**
+ * P17 - État sûr en cas de crash/redémarrage
+ * Initialise le hardware en configuration sûre AVANT toute autre opération.
+ * Appelé au tout début du setup() pour garantir un état sûr même après
+ * un reset watchdog ou une erreur système.
+ */
+void initSafeState() {
+  // Initialiser I2C pour accéder au PCA9685
+  Wire.begin();
+
+  // Créer une instance temporaire du PWM driver (adresse par défaut 0x40)
+  Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
+  pwm.begin();
+  pwm.setPWMFreq(SERVO_FREQUENCY);
+
+  // Mettre le solénoïde en état sûr (FERMÉ)
+  pinMode(SOLENOID_PIN, OUTPUT);
+  digitalWrite(SOLENOID_PIN, LOW);  // Solénoïde fermé
+
+  // Mettre le servo airflow en position repos
+  uint16_t pulseWidth = map(SERVO_AIRFLOW_OFF, 0, 180, SERVO_PULSE_MIN, SERVO_PULSE_MAX);
+  pwm.setPWM(NUM_SERVO_AIRFLOW, 0, pulseWidth);
+
+  // Mettre tous les servos doigts en position fermée (sécuritaire)
+  for (int i = 0; i < NUMBER_SERVOS_FINGER; i++) {
+    pulseWidth = map(FINGERS[i].closedAngle, 0, 180, SERVO_PULSE_MIN, SERVO_PULSE_MAX);
+    pwm.setPWM(i, 0, pulseWidth);
+  }
+
+  // Petit délai pour que les servos atteignent la position
+  delay(100);
+}
+
 void setup() {
+  // P17 - Forcer l'état sûr dès le démarrage (protection crash/watchdog)
+  initSafeState();
   // Initialiser la communication série pour debug
   if (DEBUG) {
     Serial.begin(115200);
@@ -48,8 +84,7 @@ void setup() {
     Serial.println("========================================");
   }
 
-  // Initialiser I2C
-  Wire.begin();
+  // I2C déjà initialisé dans initSafeState()
 
   // Créer l'instrument manager
   instrument = new InstrumentManager();
@@ -79,11 +114,25 @@ void setup() {
     Serial.print("  - Taille queue: ");
     Serial.print(EVENT_QUEUE_SIZE);
     Serial.println(" événements");
+    Serial.print("  - Watchdog: ");
+    Serial.println("4 secondes (P23)");
     Serial.println();
+  }
+
+  // P23 - Activer le watchdog timer (timeout 4 secondes)
+  // En cas de blocage, le système redémarre automatiquement en état sûr
+  wdt_enable(WDTO_4S);
+
+  if (DEBUG) {
+    Serial.println("DEBUG: Watchdog activé (timeout 4s)");
   }
 }
 
 void loop() {
+  // P23 - Réinitialiser le watchdog timer à chaque itération
+  // Si la loop() se bloque, le watchdog redémarre le système après 4s
+  wdt_reset();
+
   // Lire les événements MIDI entrants (non-bloquant)
   midiHandler->readMidi();
 
