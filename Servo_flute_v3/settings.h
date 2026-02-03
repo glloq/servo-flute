@@ -190,8 +190,17 @@ const uint16_t SERVO_PULSE_MAX = 2450;
 const uint16_t SERVO_FREQUENCY = 50;
 
 /*******************************************************************************
+-------------------------     MIDI SETTINGS           ------------------------
+******************************************************************************/
+// Canal MIDI (0 = omni mode, écoute tous les canaux | 1-16 = canal spécifique)
+#define MIDI_CHANNEL 0                    // 0 = omni, 1-16 = canal MIDI
+
+/*******************************************************************************
 -----------------------  CONTROL CHANGE (CC) SETTINGS  -----------------------
 ******************************************************************************/
+// Rate limiting des Control Changes (protection surcharge)
+#define CC_RATE_LIMIT_PER_SECOND 10       // Limite: 10 CC par seconde
+
 // Vibrato (CC1 - Modulation)
 #define VIBRATO_FREQUENCY_HZ 6.0          // Fréquence vibrato en Hz (standard musical)
 #define VIBRATO_MAX_AMPLITUDE_DEG 8.0     // Amplitude maximale vibrato en degrés (CC1=127)
@@ -200,5 +209,15 @@ const uint16_t SERVO_FREQUENCY = 50;
 #define CC_VOLUME_DEFAULT 127             // CC7 - Volume (0-127)
 #define CC_EXPRESSION_DEFAULT 127         // CC11 - Expression (0-127)
 #define CC_MODULATION_DEFAULT 0           // CC1 - Modulation/Vibrato (0-127)
+#define CC_BREATH_DEFAULT 127             // CC2 - Breath Controller (0-127)
+#define CC_BRIGHTNESS_DEFAULT 64          // CC74 - Brightness/Timbre (0-127)
+
+/*******************************************************************************
+-------------------------  PITCH BEND SETTINGS        ------------------------
+******************************************************************************/
+// Plage de pitch bend en demi-tons (standard MIDI: ±2 demi-tons)
+#define PITCH_BEND_RANGE_SEMITONES 2      // ±2 demi-tons
+// Pitch bend affecte l'airflow (modulation fine du débit d'air)
+#define PITCH_BEND_AIRFLOW_PERCENT 10     // ±10% d'ajustement airflow max
 
 #endif

@@ -35,6 +35,7 @@ inline float fastSin(unsigned long timeMs, float frequency) {
 AirflowController::AirflowController(Adafruit_PWMServoDriver& pwm)
   : _pwm(pwm), _solenoidOpen(false), _solenoidOpenTime(0),
     _ccVolume(CC_VOLUME_DEFAULT), _ccExpression(CC_EXPRESSION_DEFAULT), _ccModulation(CC_MODULATION_DEFAULT),
+    _pitchBendAdjustment(0),
     _baseAngleWithoutVibrato(SERVO_AIRFLOW_OFF), _vibratoActive(false),
     _currentMinAngle(SERVO_AIRFLOW_MIN), _currentMaxAngle(SERVO_AIRFLOW_MAX) {
 }
@@ -128,7 +129,14 @@ void AirflowController::setAirflowForNote(byte midiNote, byte velocity) {
   float volumeFactor = _ccVolume / 127.0;
   float finalAngleWithoutVibrato = minAngle + (modulatedAngle - minAngle) * volumeFactor;
 
-  // 4. Limiter dans les bornes valides
+  // 4. Pitch Bend : ajustement fin de l'airflow (±PITCH_BEND_AIRFLOW_PERCENT%)
+  //    Appliqué APRÈS tous les CC pour modulation fine
+  if (_pitchBendAdjustment != 0) {
+    float pitchBendOffset = (finalAngleWithoutVibrato - minAngle) * (_pitchBendAdjustment / 100.0);
+    finalAngleWithoutVibrato += pitchBendOffset;
+  }
+
+  // 5. Limiter dans les bornes valides
   if (finalAngleWithoutVibrato < SERVO_AIRFLOW_MIN) finalAngleWithoutVibrato = SERVO_AIRFLOW_MIN;
   if (finalAngleWithoutVibrato > SERVO_AIRFLOW_MAX) finalAngleWithoutVibrato = SERVO_AIRFLOW_MAX;
 
@@ -312,4 +320,16 @@ void AirflowController::setCCValues(byte ccVolume, byte ccExpression, byte ccMod
   _ccVolume = ccVolume;
   _ccExpression = ccExpression;
   _ccModulation = ccModulation;
+}
+
+void AirflowController::setPitchBendAdjustment(int8_t adjustment) {
+  _pitchBendAdjustment = adjustment;
+
+  // Limiter à ±PITCH_BEND_AIRFLOW_PERCENT
+  if (_pitchBendAdjustment > PITCH_BEND_AIRFLOW_PERCENT) {
+    _pitchBendAdjustment = PITCH_BEND_AIRFLOW_PERCENT;
+  }
+  if (_pitchBendAdjustment < -PITCH_BEND_AIRFLOW_PERCENT) {
+    _pitchBendAdjustment = -PITCH_BEND_AIRFLOW_PERCENT;
+  }
 }

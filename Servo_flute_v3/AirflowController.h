@@ -36,6 +36,9 @@ public:
   // Met à jour les valeurs CC (appelé par InstrumentManager)
   void setCCValues(byte ccVolume, byte ccExpression, byte ccModulation);
 
+  // Définit l'ajustement pitch bend (±% d'airflow)
+  void setPitchBendAdjustment(int8_t adjustment);
+
 private:
   Adafruit_PWMServoDriver& _pwm;
   bool _solenoidOpen;
@@ -45,6 +48,9 @@ private:
   byte _ccVolume;       // CC 7  (multiplicateur global)
   byte _ccExpression;   // CC 11 (expression dynamique)
   byte _ccModulation;   // CC 1  (vibrato)
+
+  // Pitch Bend
+  int8_t _pitchBendAdjustment;  // Ajustement pitch bend en % (±PITCH_BEND_AIRFLOW_PERCENT)
 
   // Gestion vibrato
   uint16_t _baseAngleWithoutVibrato;  // Angle calculé sans vibrato (pour update continu)
