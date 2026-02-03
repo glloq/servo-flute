@@ -2,7 +2,9 @@
 
 ## presentation du projet
 
-Le systeme est concu pour jouer de la flute en fonction des messages midi recu 
+Le systeme est concu pour jouer de la flute ou tout autres systeme similaire en fonction des messages midi recu 
+
+
 
 dans le cas d'un message midi NoteOn, si la note peut etre jouée le systeme va :
 - deplacer les doigts pour faire l'accord voulu
@@ -12,10 +14,13 @@ dans le cas d'un message midi NoteOn, si la note peut etre jouée le systeme va 
 Dans le cas d'un message midi NoteOff, si la note peut etre jouée le systeme :
 - fermer la vanne air vers la flute
 
-  options supplementaire :
-- CC1 : gestion du vibrato/modulation wheel => software avec servoFlow
-- CC7/CC11 : gestion du volume (en gros augmenter/reduire le debit d'air)  => software avec servoFlow
-- CC120 : all note Off / arret urgence
+
+##### Controls Chnage accepté 
+
+- CC1 : gestion du vibrato/modulation wheel 
+- CC7/CC11 : gestion du volume (en gros augmenter/reduire le debit d'air)
+- CC120 ou CC123 : all note Off / arret urgence
+- CC 121 : Reset All Controllers
 
   
 ## Schema principe
@@ -28,29 +33,30 @@ Il faudra prevoir l'ajout d'un condessateur de decouplage adapté sur l'alimenta
 
 
 ## materiel necessaire 
+
 #### Electronique :
 - un controleur tel que l'arduino leonardo ou micro et des cables de prototypage
 - un module PCA9685
 - 7 servomoteurs 9g bas de gamme (avec dent metalique) => 6 doigts et 1 servo air flow
 - Alimentation 5V 5A minimum
-- Un solenoide 5V/6V avec 2N min (ideal secutiré a 5N ) il faut viser 500mA maximum de consomation pour eviter la surchauffe (idéal autour de 30m0A) 
+- Un solenoide 5V/6V avec 2N min (ideal secutiré a 5N ) il faut viser 500mA maximum de consomation pour eviter la surchauffe (idéal autour de 300mA) 
 - un mofset adapté a la puissance
 - une diode de roue libre
+- un condensateur adapté 
   
   #### Mécanique :
-- du fil de fer diametre 1mm (pour lier les servomoteurs aux doigts) 
+  
 - un systeme de mousse a pores fermée environ 3mm d'epaisseur
 - les doigts et supports imprimé en 3D
 - servo valve imprimé en 3D avec 2 roulements 12x4x3 et 3vis/ecrous M3x20mm 
 - une boite ou planche pour supportrer le tout 
 
-
-
 ## Premiere utilisation
 
-pour les doigts, il faut que les servomoteur soit initialisé en position doigts fermé (initialiser les servo a 90° avant de fixer les bras) et il faut permettre un deplacement de +/-45° du servo.
-Chacune des position des doigts sera a initialiser dans le fichier setting.h 
+#### Calibration 
 
-Pour le servo AirFlow, il faut bien definir les 2 debit ( SERVO_VALVE_MIN_FLOW , SERVO_VALVE_MAX_FLOW ) en fonction de l'instrument et du systeme d'air.
+avant de fixer les doigts, il faut que les servomoteur soit initialisé en position fermé a 90° 
+Pour le servo AirFlow, il faut bien definir les 2 angles maximum de deplacement ( SERVO_VALVE_MIN_FLOW , SERVO_VALVE_MAX_FLOW ) en fonction du systeme utilisé
 
-=> je travaille pour faire un code qui aidera a la calibration dse doigts et du servoFlow
+
+
