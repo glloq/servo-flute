@@ -18,6 +18,9 @@ private:
 
   // Traite un événement MIDI reçu
   void processMidiEvent(midiEventPacket_t midiEvent);
+
+  // Vérifie si le message MIDI doit être traité selon le canal configuré
+  bool isChannelAccepted(byte channel);
 };
 
 #endif
