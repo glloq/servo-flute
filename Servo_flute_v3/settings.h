@@ -225,12 +225,4 @@ const uint16_t SERVO_FREQUENCY = 50;
 #define CC2_RESPONSE_CURVE 1.4            // Courbe exponentielle (1.0=linéaire, 1.4=naturel)
 #define CC2_TIMEOUT_MS 1000               // Timeout fallback velocity (ms, 0=désactivé)
 
-/*******************************************************************************
--------------------------  PITCH BEND SETTINGS        ------------------------
-******************************************************************************/
-// Plage de pitch bend en demi-tons (standard MIDI: ±2 demi-tons)
-#define PITCH_BEND_RANGE_SEMITONES 2      // ±2 demi-tons
-// Pitch bend affecte l'airflow (modulation fine du débit d'air)
-#define PITCH_BEND_AIRFLOW_PERCENT 10     // ±10% d'ajustement airflow max
-
 #endif

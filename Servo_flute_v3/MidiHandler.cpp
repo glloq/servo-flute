@@ -44,15 +44,6 @@ void MidiHandler::processMidiEvent(midiEventPacket_t midiEvent) {
       _instrument.noteOff(note);
       break;
 
-    case 0xE0:  // Pitch Bend
-      {
-        // Pitch bend: 14 bits (byte2 = LSB, byte3 = MSB)
-        // Valeur: 0-16383, centre = 8192
-        uint16_t pitchBendValue = (uint16_t)midiEvent.byte3 << 7 | midiEvent.byte2;
-        _instrument.handlePitchBend(pitchBendValue);
-      }
-      break;
-
     case 0xA0:  // Channel Pressure (Aftertouch)
       // Non implémenté pour l'instant
       break;

@@ -34,9 +34,6 @@ public:
   // Gère les Control Change MIDI
   void handleControlChange(byte ccNumber, byte ccValue);
 
-  // Gère le Pitch Bend MIDI
-  void handlePitchBend(uint16_t pitchBendValue);
-
   // Accesseurs pour les valeurs CC (pour AirflowController)
   byte getCCVolume() const { return _ccVolume; }
   byte getCCExpression() const { return _ccExpression; }
@@ -66,9 +63,6 @@ private:
   byte _ccModulation;   // CC 1  - Modulation/Vibrato (défaut: 0 = pas de modulation)
   byte _ccBreath;       // CC 2  - Breath Controller (défaut: 127 = 100%)
   byte _ccBrightness;   // CC 74 - Brightness/Timbre (défaut: 64 = neutre)
-
-  // Pitch Bend
-  int16_t _pitchBend;   // Valeur pitch bend (-8192 à +8191, 0 = centre)
 
   // Rate limiting des Control Changes
   unsigned long _lastCCTime;

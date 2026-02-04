@@ -39,9 +39,6 @@ public:
   // Met à jour CC2 (Breath Controller) avec lissage et fallback velocity
   void updateCC2Breath(byte ccBreath);
 
-  // Définit l'ajustement pitch bend (±% d'airflow)
-  void setPitchBendAdjustment(int8_t adjustment);
-
 private:
   Adafruit_PWMServoDriver& _pwm;
   bool _solenoidOpen;
@@ -52,9 +49,6 @@ private:
   byte _ccExpression;   // CC 11 (expression dynamique)
   byte _ccModulation;   // CC 1  (vibrato)
   byte _ccBreath;       // CC 2  (breath controller)
-
-  // Pitch Bend
-  int8_t _pitchBendAdjustment;  // Ajustement pitch bend en % (±PITCH_BEND_AIRFLOW_PERCENT)
 
   // Breath Controller (CC2) - Lissage et fallback
   byte _cc2SmoothingBuffer[CC2_SMOOTHING_BUFFER_SIZE];  // Buffer circulaire pour moyenne glissante

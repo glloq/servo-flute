@@ -13,7 +13,6 @@ InstrumentManager::InstrumentManager()
     _ccModulation(CC_MODULATION_DEFAULT),
     _ccBreath(CC_BREATH_DEFAULT),
     _ccBrightness(CC_BRIGHTNESS_DEFAULT),
-    _pitchBend(0),                    // Centre
     _lastCCTime(0),
     _ccCount(0),
     _ccWindowStart(0),
@@ -315,40 +314,10 @@ void InstrumentManager::resetAllControllers() {
   _ccBreath = CC_BREATH_DEFAULT;
   _ccBrightness = CC_BRIGHTNESS_DEFAULT;
 
-  // Réinitialiser le pitch bend à 0 (centre)
-  _pitchBend = 0;
-
   // Mettre à jour l'AirflowController
   _airflowCtrl.setCCValues(_ccVolume, _ccExpression, _ccModulation);
 
   if (DEBUG) {
     Serial.println("DEBUG: InstrumentManager - Reset All Controllers exécuté");
-  }
-}
-
-void InstrumentManager::handlePitchBend(uint16_t pitchBendValue) {
-  // Pitch bend MIDI: 0-16383, centre = 8192
-  // Conversion en valeur signée: -8192 à +8191
-  _pitchBend = (int16_t)pitchBendValue - 8192;
-
-  // Le pitch bend module l'airflow de manière fine
-  // Calcul du facteur de modulation: -1.0 à +1.0
-  float pitchBendFactor = (float)_pitchBend / 8192.0;
-
-  // Appliquer le pitch bend à l'airflow
-  // Le pitch bend modifie l'airflow de ±PITCH_BEND_AIRFLOW_PERCENT%
-  int8_t airflowAdjustment = (int8_t)(pitchBendFactor * PITCH_BEND_AIRFLOW_PERCENT);
-
-  // Transmettre au contrôleur d'airflow
-  _airflowCtrl.setPitchBendAdjustment(airflowAdjustment);
-
-  if (DEBUG) {
-    Serial.print("DEBUG: Pitch Bend = ");
-    Serial.print(_pitchBend);
-    Serial.print(" (raw: ");
-    Serial.print(pitchBendValue);
-    Serial.print(") | Ajustement airflow: ");
-    Serial.print(airflowAdjustment);
-    Serial.println("%");
   }
 }
