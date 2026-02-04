@@ -12,10 +12,18 @@
 - **Constantes :** `VIBRATO_FREQUENCY_HZ`, `VIBRATO_MAX_AMPLITUDE_DEG` (settings.h)
 
 ### CC 2 - Breath Controller
-- **Valeur :** 0-127
-- **Fonction :** Contrôle de souffle (réservé pour usage futur)
-- **Effet :** Stocké mais non appliqué actuellement
-- **Usage :** Destiné au contrôle de souffle externe ou aftertouch
+- **Valeur :** 0-127 (défaut: 127)
+- **Fonction :** **CONTRÔLE DYNAMIQUE DU SOUFFLE** en temps réel
+- **Effet :** Remplace velocity pour contrôle expressif continu
+  - 0-9 = Silence (valve fermée, seuil)
+  - 10+ = Airflow avec courbe exponentielle (CC2^1.4)
+  - 127 = Souffle maximum
+- **Usage :** Breath controller physique (Yamaha BC3, TEControl) ou automation DAW
+- **Lissage :** Moyenne glissante sur 5 valeurs (réduction jitter)
+- **Fallback :** Si CC2 absent > 1s, utilise velocity
+- **Rate limit :** 50 messages/sec (haute fréquence)
+- **Constantes :** `CC2_ENABLED`, `CC2_RATE_LIMIT_PER_SECOND`, `CC2_SILENCE_THRESHOLD`, `CC2_SMOOTHING_BUFFER_SIZE`, `CC2_RESPONSE_CURVE`, `CC2_TIMEOUT_MS` (settings.h)
+- **Documentation détaillée :** Voir [CC2_BREATH_CONTROLLER.md](CC2_BREATH_CONTROLLER.md)
 
 ### CC 7 - Volume (Channel Volume)
 - **Valeur :** 0-127 (défaut: 127)
@@ -1042,19 +1050,74 @@ Voir commit: `Nouvelle logique CC7/CC11 : Volume réduit plage avant Expression`
 
 ---
 
-### 2026-02-04 : Améliorations MIDI complètes
+### 2026-02-04 : CC2 Breath Controller + Suppression Pitch Bend
+
+**CC2 BREATH CONTROLLER IMPLÉMENTÉ (Option 1 - Remplacement Velocity) :**
+
+CC2 remplace velocity pour contrôle dynamique du souffle en temps réel :
+- **Lissage** : Buffer circulaire 5 valeurs (moyenne glissante anti-jitter)
+- **Courbe exponentielle** : CC2^1.4 pour réponse naturelle
+- **Seuil silence** : CC2 < 10 → valve fermée
+- **Fallback velocity** : Si CC2 absent > 1s, utilise velocity
+- **Rate limiting séparé** : 50 CC2/sec (haute fréquence)
+
+**Ordre nouveau avec CC2 :**
+```
+CC7 → CC2 (si disponible, sinon Velocity) → CC11 → Vibrato
+```
+
+**Constantes CC2 (settings.h) :**
+```cpp
+CC2_ENABLED true
+CC2_RATE_LIMIT_PER_SECOND 50
+CC2_SILENCE_THRESHOLD 10
+CC2_SMOOTHING_BUFFER_SIZE 5
+CC2_RESPONSE_CURVE 1.4
+CC2_TIMEOUT_MS 1000
+```
+
+**Avantages :**
+- ✅ Servo-flute devient véritable instrument à vent MIDI
+- ✅ Contrôle breath physique (Yamaha BC3, TEControl BBC2)
+- ✅ Automation DAW pour souffle pré-enregistré
+- ✅ Réponse naturelle avec courbe exponentielle
+
+Voir commit: `CC2 Breath Controller : Contrôle dynamique souffle en temps réel`
+
+---
+
+**PITCH BEND RETIRÉ (Logique incorrecte) :**
+
+**Problème identifié :**
+- Pitch bend modifiait l'AIRFLOW (débit d'air) au lieu de la HAUTEUR (doigts)
+- Sur une vraie flûte, hauteur = doigts, volume = souffle
+- Logique physiquement incorrecte
+
+**Solution :**
+- Retrait complet du pitch bend
+- Contrôle airflow géré par CC2/CC7/CC11 uniquement
+- Ordre simplifié : **CC7 → CC2/Velocity → CC11 → Vibrato**
+
+**Note future :**
+Si pitch bend nécessaire, l'implémenter correctement en modifiant les DOIGTS (FingerController), pas l'airflow.
+
+Voir commit: `Suppression Pitch Bend : Logique incorrecte retirée`
+
+---
+
+### 2026-02-04 : Améliorations MIDI (avant implémentation CC2)
 
 **Nouveaux CC implémentés :**
-- CC 2 (Breath Controller) - stocké pour usage futur
+- CC 2 (Breath Controller) - stocké pour usage futur (remplacé plus tard par implémentation complète)
 - CC 74 (Brightness) - stocké pour usage futur
 - CC 121 (Reset All Controllers) - réinitialise tous CC
 - CC 123 (All Notes Off) - identique à CC 120
 
-**Pitch Bend ajouté :**
+**Pitch Bend ajouté (retiré plus tard) :**
 - Valeur 14-bit (0-16383, centre 8192)
 - Plage : ±2 demi-tons
 - Effet : ±10% airflow
-- Application après CC11, avant vibrato
+- ⚠️ **Logique incorrecte** → Retiré le même jour
 
 **Rate Limiting :**
 - Limite : 10 CC/seconde (configurable)
@@ -1073,8 +1136,6 @@ CC_RATE_LIMIT_PER_SECOND
 VIBRATO_FREQUENCY_HZ
 VIBRATO_MAX_AMPLITUDE_DEG
 CC_*_DEFAULT (tous les CC)
-PITCH_BEND_RANGE_SEMITONES
-PITCH_BEND_AIRFLOW_PERCENT
 ```
 
 Voir commit: `Améliorations MIDI : Canal, Pitch Bend, CC étendus, Rate Limiting`
@@ -1174,27 +1235,27 @@ finalAngle = minAngle + (modulatedAngle - minAngle) × (CC7 / 127.0)
 ## ✅ Résumé implémentation
 
 **Fichiers modifiés :**
-- `InstrumentManager.h/cpp` - Gestion CC centralisée, rate limiting, pitch bend
-- `MidiHandler.h/cpp` - Réception CC MIDI, pitch bend, filtrage canal
-- `AirflowController.h/cpp` - Application CC sur airflow, nouvelle logique CC7/CC11
+- `InstrumentManager.h/cpp` - Gestion CC centralisée, rate limiting CC2
+- `MidiHandler.h/cpp` - Réception CC MIDI, filtrage canal
+- `AirflowController.h/cpp` - Application CC sur airflow, CC2 breath controller, nouvelle logique CC7→CC2→CC11
 - `NoteSequencer.h/cpp` - Méthode stop() pour All Sound Off
-- `settings.h` - Constantes MIDI, CC, vibrato, pitch bend
+- `settings.h` - Constantes MIDI, CC, vibrato, CC2 breath
 
-**Lignes de code ajoutées :** ~300 lignes (total avec toutes améliorations)
+**Lignes de code ajoutées :** ~500 lignes (total avec toutes améliorations)
 
 **Complexité :** Moyenne-Haute
-- Rate limiting avec fenêtre glissante
-- Pitch bend 14-bit
-- Nouvelle logique CC7→Velocity→CC11
+- Rate limiting avec fenêtre glissante (10 CC/s général, 50 CC2/s)
+- CC2 Breath Controller avec lissage, courbe exponentielle, fallback
+- Nouvelle logique CC7→CC2/Velocity→CC11→Vibrato
 - Vibrato avec sin() LUT optimisé
 - Filtrage canal MIDI
 
-**Compatibilité :** 100% DAWs standards + contrôleurs MIDI
+**Compatibilité :** 100% DAWs standards + contrôleurs MIDI + breath controllers
 
 **Features MIDI complètes :**
 - ✅ 8 CC implémentés (1, 2, 7, 11, 74, 120, 121, 123)
-- ✅ Pitch Bend 14-bit
-- ✅ Rate limiting configurable
+- ✅ CC2 Breath Controller (contrôle dynamique souffle)
+- ✅ Rate limiting configurable (général 10/s, CC2 50/s)
 - ✅ Canal MIDI (omni + spécifique)
 - ✅ Reset All Controllers
 - ✅ All Sound Off / All Notes Off
@@ -1207,6 +1268,7 @@ finalAngle = minAngle + (modulatedAngle - minAngle) × (CC7 / 127.0)
 **Dernière mise à jour :** 2026-02-04
 **Version Servo Flute :** V3
 **CC implémentés :** 1, 2, 7, 11, 74, 120, 121, 123
-**Pitch Bend :** ✅ Implémenté
+**CC2 Breath Controller :** ✅ Implémenté (Option 1 - Remplacement Velocity)
 **Canal MIDI :** ✅ Implémenté (omni + spécifique)
-**Rate Limiting :** ✅ Implémenté (10 CC/s)
+**Rate Limiting :** ✅ Implémenté (10 CC/s général, 50 CC2/s)
+**Pitch Bend :** ❌ Retiré (logique incorrecte)
