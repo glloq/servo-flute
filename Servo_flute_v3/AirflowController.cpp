@@ -35,9 +35,14 @@ inline float fastSin(unsigned long timeMs, float frequency) {
 AirflowController::AirflowController(Adafruit_PWMServoDriver& pwm)
   : _pwm(pwm), _solenoidOpen(false), _solenoidOpenTime(0),
     _ccVolume(CC_VOLUME_DEFAULT), _ccExpression(CC_EXPRESSION_DEFAULT), _ccModulation(CC_MODULATION_DEFAULT),
-    _pitchBendAdjustment(0),
+    _ccBreath(CC_BREATH_DEFAULT),
+    _cc2BufferIndex(0), _cc2BufferCount(0), _lastCC2Time(0), _lastVelocity(64),
     _baseAngleWithoutVibrato(SERVO_AIRFLOW_OFF), _vibratoActive(false),
     _currentMinAngle(SERVO_AIRFLOW_MIN), _currentMaxAngle(SERVO_AIRFLOW_MAX) {
+  // Initialiser buffer CC2 avec valeur par défaut
+  for (uint8_t i = 0; i < CC2_SMOOTHING_BUFFER_SIZE; i++) {
+    _cc2SmoothingBuffer[i] = CC_BREATH_DEFAULT;
+  }
 }
 
 void AirflowController::begin() {
@@ -113,6 +118,9 @@ void AirflowController::setAirflowForNote(byte midiNote, byte velocity) {
 
   // ===== APPLICATION DES CONTROL CHANGE =====
 
+  // Stocker velocity pour fallback si CC2 timeout
+  _lastVelocity = velocity;
+
   // 1. CC7 (Volume) RÉDUIT la limite haute de la note
   //    CC7 = 127 → maxAngle (volume max, plage complète)
   //    CC7 = 0   → minAngle (volume minimum, pas d'air)
@@ -120,22 +128,79 @@ void AirflowController::setAirflowForNote(byte midiNote, byte velocity) {
   float volumeFactor = _ccVolume / 127.0;
   uint16_t effectiveMaxAngle = minAngle + (maxAngle - minAngle) * volumeFactor;
 
-  // 2. VELOCITY définit l'angle de base dans [minAngle, effectiveMaxAngle]
-  //    La velocity utilise la plage réduite par le volume
-  baseAngle = map(velocity, 1, 127, minAngle, effectiveMaxAngle);
+  // 2. DÉTERMINER SOURCE AIRFLOW : CC2 (Breath Controller) ou VELOCITY
+  //    CC2 remplace velocity pour contrôle dynamique du souffle
+  byte airflowSource;
 
-  // 3. CC11 (Expression) module DANS la plage [minAngle, baseAngle]
-  //    CC11 = 127 → baseAngle (pleine expression selon velocity)
+  #if CC2_ENABLED
+  if (_cc2BufferCount > 0) {
+    // Vérifier timeout : si CC2 absent > CC2_TIMEOUT_MS, fallback sur velocity
+    unsigned long timeSinceCC2 = millis() - _lastCC2Time;
+    if (CC2_TIMEOUT_MS > 0 && timeSinceCC2 > CC2_TIMEOUT_MS) {
+      // Timeout : fallback sur velocity
+      airflowSource = velocity;
+      if (DEBUG) {
+        Serial.print("DEBUG: CC2 timeout (");
+        Serial.print(timeSinceCC2);
+        Serial.print("ms) - Fallback velocity: ");
+        Serial.println(velocity);
+      }
+    } else {
+      // Calculer moyenne lissée du buffer CC2
+      uint16_t sum = 0;
+      for (uint8_t i = 0; i < _cc2BufferCount; i++) {
+        sum += _cc2SmoothingBuffer[i];
+      }
+      byte smoothedCC2 = sum / _cc2BufferCount;
+
+      // Seuil silence : CC2 < CC2_SILENCE_THRESHOLD → considérer comme silence (0)
+      if (smoothedCC2 < CC2_SILENCE_THRESHOLD) {
+        airflowSource = 0;
+        if (DEBUG) {
+          Serial.print("DEBUG: CC2 sous seuil silence (");
+          Serial.print(smoothedCC2);
+          Serial.println(") - Silence");
+        }
+      } else {
+        // Appliquer courbe exponentielle pour réponse naturelle
+        float normalizedCC2 = smoothedCC2 / 127.0;  // Normaliser 0.0-1.0
+        float curvedCC2 = pow(normalizedCC2, CC2_RESPONSE_CURVE);
+        airflowSource = (byte)(curvedCC2 * 127);
+
+        if (DEBUG) {
+          Serial.print("DEBUG: CC2 smoothed: ");
+          Serial.print(smoothedCC2);
+          Serial.print(" → curved: ");
+          Serial.print(airflowSource);
+          Serial.println(" (remplace velocity)");
+        }
+      }
+    }
+  } else {
+    // Buffer vide : pas encore reçu CC2, utiliser velocity
+    airflowSource = velocity;
+  }
+  #else
+  // CC2 désactivé : toujours utiliser velocity
+  airflowSource = velocity;
+  #endif
+
+  // Si airflowSource = 0 (silence), fermer valve et arrêter
+  if (airflowSource == 0) {
+    setAirflowServoAngle(SERVO_AIRFLOW_OFF);
+    closeSolenoid();
+    return;
+  }
+
+  // 3. AIRFLOW SOURCE (CC2 ou velocity) définit l'angle de base dans [minAngle, effectiveMaxAngle]
+  //    La source airflow utilise la plage réduite par le volume
+  baseAngle = map(airflowSource, 1, 127, minAngle, effectiveMaxAngle);
+
+  // 4. CC11 (Expression) module DANS la plage [minAngle, baseAngle]
+  //    CC11 = 127 → baseAngle (pleine expression selon airflowSource)
   //    CC11 = 0   → minAngle (expression minimum de la note)
   float expressionFactor = _ccExpression / 127.0;
   float finalAngleWithoutVibrato = minAngle + (baseAngle - minAngle) * expressionFactor;
-
-  // 4. Pitch Bend : ajustement fin de l'airflow (±PITCH_BEND_AIRFLOW_PERCENT%)
-  //    Appliqué APRÈS tous les CC pour modulation fine
-  if (_pitchBendAdjustment != 0) {
-    float pitchBendOffset = (finalAngleWithoutVibrato - minAngle) * (_pitchBendAdjustment / 100.0);
-    finalAngleWithoutVibrato += pitchBendOffset;
-  }
 
   // 5. Limiter dans les bornes valides
   if (finalAngleWithoutVibrato < SERVO_AIRFLOW_MIN) finalAngleWithoutVibrato = SERVO_AIRFLOW_MIN;
@@ -152,6 +217,25 @@ void AirflowController::setAirflowForNote(byte midiNote, byte velocity) {
     Serial.print(midiNote);
     Serial.print(" | Vel: ");
     Serial.print(velocity);
+
+    // Afficher source airflow (CC2 ou velocity)
+    #if CC2_ENABLED
+    if (_cc2BufferCount > 0 && (CC2_TIMEOUT_MS == 0 || (millis() - _lastCC2Time <= CC2_TIMEOUT_MS))) {
+      Serial.print(" | CC2: ");
+      Serial.print(_ccBreath);
+      Serial.print(" → AirflowSrc: ");
+      Serial.print(airflowSource);
+    } else {
+      Serial.print(" | AirflowSrc: ");
+      Serial.print(airflowSource);
+      Serial.print(" (velocity)");
+    }
+    #else
+    Serial.print(" | AirflowSrc: ");
+    Serial.print(airflowSource);
+    Serial.print(" (velocity)");
+    #endif
+
     Serial.print(" | Range: ");
     Serial.print(minAngle);
     Serial.print("°-");
@@ -323,14 +407,32 @@ void AirflowController::setCCValues(byte ccVolume, byte ccExpression, byte ccMod
   _ccModulation = ccModulation;
 }
 
-void AirflowController::setPitchBendAdjustment(int8_t adjustment) {
-  _pitchBendAdjustment = adjustment;
+void AirflowController::updateCC2Breath(byte ccBreath) {
+  #if CC2_ENABLED
+  // Stocker la valeur CC2 dans le buffer circulaire pour lissage
+  _cc2SmoothingBuffer[_cc2BufferIndex] = ccBreath;
 
-  // Limiter à ±PITCH_BEND_AIRFLOW_PERCENT
-  if (_pitchBendAdjustment > PITCH_BEND_AIRFLOW_PERCENT) {
-    _pitchBendAdjustment = PITCH_BEND_AIRFLOW_PERCENT;
+  // Avancer l'index circulaire
+  _cc2BufferIndex = (_cc2BufferIndex + 1) % CC2_SMOOTHING_BUFFER_SIZE;
+
+  // Incrémenter compteur jusqu'à remplissage complet du buffer
+  if (_cc2BufferCount < CC2_SMOOTHING_BUFFER_SIZE) {
+    _cc2BufferCount++;
   }
-  if (_pitchBendAdjustment < -PITCH_BEND_AIRFLOW_PERCENT) {
-    _pitchBendAdjustment = -PITCH_BEND_AIRFLOW_PERCENT;
+
+  // Mettre à jour timestamp pour gestion timeout fallback
+  _lastCC2Time = millis();
+
+  // Stocker valeur actuelle
+  _ccBreath = ccBreath;
+
+  if (DEBUG) {
+    Serial.print("DEBUG: CC2 (Breath) reçu: ");
+    Serial.print(ccBreath);
+    Serial.print(" | Buffer: ");
+    Serial.print(_cc2BufferCount);
+    Serial.print("/");
+    Serial.println(CC2_SMOOTHING_BUFFER_SIZE);
   }
+  #endif
 }

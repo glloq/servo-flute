@@ -13,10 +13,11 @@ InstrumentManager::InstrumentManager()
     _ccModulation(CC_MODULATION_DEFAULT),
     _ccBreath(CC_BREATH_DEFAULT),
     _ccBrightness(CC_BRIGHTNESS_DEFAULT),
-    _pitchBend(0),                    // Centre
     _lastCCTime(0),
     _ccCount(0),
-    _ccWindowStart(0) {
+    _ccWindowStart(0),
+    _cc2Count(0),
+    _cc2WindowStart(0) {
 }
 
 void InstrumentManager::begin() {
@@ -167,22 +168,43 @@ void InstrumentManager::handleControlChange(byte ccNumber, byte ccValue) {
   }
 
   // Rate limiting: Maximum CC_RATE_LIMIT_PER_SECOND CC par seconde
+  // CC2 (Breath Controller) a son propre rate limit plus élevé (CC2_RATE_LIMIT_PER_SECOND)
   unsigned long currentTime = millis();
 
-  // Réinitialiser le compteur si nouvelle fenêtre d'une seconde
-  if (currentTime - _ccWindowStart >= 1000) {
-    _ccWindowStart = currentTime;
-    _ccCount = 0;
-  }
+  // Rate limiting pour CC2 (Breath Controller) - limite séparée haute fréquence
+  if (ccNumber == 2) {
+    #if CC2_ENABLED
+    // Réinitialiser compteur CC2 si nouvelle fenêtre
+    if (currentTime - _cc2WindowStart >= 1000) {
+      _cc2WindowStart = currentTime;
+      _cc2Count = 0;
+    }
 
-  // Vérifier le rate limit (sauf pour CC urgents: 120, 121, 123)
-  if (ccNumber != 120 && ccNumber != 121 && ccNumber != 123) {
-    _ccCount++;
-    if (_ccCount > CC_RATE_LIMIT_PER_SECOND) {
+    _cc2Count++;
+    if (_cc2Count > CC2_RATE_LIMIT_PER_SECOND) {
       if (DEBUG) {
-        Serial.println("ATTENTION: Rate limit CC dépassé, message ignoré");
+        Serial.println("ATTENTION: Rate limit CC2 dépassé, message ignoré");
       }
-      return;  // Ignorer si rate limit dépassé
+      return;  // Ignorer si rate limit CC2 dépassé
+    }
+    #endif
+  } else {
+    // Rate limiting normal pour autres CC
+    // Réinitialiser le compteur si nouvelle fenêtre d'une seconde
+    if (currentTime - _ccWindowStart >= 1000) {
+      _ccWindowStart = currentTime;
+      _ccCount = 0;
+    }
+
+    // Vérifier le rate limit (sauf pour CC urgents: 120, 121, 123)
+    if (ccNumber != 120 && ccNumber != 121 && ccNumber != 123) {
+      _ccCount++;
+      if (_ccCount > CC_RATE_LIMIT_PER_SECOND) {
+        if (DEBUG) {
+          Serial.println("ATTENTION: Rate limit CC dépassé, message ignoré");
+        }
+        return;  // Ignorer si rate limit dépassé
+      }
     }
   }
 
@@ -200,8 +222,8 @@ void InstrumentManager::handleControlChange(byte ccNumber, byte ccValue) {
 
     case 2:  // Breath Controller
       _ccBreath = ccValue;
-      // Le breath controller peut moduler l'airflow comme l'expression
-      // Pour l'instant, on le stocke pour utilisation future
+      // CC2 remplace velocity pour contrôle dynamique du souffle en temps réel
+      _airflowCtrl.updateCC2Breath(ccValue);
       if (DEBUG) {
         Serial.print("DEBUG: CC 2 (Breath Controller) = ");
         Serial.println(ccValue);
@@ -292,40 +314,10 @@ void InstrumentManager::resetAllControllers() {
   _ccBreath = CC_BREATH_DEFAULT;
   _ccBrightness = CC_BRIGHTNESS_DEFAULT;
 
-  // Réinitialiser le pitch bend à 0 (centre)
-  _pitchBend = 0;
-
   // Mettre à jour l'AirflowController
   _airflowCtrl.setCCValues(_ccVolume, _ccExpression, _ccModulation);
 
   if (DEBUG) {
     Serial.println("DEBUG: InstrumentManager - Reset All Controllers exécuté");
-  }
-}
-
-void InstrumentManager::handlePitchBend(uint16_t pitchBendValue) {
-  // Pitch bend MIDI: 0-16383, centre = 8192
-  // Conversion en valeur signée: -8192 à +8191
-  _pitchBend = (int16_t)pitchBendValue - 8192;
-
-  // Le pitch bend module l'airflow de manière fine
-  // Calcul du facteur de modulation: -1.0 à +1.0
-  float pitchBendFactor = (float)_pitchBend / 8192.0;
-
-  // Appliquer le pitch bend à l'airflow
-  // Le pitch bend modifie l'airflow de ±PITCH_BEND_AIRFLOW_PERCENT%
-  int8_t airflowAdjustment = (int8_t)(pitchBendFactor * PITCH_BEND_AIRFLOW_PERCENT);
-
-  // Transmettre au contrôleur d'airflow
-  _airflowCtrl.setPitchBendAdjustment(airflowAdjustment);
-
-  if (DEBUG) {
-    Serial.print("DEBUG: Pitch Bend = ");
-    Serial.print(_pitchBend);
-    Serial.print(" (raw: ");
-    Serial.print(pitchBendValue);
-    Serial.print(") | Ajustement airflow: ");
-    Serial.print(airflowAdjustment);
-    Serial.println("%");
   }
 }
