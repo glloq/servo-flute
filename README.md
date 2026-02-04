@@ -27,23 +27,6 @@ La **Servo Flute V3** est un instrument robotique qui transforme des messages MI
 ## 🚀 Démarrage Rapide
 
 ### Matériel Requis
-
-#### Électronique
-- **Arduino Leonardo ou Micro** (ATmega32u4 avec USB-MIDI natif)
-- **PCA9685** - Module PWM 16 canaux
-- **7 servomoteurs 9g** (6 doigts + 1 airflow)
-- **Solénoïde 12V** - Valve pneumatique
-- **Alimentation 5V** - 10A minimum (servos)
-- **Alimentation 12V** - 2A (solénoïde)
-
-#### Mécanique
-- **Irish flute** ou **flûte à bec**
-- **Fil de fer 1mm** - Connexion servos → doigts
-- **Mousse** - Bande 5mm largeur, 3mm épaisseur (doigts)
-- **Supports imprimés 3D** - Fichiers dans `/stl/`
-- **Planche bois** - 40x25cm support général
-- **Vis bois** - 3x35mm (2 par servo)
-
 #### Electronique :
 - un controleur tel que l'arduino leonardo ou micro et des cables de prototypage
 - un module PCA9685
