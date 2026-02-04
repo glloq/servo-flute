@@ -1,38 +1,48 @@
-# servo flute
+# Servo Flute V3 🎵
 
-## presentation du projet
+**Une flûte robotique contrôlée par MIDI avec support breath controller**
 
-Le systeme est concu pour jouer de la flute ou tout autres systeme similaire en fonction des messages midi recu 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Arduino](https://img.shields.io/badge/Arduino-Leonardo%2FMicro-00979D.svg)](https://www.arduino.cc/)
+[![Version](https://img.shields.io/badge/Version-3.0-blue.svg)](https://github.com/glloq/servo-flute)
 
+---
 
+## 📋 Vue d'ensemble
 
-dans le cas d'un message midi NoteOn, si la note peut etre jouée le systeme va :
-- deplacer les doigts pour faire l'accord voulu
-- deplacer le servo airFlow vers la plute entre l'angle MIN_SERVO_AIR_FLOW et MAX_SERVO_AIR_FLOW en fonction de la note demandée et de la velocité 
-- ouvrir la vanne air vers la flute après un delais pour laisser le temps au servomoteur de se mettre en position
+La **Servo Flute V3** est un instrument robotique qui transforme des messages MIDI en sons de flûte acoustique. Utilisant des servomoteurs pour actionner les doigts et contrôler le débit d'air, elle offre un contrôle expressif comparable à une flûte jouée par un humain.
 
-Dans le cas d'un message midi NoteOff, si la note peut etre jouée le systeme :
-- fermer la vanne air vers la flute
+### Caractéristiques principales
 
+- ✅ **Contrôle MIDI complet** - 8 Control Changes implémentés
+- ✅ **Breath Controller (CC2)** - Contrôle dynamique du souffle en temps réel
+- ✅ **Irish Flute 6 trous** - 14 notes jouables (A#5 - G7)
+- ✅ **Vibrato optimisé** - sin() LUT pour CPU efficace
+- ✅ **Watchdog timer** - Auto-restart en cas de blocage
+- ✅ **Outil de calibration** - Interface Serial Monitor intuitive
+- ✅ **Documentation complète** - Architecture, MIDI, Configuration
 
-##### Controls Chnage accepté 
+---
 
-- CC1 : gestion du vibrato/modulation wheel 
-- CC7/CC11 : gestion du volume (en gros augmenter/reduire le debit d'air)
-- CC120 ou CC123 : all note Off / arret urgence
-- CC 121 : Reset All Controllers
+## 🚀 Démarrage Rapide
 
-  
-## Schema principe
+### Matériel Requis
 
-#### Servo Finger
-l'objectif est d'avoir quelque chose de simple (sans soudures), adaptable a plusieurs type d'instrument a vent similaire ( avec gestion air + 15 doigts max )
-On utilisera une carte PCA9685 pour le controle des servomoteurs.
-On utilisera un mofset avec un diode de roue libre pour la valve d'air 
-Il faudra prevoir l'ajout d'un condessateur de decouplage adapté sur l'alimentation 5v pour limiter les chute de tension (470/1000nF) 
+#### Électronique
+- **Arduino Leonardo ou Micro** (ATmega32u4 avec USB-MIDI natif)
+- **PCA9685** - Module PWM 16 canaux
+- **7 servomoteurs 9g** (6 doigts + 1 airflow)
+- **Solénoïde 12V** - Valve pneumatique
+- **Alimentation 5V** - 10A minimum (servos)
+- **Alimentation 12V** - 2A (solénoïde)
 
-
-## materiel necessaire 
+#### Mécanique
+- **Irish flute** ou **flûte à bec**
+- **Fil de fer 1mm** - Connexion servos → doigts
+- **Mousse** - Bande 5mm largeur, 3mm épaisseur (doigts)
+- **Supports imprimés 3D** - Fichiers dans `/stl/`
+- **Planche bois** - 40x25cm support général
+- **Vis bois** - 3x35mm (2 par servo)
 
 #### Electronique :
 - un controleur tel que l'arduino leonardo ou micro et des cables de prototypage
