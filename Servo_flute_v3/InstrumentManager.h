@@ -75,6 +75,10 @@ private:
   uint16_t _ccCount;
   unsigned long _ccWindowStart;
 
+  // Rate limiting séparé pour CC2 (Breath Controller) - haute fréquence
+  uint16_t _cc2Count;
+  unsigned long _cc2WindowStart;
+
   // Gère l'alimentation des servos (power management)
   void managePower();
 

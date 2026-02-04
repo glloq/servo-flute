@@ -36,6 +36,9 @@ public:
   // Met à jour les valeurs CC (appelé par InstrumentManager)
   void setCCValues(byte ccVolume, byte ccExpression, byte ccModulation);
 
+  // Met à jour CC2 (Breath Controller) avec lissage et fallback velocity
+  void updateCC2Breath(byte ccBreath);
+
   // Définit l'ajustement pitch bend (±% d'airflow)
   void setPitchBendAdjustment(int8_t adjustment);
 
@@ -48,9 +51,17 @@ private:
   byte _ccVolume;       // CC 7  (multiplicateur global)
   byte _ccExpression;   // CC 11 (expression dynamique)
   byte _ccModulation;   // CC 1  (vibrato)
+  byte _ccBreath;       // CC 2  (breath controller)
 
   // Pitch Bend
   int8_t _pitchBendAdjustment;  // Ajustement pitch bend en % (±PITCH_BEND_AIRFLOW_PERCENT)
+
+  // Breath Controller (CC2) - Lissage et fallback
+  byte _cc2SmoothingBuffer[CC2_SMOOTHING_BUFFER_SIZE];  // Buffer circulaire pour moyenne glissante
+  uint8_t _cc2BufferIndex;                              // Index actuel dans buffer circulaire
+  uint8_t _cc2BufferCount;                              // Nombre valeurs dans buffer (0-CC2_SMOOTHING_BUFFER_SIZE)
+  unsigned long _lastCC2Time;                           // Timestamp dernier CC2 reçu (pour timeout fallback)
+  byte _lastVelocity;                                   // Velocity stockée pour fallback si CC2 absent
 
   // Gestion vibrato
   uint16_t _baseAngleWithoutVibrato;  // Angle calculé sans vibrato (pour update continu)

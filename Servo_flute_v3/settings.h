@@ -213,6 +213,19 @@ const uint16_t SERVO_FREQUENCY = 50;
 #define CC_BRIGHTNESS_DEFAULT 64          // CC74 - Brightness/Timbre (0-127)
 
 /*******************************************************************************
+--------------------  BREATH CONTROLLER (CC2) SETTINGS  ----------------------
+******************************************************************************/
+// CC2 Breath Controller: Contrôle dynamique de l'airflow en temps réel
+// Simule l'intensité du souffle d'un musicien (via contrôleur physique ou DAW)
+
+#define CC2_ENABLED true                  // Activer contrôle breath (true/false)
+#define CC2_RATE_LIMIT_PER_SECOND 50      // Rate limit séparé pour CC2 (haute fréquence)
+#define CC2_SILENCE_THRESHOLD 10          // Seuil silence: CC2 < 10 → valve fermée
+#define CC2_SMOOTHING_BUFFER_SIZE 5       // Taille buffer lissage (moyenne glissante)
+#define CC2_RESPONSE_CURVE 1.4            // Courbe exponentielle (1.0=linéaire, 1.4=naturel)
+#define CC2_TIMEOUT_MS 1000               // Timeout fallback velocity (ms, 0=désactivé)
+
+/*******************************************************************************
 -------------------------  PITCH BEND SETTINGS        ------------------------
 ******************************************************************************/
 // Plage de pitch bend en demi-tons (standard MIDI: ±2 demi-tons)
