@@ -107,27 +107,28 @@ void AirflowController::setAirflowForNote(byte midiNote, byte velocity) {
     maxAngle = SERVO_AIRFLOW_MAX;
   }
 
-  // Stocker les bornes pour limiter le vibrato ultérieurement
+  // Stocker les bornes originales pour limiter le vibrato ultérieurement
   _currentMinAngle = minAngle;
   _currentMaxAngle = maxAngle;
 
-  // 1. VELOCITY définit l'angle de base dans [minAngle, maxAngle]
-  baseAngle = map(velocity, 1, 127, minAngle, maxAngle);
-
   // ===== APPLICATION DES CONTROL CHANGE =====
 
-  // 2. CC11 (Expression) module DANS la plage [minAngle, baseAngle]
+  // 1. CC7 (Volume) RÉDUIT la limite haute de la note
+  //    CC7 = 127 → maxAngle (volume max, plage complète)
+  //    CC7 = 0   → minAngle (volume minimum, pas d'air)
+  //    Le volume définit le maxAngle effectif disponible
+  float volumeFactor = _ccVolume / 127.0;
+  uint16_t effectiveMaxAngle = minAngle + (maxAngle - minAngle) * volumeFactor;
+
+  // 2. VELOCITY définit l'angle de base dans [minAngle, effectiveMaxAngle]
+  //    La velocity utilise la plage réduite par le volume
+  baseAngle = map(velocity, 1, 127, minAngle, effectiveMaxAngle);
+
+  // 3. CC11 (Expression) module DANS la plage [minAngle, baseAngle]
   //    CC11 = 127 → baseAngle (pleine expression selon velocity)
   //    CC11 = 0   → minAngle (expression minimum de la note)
   float expressionFactor = _ccExpression / 127.0;
-  float modulatedAngle = minAngle + (baseAngle - minAngle) * expressionFactor;
-
-  // 3. CC7 (Volume) module DANS la plage [minAngle, modulatedAngle]
-  //    CC7 = 127 → modulatedAngle (plein volume)
-  //    CC7 = 0   → minAngle (silence minimum de la note)
-  //    Garantit que l'angle ne descend JAMAIS sous minAngle
-  float volumeFactor = _ccVolume / 127.0;
-  float finalAngleWithoutVibrato = minAngle + (modulatedAngle - minAngle) * volumeFactor;
+  float finalAngleWithoutVibrato = minAngle + (baseAngle - minAngle) * expressionFactor;
 
   // 4. Pitch Bend : ajustement fin de l'airflow (±PITCH_BEND_AIRFLOW_PERCENT%)
   //    Appliqué APRÈS tous les CC pour modulation fine
@@ -155,15 +156,15 @@ void AirflowController::setAirflowForNote(byte midiNote, byte velocity) {
     Serial.print(minAngle);
     Serial.print("°-");
     Serial.print(maxAngle);
+    Serial.print("° | CC7: ");
+    Serial.print(_ccVolume);
+    Serial.print(" → MaxEff: ");
+    Serial.print(effectiveMaxAngle);
     Serial.print("° | BaseAngle: ");
     Serial.print(baseAngle);
     Serial.print("° | CC11: ");
     Serial.print(_ccExpression);
-    Serial.print(" → ");
-    Serial.print((uint16_t)modulatedAngle);
-    Serial.print("° | CC7: ");
-    Serial.print(_ccVolume);
-    Serial.print(" | Base(no vib): ");
+    Serial.print(" → Final(no vib): ");
     Serial.print(_baseAngleWithoutVibrato);
     Serial.print("° | CC1: ");
     Serial.print(_ccModulation);
