@@ -1,0 +1,167 @@
+/***********************************************************************************************
+ * SERVO FLUTE ESP32 - Automated Recorder Player
+ *
+ * Version ESP32-WROOM avec connectivite sans fil :
+ * - BLE-MIDI (Bluetooth Low Energy) via NimBLE
+ * - WiFi-MIDI (rtpMIDI / AppleMIDI)
+ * - Mode hotspot autonome (fallback / force par bouton)
+ *
+ * Hardware:
+ * - ESP32-WROOM-32E
+ * - PCA9685 PWM Driver (I2C : SDA=GPIO21, SCL=GPIO22)
+ * - 6 servos SG90 pour les doigts
+ * - 1 servo pour le debit d'air
+ * - 1 solenoide pour valve on/off (GPIO13)
+ * - 1 LED d'etat (GPIO2)
+ * - 1 bouton d'appairage (GPIO0 - BOOT)
+ * - 1 interrupteur BT/WiFi (GPIO4)
+ *
+ * Modes de fonctionnement :
+ * - Switch BT  : BLE-MIDI, LED cligno rapide/lent
+ * - Switch WiFi : rtpMIDI + serveur web
+ *   - STA (reseau existant) : LED double flash
+ *   - AP  (hotspot)         : LED triple flash
+ *   - Bouton long (3s)      : force AP
+ *
+ * Auteur: Servo-Flute Project
+ * Version: ESP32 1.0
+ * Date: 2026-02-07
+ ***********************************************************************************************/
+
+#include <Wire.h>
+#include <Adafruit_PWMServoDriver.h>
+#include <esp_task_wdt.h>
+
+#include "settings.h"
+#include "EventQueue.h"
+#include "FingerController.h"
+#include "AirflowController.h"
+#include "NoteSequencer.h"
+#include "InstrumentManager.h"
+#include "StatusLed.h"
+#include "HardwareInputs.h"
+#include "WirelessManager.h"
+
+// Instances globales
+InstrumentManager* instrument = nullptr;
+StatusLed statusLed(STATUS_LED_PIN);
+HardwareInputs inputs(PAIRING_BUTTON_PIN, MODE_SWITCH_PIN);
+WirelessManager* wireless = nullptr;
+
+/**
+ * Etat sur en cas de crash/redemarrage
+ * Initialise le hardware en configuration sure AVANT toute autre operation.
+ */
+void initSafeState() {
+  // Initialiser I2C avec les pins ESP32
+  Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);
+
+  // Creer une instance temporaire du PWM driver
+  Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
+  pwm.begin();
+  pwm.setPWMFreq(SERVO_FREQUENCY);
+
+  // Solenoide en etat sur (FERME)
+  pinMode(SOLENOID_PIN, OUTPUT);
+  digitalWrite(SOLENOID_PIN, LOW);
+
+  // Servo airflow en position repos
+  uint16_t pulseWidth = map(SERVO_AIRFLOW_OFF, 0, 180, SERVO_PULSE_MIN, SERVO_PULSE_MAX);
+  pwm.setPWM(NUM_SERVO_AIRFLOW, 0, pulseWidth);
+
+  // Tous les servos doigts en position fermee
+  for (int i = 0; i < NUMBER_SERVOS_FINGER; i++) {
+    pulseWidth = map(FINGERS[i].closedAngle, 0, 180, SERVO_PULSE_MIN, SERVO_PULSE_MAX);
+    pwm.setPWM(i, 0, pulseWidth);
+  }
+
+  delay(100);
+}
+
+void setup() {
+  // Forcer l'etat sur des le demarrage
+  initSafeState();
+
+  // Communication serie pour debug
+  if (DEBUG) {
+    Serial.begin(115200);
+    // ESP32 n'a pas besoin d'attendre le port serie comme Leonardo
+    delay(500);
+    Serial.println();
+    Serial.println("========================================");
+    Serial.println("  SERVO FLUTE ESP32 - INITIALISATION");
+    Serial.println("========================================");
+  }
+
+  // Initialiser les entrees hardware (bouton + switch)
+  inputs.begin();
+
+  // Initialiser la LED d'etat
+  statusLed.begin();
+  statusLed.setPattern(LED_BLINK_FAST);  // Demarrage en cours
+
+  // Creer l'instrument manager
+  instrument = new InstrumentManager();
+  instrument->begin();
+
+  // Creer et initialiser le wireless manager
+  wireless = new WirelessManager(statusLed, inputs);
+  wireless->begin(instrument);
+
+  if (DEBUG) {
+    Serial.println("========================================");
+    Serial.println("   SYSTEME PRET");
+    Serial.println("========================================");
+    Serial.println();
+    Serial.println("Configuration:");
+    Serial.print("  - Notes jouables: ");
+    Serial.print(NUMBER_NOTES);
+    Serial.print(" (MIDI ");
+    Serial.print(FIRST_MIDI_NOTE);
+    Serial.print(" - ");
+    Serial.print(NOTES[NUMBER_NOTES - 1].midiNote);
+    Serial.println(")");
+    Serial.print("  - Servos doigts: ");
+    Serial.println(NUMBER_SERVOS_FINGER);
+    Serial.print("  - Delai servos->solenoide: ");
+    Serial.print(SERVO_TO_SOLENOID_DELAY_MS);
+    Serial.println(" ms");
+    Serial.print("  - Mode: ");
+    Serial.println(wireless->getStatusText());
+    Serial.print("  - Watchdog: ");
+    Serial.print(WATCHDOG_TIMEOUT_MS);
+    Serial.println(" ms");
+    Serial.println();
+  }
+
+  // Configurer le watchdog ESP32 (Task WDT)
+  esp_task_wdt_config_t wdt_config = {
+    .timeout_ms = WATCHDOG_TIMEOUT_MS,
+    .idle_core_mask = 0,       // Ne pas surveiller les taches idle
+    .trigger_panic = true      // Redemarrage si timeout
+  };
+  esp_task_wdt_deinit();               // Reinitialiser si deja configure
+  esp_task_wdt_init(&wdt_config);
+  esp_task_wdt_add(NULL);              // Inscrire la tache courante (loopTask)
+
+  if (DEBUG) {
+    Serial.println("DEBUG: Watchdog ESP32 active");
+  }
+}
+
+void loop() {
+  // Reinitialiser le watchdog
+  esp_task_wdt_reset();
+
+  // Lire les entrees hardware
+  inputs.update();
+
+  // Mettre a jour le wireless (BLE-MIDI ou WiFi-MIDI + gestion bouton)
+  wireless->update();
+
+  // Mettre a jour l'instrument (state machine + power management)
+  instrument->update();
+
+  // Mettre a jour la LED d'etat
+  statusLed.update();
+}
