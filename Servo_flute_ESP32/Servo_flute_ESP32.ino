@@ -41,6 +41,7 @@
 #include <LittleFS.h>
 
 #include "settings.h"
+#include "ConfigStorage.h"
 #include "EventQueue.h"
 #include "FingerController.h"
 #include "AirflowController.h"
@@ -113,6 +114,16 @@ void setup() {
       Serial.print(LittleFS.usedBytes() / 1024);
       Serial.println("KB utilise)");
     }
+  }
+
+  // Charger la configuration depuis LittleFS (ou defauts si pas de fichier)
+  ConfigStorage::load();
+
+  if (DEBUG) {
+    Serial.print("DEBUG: Config - Canal MIDI: ");
+    Serial.println(cfg.midiChannel == 0 ? "Omni" : String(cfg.midiChannel).c_str());
+    Serial.print("DEBUG: Config - Device: ");
+    Serial.println(cfg.deviceName);
   }
 
   // Initialiser les entrees hardware (bouton + switch)

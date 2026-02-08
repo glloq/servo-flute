@@ -1,4 +1,5 @@
 #include "InstrumentManager.h"
+#include "ConfigStorage.h"
 
 InstrumentManager::InstrumentManager()
   : _pwm(Adafruit_PWMServoDriver()),
@@ -8,11 +9,11 @@ InstrumentManager::InstrumentManager()
     _sequencer(_eventQueue, _fingerCtrl, _airflowCtrl),
     _lastActivityTime(0),
     _servosPowered(false),
-    _ccVolume(CC_VOLUME_DEFAULT),
-    _ccExpression(CC_EXPRESSION_DEFAULT),
-    _ccModulation(CC_MODULATION_DEFAULT),
-    _ccBreath(CC_BREATH_DEFAULT),
-    _ccBrightness(CC_BRIGHTNESS_DEFAULT),
+    _ccVolume(cfg.ccVolumeDefault),
+    _ccExpression(cfg.ccExpressionDefault),
+    _ccModulation(cfg.ccModulationDefault),
+    _ccBreath(cfg.ccBreathDefault),
+    _ccBrightness(cfg.ccBrightnessDefault),
     _lastCCTime(0),
     _ccCount(0),
     _ccWindowStart(0),
@@ -118,7 +119,7 @@ void InstrumentManager::managePower() {
     _lastActivityTime = millis();
   } else {
     unsigned long elapsed = millis() - _lastActivityTime;
-    if (elapsed >= TIMEUNPOWER && _servosPowered) {
+    if (elapsed >= cfg.timeUnpower && _servosPowered) {
       powerOffServos();
     }
   }
@@ -155,16 +156,16 @@ void InstrumentManager::handleControlChange(byte ccNumber, byte ccValue) {
 
   // Rate limiting CC2 (Breath Controller) separe
   if (ccNumber == 2) {
-    #if CC2_ENABLED
-    if (currentTime - _cc2WindowStart >= 1000) {
-      _cc2WindowStart = currentTime;
-      _cc2Count = 0;
+    if (cfg.cc2Enabled) {
+      if (currentTime - _cc2WindowStart >= 1000) {
+        _cc2WindowStart = currentTime;
+        _cc2Count = 0;
+      }
+      _cc2Count++;
+      if (_cc2Count > CC2_RATE_LIMIT_PER_SECOND) {
+        return;
+      }
     }
-    _cc2Count++;
-    if (_cc2Count > CC2_RATE_LIMIT_PER_SECOND) {
-      return;
-    }
-    #endif
   } else {
     // Rate limiting normal
     if (currentTime - _ccWindowStart >= 1000) {
@@ -250,11 +251,11 @@ void InstrumentManager::allSoundOff() {
 }
 
 void InstrumentManager::resetAllControllers() {
-  _ccVolume = CC_VOLUME_DEFAULT;
-  _ccExpression = CC_EXPRESSION_DEFAULT;
-  _ccModulation = CC_MODULATION_DEFAULT;
-  _ccBreath = CC_BREATH_DEFAULT;
-  _ccBrightness = CC_BRIGHTNESS_DEFAULT;
+  _ccVolume = cfg.ccVolumeDefault;
+  _ccExpression = cfg.ccExpressionDefault;
+  _ccModulation = cfg.ccModulationDefault;
+  _ccBreath = cfg.ccBreathDefault;
+  _ccBrightness = cfg.ccBrightnessDefault;
   _airflowCtrl.setCCValues(_ccVolume, _ccExpression, _ccModulation);
 
   if (DEBUG) {

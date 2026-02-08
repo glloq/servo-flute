@@ -1,4 +1,5 @@
 #include "AirflowController.h"
+#include "ConfigStorage.h"
 
 // Lookup table pour sin() - 256 entrees pour une periode complete [0, 2pi]
 // Valeurs: -127 a +127 (represente -1.0 a +1.0)
@@ -34,13 +35,14 @@ inline float fastSin(unsigned long timeMs, float frequency) {
 
 AirflowController::AirflowController(Adafruit_PWMServoDriver& pwm)
   : _pwm(pwm), _solenoidOpen(false), _solenoidOpenTime(0),
-    _ccVolume(CC_VOLUME_DEFAULT), _ccExpression(CC_EXPRESSION_DEFAULT), _ccModulation(CC_MODULATION_DEFAULT),
-    _ccBreath(CC_BREATH_DEFAULT),
+    _ccVolume(cfg.ccVolumeDefault), _ccExpression(cfg.ccExpressionDefault),
+    _ccModulation(cfg.ccModulationDefault),
+    _ccBreath(cfg.ccBreathDefault),
     _cc2BufferIndex(0), _cc2BufferCount(0), _lastCC2Time(0), _lastVelocity(64),
-    _baseAngleWithoutVibrato(SERVO_AIRFLOW_OFF), _vibratoActive(false),
-    _currentMinAngle(SERVO_AIRFLOW_MIN), _currentMaxAngle(SERVO_AIRFLOW_MAX) {
+    _baseAngleWithoutVibrato(cfg.servoAirflowOff), _vibratoActive(false),
+    _currentMinAngle(cfg.servoAirflowMin), _currentMaxAngle(cfg.servoAirflowMax) {
   for (uint8_t i = 0; i < CC2_SMOOTHING_BUFFER_SIZE; i++) {
-    _cc2SmoothingBuffer[i] = CC_BREATH_DEFAULT;
+    _cc2SmoothingBuffer[i] = cfg.ccBreathDefault;
   }
 }
 
@@ -54,9 +56,9 @@ void AirflowController::begin() {
     #if SOLENOID_USE_PWM
     Serial.println("DEBUG: AirflowController - Mode PWM active");
     Serial.print("DEBUG:   - PWM activation: ");
-    Serial.println(SOLENOID_PWM_ACTIVATION);
+    Serial.println(cfg.solenoidPwmActivation);
     Serial.print("DEBUG:   - PWM maintien: ");
-    Serial.println(SOLENOID_PWM_HOLDING);
+    Serial.println(cfg.solenoidPwmHolding);
     #else
     Serial.println("DEBUG: AirflowController - Mode GPIO simple");
     #endif
@@ -67,9 +69,9 @@ void AirflowController::setAirflowVelocity(byte velocity) {
   uint16_t angle;
 
   if (velocity == 0) {
-    angle = SERVO_AIRFLOW_OFF;
+    angle = cfg.servoAirflowOff;
   } else {
-    angle = map(velocity, 1, 127, SERVO_AIRFLOW_MIN, SERVO_AIRFLOW_MAX);
+    angle = map(velocity, 1, 127, cfg.servoAirflowMin, cfg.servoAirflowMax);
   }
 
   setAirflowServoAngle(angle);
@@ -89,16 +91,19 @@ void AirflowController::setAirflowForNote(byte midiNote, byte velocity) {
   uint16_t baseAngle;
 
   if (velocity == 0) {
-    setAirflowServoAngle(SERVO_AIRFLOW_OFF);
+    setAirflowServoAngle(cfg.servoAirflowOff);
     return;
   }
 
   if (note != nullptr) {
-    minAngle = SERVO_AIRFLOW_MIN + ((SERVO_AIRFLOW_MAX - SERVO_AIRFLOW_MIN) * note->airflowMinPercent / 100);
-    maxAngle = SERVO_AIRFLOW_MIN + ((SERVO_AIRFLOW_MAX - SERVO_AIRFLOW_MIN) * note->airflowMaxPercent / 100);
+    int noteIdx = getNoteIndex(midiNote);
+    uint8_t airMin = (noteIdx >= 0) ? cfg.noteAirflowMin[noteIdx] : note->airflowMinPercent;
+    uint8_t airMax = (noteIdx >= 0) ? cfg.noteAirflowMax[noteIdx] : note->airflowMaxPercent;
+    minAngle = cfg.servoAirflowMin + ((cfg.servoAirflowMax - cfg.servoAirflowMin) * airMin / 100);
+    maxAngle = cfg.servoAirflowMin + ((cfg.servoAirflowMax - cfg.servoAirflowMin) * airMax / 100);
   } else {
-    minAngle = SERVO_AIRFLOW_MIN;
-    maxAngle = SERVO_AIRFLOW_MAX;
+    minAngle = cfg.servoAirflowMin;
+    maxAngle = cfg.servoAirflowMax;
   }
 
   _currentMinAngle = minAngle;
@@ -114,41 +119,41 @@ void AirflowController::setAirflowForNote(byte midiNote, byte velocity) {
   // 2. Determiner source airflow : CC2 ou velocity
   byte airflowSource;
 
-  #if CC2_ENABLED
-  if (_cc2BufferCount > 0) {
-    unsigned long timeSinceCC2 = millis() - _lastCC2Time;
-    if (CC2_TIMEOUT_MS > 0 && timeSinceCC2 > CC2_TIMEOUT_MS) {
-      airflowSource = velocity;
-      if (DEBUG) {
-        Serial.print("DEBUG: CC2 timeout (");
-        Serial.print(timeSinceCC2);
-        Serial.print("ms) - Fallback velocity: ");
-        Serial.println(velocity);
+  if (cfg.cc2Enabled) {
+    if (_cc2BufferCount > 0) {
+      unsigned long timeSinceCC2 = millis() - _lastCC2Time;
+      if (cfg.cc2TimeoutMs > 0 && timeSinceCC2 > cfg.cc2TimeoutMs) {
+        airflowSource = velocity;
+        if (DEBUG) {
+          Serial.print("DEBUG: CC2 timeout (");
+          Serial.print(timeSinceCC2);
+          Serial.print("ms) - Fallback velocity: ");
+          Serial.println(velocity);
+        }
+      } else {
+        uint16_t sum = 0;
+        for (uint8_t i = 0; i < _cc2BufferCount; i++) {
+          sum += _cc2SmoothingBuffer[i];
+        }
+        byte smoothedCC2 = sum / _cc2BufferCount;
+
+        if (smoothedCC2 < cfg.cc2SilenceThreshold) {
+          airflowSource = 0;
+        } else {
+          float normalizedCC2 = smoothedCC2 / 127.0;
+          float curvedCC2 = pow(normalizedCC2, cfg.cc2ResponseCurve);
+          airflowSource = (byte)(curvedCC2 * 127);
+        }
       }
     } else {
-      uint16_t sum = 0;
-      for (uint8_t i = 0; i < _cc2BufferCount; i++) {
-        sum += _cc2SmoothingBuffer[i];
-      }
-      byte smoothedCC2 = sum / _cc2BufferCount;
-
-      if (smoothedCC2 < CC2_SILENCE_THRESHOLD) {
-        airflowSource = 0;
-      } else {
-        float normalizedCC2 = smoothedCC2 / 127.0;
-        float curvedCC2 = pow(normalizedCC2, CC2_RESPONSE_CURVE);
-        airflowSource = (byte)(curvedCC2 * 127);
-      }
+      airflowSource = velocity;
     }
   } else {
     airflowSource = velocity;
   }
-  #else
-  airflowSource = velocity;
-  #endif
 
   if (airflowSource == 0) {
-    setAirflowServoAngle(SERVO_AIRFLOW_OFF);
+    setAirflowServoAngle(cfg.servoAirflowOff);
     closeSolenoid();
     return;
   }
@@ -161,8 +166,8 @@ void AirflowController::setAirflowForNote(byte midiNote, byte velocity) {
   float finalAngleWithoutVibrato = minAngle + (baseAngle - minAngle) * expressionFactor;
 
   // 5. Limiter
-  if (finalAngleWithoutVibrato < SERVO_AIRFLOW_MIN) finalAngleWithoutVibrato = SERVO_AIRFLOW_MIN;
-  if (finalAngleWithoutVibrato > SERVO_AIRFLOW_MAX) finalAngleWithoutVibrato = SERVO_AIRFLOW_MAX;
+  if (finalAngleWithoutVibrato < cfg.servoAirflowMin) finalAngleWithoutVibrato = cfg.servoAirflowMin;
+  if (finalAngleWithoutVibrato > cfg.servoAirflowMax) finalAngleWithoutVibrato = cfg.servoAirflowMax;
 
   _baseAngleWithoutVibrato = (uint16_t)(finalAngleWithoutVibrato + 0.5);
   _vibratoActive = (_ccModulation > 0);
@@ -190,7 +195,7 @@ void AirflowController::setAirflowForNote(byte midiNote, byte velocity) {
 
 void AirflowController::openSolenoid() {
   #if SOLENOID_USE_PWM
-    setSolenoidPWM(SOLENOID_PWM_ACTIVATION);
+    setSolenoidPWM(cfg.solenoidPwmActivation);
     _solenoidOpenTime = millis();
   #else
     if (SOLENOID_ACTIVE_HIGH) {
@@ -231,15 +236,15 @@ bool AirflowController::isSolenoidOpen() const {
 }
 
 void AirflowController::setAirflowToRest() {
-  setAirflowServoAngle(SERVO_AIRFLOW_OFF);
+  setAirflowServoAngle(cfg.servoAirflowOff);
 }
 
 void AirflowController::update() {
   #if SOLENOID_USE_PWM
   if (_solenoidOpen && _solenoidOpenTime > 0) {
     unsigned long elapsed = millis() - _solenoidOpenTime;
-    if (elapsed >= SOLENOID_ACTIVATION_TIME_MS) {
-      setSolenoidPWM(SOLENOID_PWM_HOLDING);
+    if (elapsed >= cfg.solenoidActivationTimeMs) {
+      setSolenoidPWM(cfg.solenoidPwmHolding);
       _solenoidOpenTime = 0;
     }
   }
@@ -247,9 +252,8 @@ void AirflowController::update() {
 
   // Appliquer vibrato si actif
   if (_vibratoActive && _ccModulation > 0 && _solenoidOpen) {
-    const float VIBRATO_FREQUENCY = VIBRATO_FREQUENCY_HZ;
-    float vibratoAmplitude = (_ccModulation / 127.0) * VIBRATO_MAX_AMPLITUDE_DEG;
-    float vibratoOffset = fastSin(millis(), VIBRATO_FREQUENCY) * vibratoAmplitude;
+    float vibratoAmplitude = (_ccModulation / 127.0) * cfg.vibratoMaxAmplitudeDeg;
+    float vibratoOffset = fastSin(millis(), cfg.vibratoFrequencyHz) * vibratoAmplitude;
 
     int16_t finalAngle = _baseAngleWithoutVibrato + (int16_t)(vibratoOffset + 0.5);
 
@@ -257,6 +261,24 @@ void AirflowController::update() {
     if (finalAngle > (int16_t)_currentMaxAngle) finalAngle = _currentMaxAngle;
 
     setAirflowServoAngle((uint16_t)finalAngle);
+  }
+}
+
+void AirflowController::testAirflowAngle(uint16_t angle) {
+  if (angle > 180) angle = 180;
+  setAirflowServoAngle(angle);
+
+  if (DEBUG) {
+    Serial.print("DEBUG: AirflowController - Test angle: ");
+    Serial.println(angle);
+  }
+}
+
+void AirflowController::testSolenoid(bool open) {
+  if (open) {
+    openSolenoid();
+  } else {
+    closeSolenoid();
   }
 }
 
@@ -296,7 +318,8 @@ void AirflowController::setCCValues(byte ccVolume, byte ccExpression, byte ccMod
 }
 
 void AirflowController::updateCC2Breath(byte ccBreath) {
-  #if CC2_ENABLED
+  if (!cfg.cc2Enabled) return;
+
   _cc2SmoothingBuffer[_cc2BufferIndex] = ccBreath;
   _cc2BufferIndex = (_cc2BufferIndex + 1) % CC2_SMOOTHING_BUFFER_SIZE;
   if (_cc2BufferCount < CC2_SMOOTHING_BUFFER_SIZE) {
@@ -313,5 +336,4 @@ void AirflowController::updateCC2Breath(byte ccBreath) {
     Serial.print("/");
     Serial.println(CC2_SMOOTHING_BUFFER_SIZE);
   }
-  #endif
 }

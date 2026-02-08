@@ -13,6 +13,9 @@
  * - GET  /api/config    Configuration JSON
  * - POST /api/config    Modifier la configuration
  * - POST /api/midi      Upload fichier MIDI
+ * - GET  /api/wifi/scan       Lancer scan WiFi
+ * - GET  /api/wifi/results    Resultats scan WiFi
+ * - POST /api/wifi/connect    Connexion a un reseau WiFi
  * - WS   /ws            WebSocket pour controle temps reel
  *
  * Protocole WebSocket (JSON) :
@@ -24,6 +27,9 @@
  *   {"t":"pause"}               Pause
  *   {"t":"stop"}                Stop
  *   {"t":"velocity","v":100}    Changer velocity par defaut
+ *   {"t":"test_finger","i":0,"a":90}  Test servo doigt
+ *   {"t":"test_air","a":60}           Test servo airflow
+ *   {"t":"test_sol","o":true}         Test solenoide
  *
  * Serveur→Client :
  *   {"t":"status",...}          Mise a jour status periodique
@@ -37,8 +43,10 @@
 
 #include <Arduino.h>
 #include <ESPAsyncWebServer.h>
+#include <ArduinoJson.h>
 #include <LittleFS.h>
 #include "settings.h"
+#include "ConfigStorage.h"
 #include "MidiFilePlayer.h"
 
 // Forward declarations
@@ -77,7 +85,8 @@ private:
   void handleRoot(AsyncWebServerRequest* request);
   void handleApiStatus(AsyncWebServerRequest* request);
   void handleApiConfig(AsyncWebServerRequest* request);
-  void handleApiConfigPost(AsyncWebServerRequest* request);
+  void handleApiConfigPost(AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total);
+  void handleApiConfigReset(AsyncWebServerRequest* request);
   void handleMidiUpload(AsyncWebServerRequest* request, const String& filename,
                         size_t index, uint8_t* data, size_t len, bool final);
   void handleMidiUploadComplete(AsyncWebServerRequest* request);
@@ -89,6 +98,9 @@ private:
 
   // Broadcast status a tous les clients WS
   void broadcastStatus();
+
+  // Buffer body pour POST config
+  String _configBody;
 
   // Fichier temporaire pour upload MIDI
   File _uploadFile;

@@ -20,6 +20,9 @@ public:
   void closeAllFingers();
   void openAllFingers();
 
+  // Calibration : positionner un doigt a un angle arbitraire
+  void testFingerAngle(int fingerIndex, uint16_t angle);
+
 private:
   Adafruit_PWMServoDriver& _pwm;
 

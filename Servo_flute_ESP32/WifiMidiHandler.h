@@ -60,6 +60,14 @@ public:
   bool isAPMode() const;
   String getIPAddress() const;
 
+  // WiFi scan
+  void startWifiScan();
+  String getScanResultsJson() const;
+  bool isScanComplete() const;
+
+  // Connexion a un nouveau reseau
+  void connectToNetwork(const char* ssid, const char* password);
+
 private:
   InstrumentManager* _instrument;
   WifiState _state;

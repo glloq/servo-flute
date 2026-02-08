@@ -36,6 +36,10 @@ public:
   void allSoundOff();
   void resetAllControllers();
 
+  // Calibration : acces direct aux controleurs
+  FingerController& getFingerCtrl() { return _fingerCtrl; }
+  AirflowController& getAirflowCtrl() { return _airflowCtrl; }
+
 private:
   Adafruit_PWMServoDriver _pwm;
   EventQueue _eventQueue;

@@ -1,4 +1,5 @@
 #include "FingerController.h"
+#include "ConfigStorage.h"
 
 FingerController::FingerController(Adafruit_PWMServoDriver& pwm)
   : _pwm(pwm) {
@@ -52,7 +53,7 @@ void FingerController::setFingerPatternForNote(byte midiNote) {
 
 void FingerController::closeAllFingers() {
   for (int i = 0; i < NUMBER_SERVOS_FINGER; i++) {
-    setServoAngle(i, FINGERS[i].closedAngle);
+    setServoAngle(i, cfg.fingerClosedAngle[i]);
   }
 
   if (DEBUG) {
@@ -72,12 +73,12 @@ void FingerController::openAllFingers() {
 }
 
 uint16_t FingerController::calculateServoAngle(int fingerIndex, bool isOpen) {
-  uint16_t baseAngle = FINGERS[fingerIndex].closedAngle;
+  uint16_t baseAngle = cfg.fingerClosedAngle[fingerIndex];
 
   if (!isOpen) {
     return baseAngle;
   } else {
-    int16_t angle = baseAngle + (ANGLE_OPEN * FINGERS[fingerIndex].direction);
+    int16_t angle = baseAngle + (cfg.fingerAngleOpen * cfg.fingerDirection[fingerIndex]);
 
     if (angle < 0) angle = 0;
     if (angle > 180) angle = 180;
@@ -90,6 +91,19 @@ void FingerController::setServoAngle(int fingerIndex, uint16_t angle) {
   int pcaChannel = FINGERS[fingerIndex].pcaChannel;
   uint16_t pwmValue = angleToPWM(angle);
   _pwm.setPWM(pcaChannel, 0, pwmValue);
+}
+
+void FingerController::testFingerAngle(int fingerIndex, uint16_t angle) {
+  if (fingerIndex < 0 || fingerIndex >= NUMBER_SERVOS_FINGER) return;
+  if (angle > 180) angle = 180;
+  setServoAngle(fingerIndex, angle);
+
+  if (DEBUG) {
+    Serial.print("DEBUG: FingerController - Test doigt ");
+    Serial.print(fingerIndex);
+    Serial.print(" angle: ");
+    Serial.println(angle);
+  }
 }
 
 uint16_t FingerController::angleToPWM(uint16_t angle) {

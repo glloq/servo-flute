@@ -1,5 +1,6 @@
 #include "WifiMidiHandler.h"
 #include "InstrumentManager.h"
+#include "ConfigStorage.h"
 
 #include <WiFi.h>
 #include <ESPmDNS.h>
@@ -211,7 +212,62 @@ void WifiMidiHandler::onAppleMidiDisconnected() {
   }
 }
 
+void WifiMidiHandler::startWifiScan() {
+  WiFi.scanDelete();
+  WiFi.scanNetworks(true);  // async
+
+  if (DEBUG) {
+    Serial.println("DEBUG: WifiMidiHandler - Scan WiFi lance (async)");
+  }
+}
+
+bool WifiMidiHandler::isScanComplete() const {
+  int result = WiFi.scanComplete();
+  return (result != WIFI_SCAN_RUNNING);
+}
+
+String WifiMidiHandler::getScanResultsJson() const {
+  int n = WiFi.scanComplete();
+  String json = "[";
+
+  if (n > 0) {
+    for (int i = 0; i < n; i++) {
+      if (i > 0) json += ",";
+      json += "{\"ssid\":\"" + WiFi.SSID(i) + "\"";
+      json += ",\"rssi\":" + String(WiFi.RSSI(i));
+      json += ",\"enc\":" + String(WiFi.encryptionType(i) != WIFI_AUTH_OPEN ? 1 : 0);
+      json += "}";
+    }
+  }
+
+  json += "]";
+  WiFi.scanDelete();
+  return json;
+}
+
+void WifiMidiHandler::connectToNetwork(const char* ssid, const char* password) {
+  if (DEBUG) {
+    Serial.print("DEBUG: WifiMidiHandler - Connexion vers: ");
+    Serial.println(ssid);
+  }
+
+  // Sauvegarder dans config
+  strncpy(cfg.wifiSsid, ssid, sizeof(cfg.wifiSsid) - 1);
+  cfg.wifiSsid[sizeof(cfg.wifiSsid) - 1] = '\0';
+  strncpy(cfg.wifiPassword, password, sizeof(cfg.wifiPassword) - 1);
+  cfg.wifiPassword[sizeof(cfg.wifiPassword) - 1] = '\0';
+  ConfigStorage::save();
+
+  // Deconnecter et reconnecter en STA
+  if (_state == WIFI_STATE_AP_ACTIVE || _state == WIFI_STATE_CONNECTING) {
+    WiFi.disconnect();
+    delay(100);
+  }
+
+  startSTA(ssid, password);
+}
+
 bool WifiMidiHandler::isChannelAccepted(byte channel) {
-  if (MIDI_CHANNEL == 0) return true;
-  return (channel == MIDI_CHANNEL);
+  if (cfg.midiChannel == 0) return true;
+  return (channel == cfg.midiChannel);
 }
