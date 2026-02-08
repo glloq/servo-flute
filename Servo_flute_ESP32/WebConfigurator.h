@@ -37,8 +37,10 @@
 
 #include <Arduino.h>
 #include <ESPAsyncWebServer.h>
+#include <ArduinoJson.h>
 #include <LittleFS.h>
 #include "settings.h"
+#include "ConfigStorage.h"
 #include "MidiFilePlayer.h"
 
 // Forward declarations
@@ -77,7 +79,8 @@ private:
   void handleRoot(AsyncWebServerRequest* request);
   void handleApiStatus(AsyncWebServerRequest* request);
   void handleApiConfig(AsyncWebServerRequest* request);
-  void handleApiConfigPost(AsyncWebServerRequest* request);
+  void handleApiConfigPost(AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total);
+  void handleApiConfigReset(AsyncWebServerRequest* request);
   void handleMidiUpload(AsyncWebServerRequest* request, const String& filename,
                         size_t index, uint8_t* data, size_t len, bool final);
   void handleMidiUploadComplete(AsyncWebServerRequest* request);
@@ -89,6 +92,9 @@ private:
 
   // Broadcast status a tous les clients WS
   void broadcastStatus();
+
+  // Buffer body pour POST config
+  String _configBody;
 
   // Fichier temporaire pour upload MIDI
   File _uploadFile;

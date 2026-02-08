@@ -1,4 +1,5 @@
 #include "FingerController.h"
+#include "ConfigStorage.h"
 
 FingerController::FingerController(Adafruit_PWMServoDriver& pwm)
   : _pwm(pwm) {
@@ -52,7 +53,7 @@ void FingerController::setFingerPatternForNote(byte midiNote) {
 
 void FingerController::closeAllFingers() {
   for (int i = 0; i < NUMBER_SERVOS_FINGER; i++) {
-    setServoAngle(i, FINGERS[i].closedAngle);
+    setServoAngle(i, cfg.fingerClosedAngle[i]);
   }
 
   if (DEBUG) {
@@ -72,12 +73,12 @@ void FingerController::openAllFingers() {
 }
 
 uint16_t FingerController::calculateServoAngle(int fingerIndex, bool isOpen) {
-  uint16_t baseAngle = FINGERS[fingerIndex].closedAngle;
+  uint16_t baseAngle = cfg.fingerClosedAngle[fingerIndex];
 
   if (!isOpen) {
     return baseAngle;
   } else {
-    int16_t angle = baseAngle + (ANGLE_OPEN * FINGERS[fingerIndex].direction);
+    int16_t angle = baseAngle + (cfg.fingerAngleOpen * cfg.fingerDirection[fingerIndex]);
 
     if (angle < 0) angle = 0;
     if (angle > 180) angle = 180;

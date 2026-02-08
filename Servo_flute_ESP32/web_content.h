@@ -4,7 +4,7 @@
  * Single Page Application avec 4 onglets :
  * 1. Clavier virtuel (14 notes jouables + velocity)
  * 2. Lecteur MIDI (upload + transport)
- * 3. Configuration (lecture des parametres)
+ * 3. Configuration (editable + sauvegarde JSON sur LittleFS)
  * 4. Monitoring temps reel (WebSocket)
  ***********************************************************************************************/
 #ifndef WEB_CONTENT_H
@@ -74,12 +74,28 @@ background:#16213e;color:#e0e0e0;font-size:1em;cursor:pointer;transition:all .2s
 .config-section{background:#16213e;border-radius:8px;padding:16px;margin:12px 0}
 .config-section h3{color:#e94560;font-size:0.95em;margin-bottom:10px;
 border-bottom:1px solid #0f3460;padding-bottom:6px}
-.config-row{display:flex;justify-content:space-between;padding:6px 0;font-size:0.9em}
-.config-row .label{color:#a0a0a0}.config-row .value{color:#4ecca3;font-weight:bold}
+.cfg-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:0.9em}
+.cfg-row label{color:#a0a0a0;flex:1}
+.cfg-row input[type=number],.cfg-row input[type=text],.cfg-row input[type=password]{
+width:100px;padding:4px 8px;border:1px solid #0f3460;border-radius:4px;
+background:#0a0a1a;color:#4ecca3;font-size:0.9em;text-align:right}
+.cfg-row input[type=text],.cfg-row input[type=password]{width:160px;text-align:left}
+.cfg-row input[type=checkbox]{accent-color:#e94560;width:18px;height:18px}
 .notes-table{width:100%;border-collapse:collapse;font-size:0.8em;margin-top:8px}
 .notes-table th{text-align:left;color:#e94560;padding:4px;border-bottom:1px solid #0f3460}
 .notes-table td{padding:4px;border-bottom:1px solid #0a0a1a}
+.notes-table input[type=number]{width:55px;padding:2px 4px;border:1px solid #0f3460;
+border-radius:3px;background:#0a0a1a;color:#4ecca3;font-size:0.9em;text-align:right}
 .notes-table .fingers{font-family:monospace;letter-spacing:2px}
+.btn-row{display:flex;gap:8px;margin-top:16px}
+.save-btn{flex:1;padding:12px;background:#4ecca3;color:#1a1a2e;border:none;border-radius:8px;
+font-size:1em;font-weight:bold;cursor:pointer}
+.save-btn:active{background:#3ab88a}
+.reset-btn{flex:1;padding:12px;background:#0f3460;color:#e0e0e0;border:none;border-radius:8px;
+font-size:1em;cursor:pointer}
+.reset-btn:active{background:#e94560;color:#fff}
+.cfg-status{text-align:center;margin:8px 0;font-size:0.85em;min-height:1.2em}
+.cfg-status.ok{color:#4ecca3}.cfg-status.err{color:#e94560}
 
 /* Monitor */
 .monitor-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}
@@ -103,6 +119,7 @@ border:none;border-radius:8px;font-size:1em;font-weight:bold;cursor:pointer}
 @media(max-width:500px){
   .key{width:calc(33.33% - 6px);min-width:60px;padding:10px 4px}
   .monitor-grid{grid-template-columns:1fr}
+  .cfg-row input[type=text],.cfg-row input[type=password]{width:120px}
 }
 </style>
 </head>
@@ -158,9 +175,9 @@ border:none;border-radius:8px;font-size:1em;font-weight:bold;cursor:pointer}
   </div>
 
   <div class="file-info" id="fileInfo">
-    <div class="config-row"><span class="label">Fichier</span><span class="value" id="fName">-</span></div>
-    <div class="config-row"><span class="label">Evenements</span><span class="value" id="fEvents">-</span></div>
-    <div class="config-row"><span class="label">Duree</span><span class="value" id="fDuration">-</span></div>
+    <div class="cfg-row"><span class="label" style="color:#a0a0a0">Fichier</span><span class="value" style="color:#4ecca3;font-weight:bold" id="fName">-</span></div>
+    <div class="cfg-row"><span class="label" style="color:#a0a0a0">Evenements</span><span class="value" style="color:#4ecca3;font-weight:bold" id="fEvents">-</span></div>
+    <div class="cfg-row"><span class="label" style="color:#a0a0a0">Duree</span><span class="value" style="color:#4ecca3;font-weight:bold" id="fDuration">-</span></div>
   </div>
 
   <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
@@ -175,39 +192,73 @@ border:none;border-radius:8px;font-size:1em;font-weight:bold;cursor:pointer}
   <button class="panic-btn" onclick="sendPanic()">ALL SOUND OFF</button>
 </div>
 
-<!-- TAB: CONFIGURATION -->
+<!-- TAB: CONFIGURATION (editable) -->
 <div class="tab" id="tab-config">
   <div class="config-section">
     <h3>Instrument</h3>
-    <div class="config-row"><span class="label">Nom</span><span class="value" id="cfgName">-</span></div>
-    <div class="config-row"><span class="label">Canal MIDI</span><span class="value" id="cfgCh">-</span></div>
-    <div class="config-row"><span class="label">Notes jouables</span><span class="value" id="cfgNotes">-</span></div>
-    <div class="config-row"><span class="label">Servos doigts</span><span class="value" id="cfgFingers">-</span></div>
+    <div class="cfg-row"><label>Nom appareil</label><input type="text" id="cfgDevice" maxlength="31"></div>
+    <div class="cfg-row"><label>Canal MIDI (0=omni)</label><input type="number" id="cfgMidiCh" min="0" max="16"></div>
+  </div>
+  <div class="config-section">
+    <h3>Timing</h3>
+    <div class="cfg-row"><label>Delai servo-solenoide (ms)</label><input type="number" id="cfgServoDelay" min="0" max="500"></div>
+    <div class="cfg-row"><label>Interval min valve (ms)</label><input type="number" id="cfgValveInt" min="0" max="500"></div>
+    <div class="cfg-row"><label>Duree min note (ms)</label><input type="number" id="cfgMinNote" min="0" max="500"></div>
   </div>
   <div class="config-section">
     <h3>Airflow</h3>
-    <div class="config-row"><span class="label">Angle min</span><span class="value" id="cfgAirMin">-</span></div>
-    <div class="config-row"><span class="label">Angle max</span><span class="value" id="cfgAirMax">-</span></div>
-    <div class="config-row"><span class="label">Delai servo-solenoide</span><span class="value" id="cfgDelay">-</span></div>
+    <div class="cfg-row"><label>Angle repos (off)</label><input type="number" id="cfgAirOff" min="0" max="180"></div>
+    <div class="cfg-row"><label>Angle min</label><input type="number" id="cfgAirMin" min="0" max="180"></div>
+    <div class="cfg-row"><label>Angle max</label><input type="number" id="cfgAirMax" min="0" max="180"></div>
   </div>
   <div class="config-section">
     <h3>Vibrato</h3>
-    <div class="config-row"><span class="label">Frequence</span><span class="value" id="cfgVibFreq">-</span></div>
-    <div class="config-row"><span class="label">Amplitude max</span><span class="value" id="cfgVibAmp">-</span></div>
+    <div class="cfg-row"><label>Frequence (Hz)</label><input type="number" id="cfgVibFreq" min="0.1" max="20" step="0.1"></div>
+    <div class="cfg-row"><label>Amplitude max (deg)</label><input type="number" id="cfgVibAmp" min="0" max="30" step="0.5"></div>
   </div>
   <div class="config-section">
     <h3>Breath Controller (CC2)</h3>
-    <div class="config-row"><span class="label">Active</span><span class="value" id="cfgCC2">-</span></div>
-    <div class="config-row"><span class="label">Seuil silence</span><span class="value" id="cfgCC2Thr">-</span></div>
-    <div class="config-row"><span class="label">Courbe reponse</span><span class="value" id="cfgCC2Curve">-</span></div>
+    <div class="cfg-row"><label>Active</label><input type="checkbox" id="cfgCC2On"></div>
+    <div class="cfg-row"><label>Seuil silence</label><input type="number" id="cfgCC2Thr" min="0" max="127"></div>
+    <div class="cfg-row"><label>Courbe reponse</label><input type="number" id="cfgCC2Curve" min="0.1" max="5" step="0.1"></div>
+    <div class="cfg-row"><label>Timeout (ms)</label><input type="number" id="cfgCC2Timeout" min="0" max="10000"></div>
   </div>
   <div class="config-section">
-    <h3>Notes et doigtes</h3>
+    <h3>Solenoide PWM</h3>
+    <div class="cfg-row"><label>PWM activation</label><input type="number" id="cfgSolAct" min="0" max="255"></div>
+    <div class="cfg-row"><label>PWM maintien</label><input type="number" id="cfgSolHold" min="0" max="255"></div>
+    <div class="cfg-row"><label>Temps activation (ms)</label><input type="number" id="cfgSolTime" min="0" max="500"></div>
+  </div>
+  <div class="config-section">
+    <h3>Calibration doigts</h3>
+    <div class="cfg-row"><label>Angle ouverture</label><input type="number" id="cfgAngleOpen" min="10" max="90"></div>
     <table class="notes-table">
-      <thead><tr><th>MIDI</th><th>Note</th><th>Doigtes</th><th>Air%</th></tr></thead>
-      <tbody id="notesTableBody"></tbody>
+      <thead><tr><th>Doigt</th><th>PCA</th><th>Angle ferme</th><th>Direction</th></tr></thead>
+      <tbody id="fingersTable"></tbody>
     </table>
   </div>
+  <div class="config-section">
+    <h3>Airflow par note (%)</h3>
+    <table class="notes-table">
+      <thead><tr><th>MIDI</th><th>Note</th><th>Air min%</th><th>Air max%</th></tr></thead>
+      <tbody id="notesAirTable"></tbody>
+    </table>
+  </div>
+  <div class="config-section">
+    <h3>WiFi STA</h3>
+    <div class="cfg-row"><label>SSID</label><input type="text" id="cfgWifiSsid" maxlength="32"></div>
+    <div class="cfg-row"><label>Mot de passe</label><input type="password" id="cfgWifiPass" maxlength="64"></div>
+  </div>
+  <div class="config-section">
+    <h3>Power</h3>
+    <div class="cfg-row"><label>Timeout inactivite (ms)</label><input type="number" id="cfgTimeUnpower" min="0" max="60000"></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="save-btn" onclick="saveConfig()">Sauvegarder</button>
+    <button class="reset-btn" onclick="resetConfig()">Reset defauts</button>
+  </div>
+  <div class="cfg-status" id="cfgStatus"></div>
 </div>
 
 <!-- TAB: MONITORING -->
@@ -267,7 +318,9 @@ const NOTES=[
 ];
 
 const STATES=["IDLE","POSITIONING","PLAYING","STOPPING"];
+const NOTE_NAMES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 let ws=null, velocity=100, wsConnected=false;
+let cfgData=null; // Derniere config chargee
 
 // --- WebSocket ---
 function wsConnect(){
@@ -285,16 +338,11 @@ function wsSend(obj){if(ws&&ws.readyState===1)ws.send(JSON.stringify(obj))}
 
 function handleWsMsg(d){
   if(d.t==='status'){
-    // Update monitor
     const st=STATES[d.state]||"?";
     document.getElementById('monState').textContent=st;
     document.getElementById('monState').style.color=d.playing?'#e94560':'#4ecca3';
     if(d.heap)document.getElementById('monHeap').textContent=Math.round(d.heap/1024)+"KB";
-
-    // CC bars
     updateCC(1,d.cc1);updateCC(2,d.cc2);updateCC(7,d.cc7);updateCC(11,d.cc11);
-
-    // Player progress
     if(d.pp!==undefined){
       document.getElementById('progressFill').style.width=d.pp+'%';
       if(d.ppos!==undefined){
@@ -302,10 +350,9 @@ function handleWsMsg(d){
           formatTime(d.ppos)+' / '+formatTime(playerDuration);
       }
     }
-    // Player state buttons
     const ps=d.ps;
     if(ps!==undefined){
-      document.getElementById('btnPlay').disabled=(ps===1);// playing
+      document.getElementById('btnPlay').disabled=(ps===1);
       document.getElementById('btnPause').disabled=(ps!==1);
       document.getElementById('btnStop').disabled=(ps===0&&!fileLoaded);
     }
@@ -353,17 +400,12 @@ function buildKeyboard(){
     key.className='key'+(n.black?' black':'');
     key.dataset.midi=n.midi;
     key.innerHTML='<span class="note-name">'+n.name+'</span><span class="note-midi">MIDI '+n.midi+'</span>';
-
-    // Touch events (mobile)
     key.addEventListener('touchstart',(e)=>{e.preventDefault();noteOn(n.midi);key.classList.add('pressed')},{passive:false});
     key.addEventListener('touchend',(e)=>{e.preventDefault();noteOff(n.midi);key.classList.remove('pressed')},{passive:false});
     key.addEventListener('touchcancel',(e)=>{noteOff(n.midi);key.classList.remove('pressed')});
-
-    // Mouse events (desktop)
     key.addEventListener('mousedown',(e)=>{e.preventDefault();noteOn(n.midi);key.classList.add('pressed')});
     key.addEventListener('mouseup',(e)=>{noteOff(n.midi);key.classList.remove('pressed')});
     key.addEventListener('mouseleave',(e)=>{if(key.classList.contains('pressed')){noteOff(n.midi);key.classList.remove('pressed')}});
-
     container.appendChild(key);
   });
 }
@@ -402,7 +444,6 @@ function uploadMidi(file){
     .catch(e=>addLog("ERREUR upload: "+e));
 }
 
-// Drag & drop
 const uz=document.getElementById('uploadZone');
 uz.addEventListener('dragover',(e)=>{e.preventDefault();uz.classList.add('dragover')});
 uz.addEventListener('dragleave',()=>{uz.classList.remove('dragover')});
@@ -417,38 +458,151 @@ function showTab(name){
   document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   event.target.classList.add('active');
+  if(name==='config')loadConfig();
 }
 
 // --- Config ---
 function loadConfig(){
   fetch('/api/config').then(r=>r.json()).then(d=>{
-    document.getElementById('cfgName').textContent=d.device_name;
-    document.getElementById('cfgCh').textContent=d.midi_channel===0?'Omni':d.midi_channel;
-    document.getElementById('cfgNotes').textContent=d.num_notes;
-    document.getElementById('cfgFingers').textContent=d.num_fingers;
-    document.getElementById('cfgAirMin').textContent=d.airflow_min+'deg';
-    document.getElementById('cfgAirMax').textContent=d.airflow_max+'deg';
-    document.getElementById('cfgDelay').textContent=d.servo_solenoid_delay+'ms';
-    document.getElementById('cfgVibFreq').textContent=d.vibrato_freq+'Hz';
-    document.getElementById('cfgVibAmp').textContent=d.vibrato_amp+'deg';
-    document.getElementById('cfgCC2').textContent=d.cc2_enabled?'Oui':'Non';
-    document.getElementById('cfgCC2Thr').textContent=d.cc2_threshold;
-    document.getElementById('cfgCC2Curve').textContent=d.cc2_curve;
-
-    // Table des notes
-    if(d.notes){
-      const noteNames=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-      const tbody=document.getElementById('notesTableBody');
-      tbody.innerHTML='';
-      d.notes.forEach(n=>{
-        const name=noteNames[n.midi%12]+(Math.floor(n.midi/12)-1);
-        const fingers=n.fingers.map(f=>f?'O':'-').join('');
+    cfgData=d;
+    // Instrument
+    document.getElementById('cfgDevice').value=d.device||'';
+    document.getElementById('cfgMidiCh').value=d.midi_ch||0;
+    // Timing
+    document.getElementById('cfgServoDelay').value=d.servo_delay||0;
+    document.getElementById('cfgValveInt').value=d.valve_interval||0;
+    document.getElementById('cfgMinNote').value=d.min_note_dur||0;
+    // Airflow
+    document.getElementById('cfgAirOff').value=d.air_off||0;
+    document.getElementById('cfgAirMin').value=d.air_min||0;
+    document.getElementById('cfgAirMax').value=d.air_max||0;
+    // Vibrato
+    document.getElementById('cfgVibFreq').value=d.vib_freq||6;
+    document.getElementById('cfgVibAmp').value=d.vib_amp||8;
+    // CC2
+    document.getElementById('cfgCC2On').checked=!!d.cc2_on;
+    document.getElementById('cfgCC2Thr').value=d.cc2_thr||0;
+    document.getElementById('cfgCC2Curve').value=d.cc2_curve||1.4;
+    document.getElementById('cfgCC2Timeout').value=d.cc2_timeout||1000;
+    // Solenoid
+    document.getElementById('cfgSolAct').value=d.sol_act||255;
+    document.getElementById('cfgSolHold').value=d.sol_hold||128;
+    document.getElementById('cfgSolTime').value=d.sol_time||50;
+    // Fingers
+    document.getElementById('cfgAngleOpen').value=d.angle_open||30;
+    const ft=document.getElementById('fingersTable');
+    ft.innerHTML='';
+    if(d.fingers){
+      d.fingers.forEach((f,i)=>{
         const tr=document.createElement('tr');
-        tr.innerHTML='<td>'+n.midi+'</td><td>'+name+'</td><td class="fingers">'+fingers+'</td><td>'+n.air_min+'-'+n.air_max+'%</td>';
-        tbody.appendChild(tr);
+        tr.innerHTML='<td>Doigt '+(i+1)+'</td><td>'+f.ch+'</td>'+
+          '<td><input type="number" id="fAngle'+i+'" min="0" max="180" value="'+f.a+'"></td>'+
+          '<td><select id="fDir'+i+'"><option value="1"'+(f.d===1?' selected':'')+'>+1</option>'+
+          '<option value="-1"'+(f.d===-1?' selected':'')+'>-1</option></select></td>';
+        ft.appendChild(tr);
       });
     }
-  }).catch(e=>addLog("Erreur config: "+e));
+    // Notes airflow
+    const nt=document.getElementById('notesAirTable');
+    nt.innerHTML='';
+    if(d.notes){
+      d.notes.forEach((n,i)=>{
+        const name=NOTE_NAMES[n.midi%12]+(Math.floor(n.midi/12)-1);
+        const tr=document.createElement('tr');
+        tr.innerHTML='<td>'+n.midi+'</td><td>'+name+'</td>'+
+          '<td><input type="number" id="nMin'+i+'" min="0" max="100" value="'+n.air_min+'"></td>'+
+          '<td><input type="number" id="nMax'+i+'" min="0" max="100" value="'+n.air_max+'"></td>';
+        nt.appendChild(tr);
+      });
+    }
+    // WiFi
+    document.getElementById('cfgWifiSsid').value=d.wifi_ssid||'';
+    document.getElementById('cfgWifiPass').value='';
+    // Power
+    document.getElementById('cfgTimeUnpower').value=d.time_unpower||200;
+
+    showCfgStatus('Config chargee','ok');
+  }).catch(e=>{showCfgStatus('Erreur chargement: '+e,'err');addLog("Erreur config: "+e)});
+}
+
+function saveConfig(){
+  const body={
+    device:document.getElementById('cfgDevice').value,
+    midi_ch:parseInt(document.getElementById('cfgMidiCh').value)||0,
+    servo_delay:parseInt(document.getElementById('cfgServoDelay').value)||0,
+    valve_interval:parseInt(document.getElementById('cfgValveInt').value)||0,
+    min_note_dur:parseInt(document.getElementById('cfgMinNote').value)||0,
+    air_off:parseInt(document.getElementById('cfgAirOff').value)||0,
+    air_min:parseInt(document.getElementById('cfgAirMin').value)||0,
+    air_max:parseInt(document.getElementById('cfgAirMax').value)||0,
+    vib_freq:parseFloat(document.getElementById('cfgVibFreq').value)||6,
+    vib_amp:parseFloat(document.getElementById('cfgVibAmp').value)||8,
+    cc2_on:document.getElementById('cfgCC2On').checked,
+    cc2_thr:parseInt(document.getElementById('cfgCC2Thr').value)||0,
+    cc2_curve:parseFloat(document.getElementById('cfgCC2Curve').value)||1.4,
+    cc2_timeout:parseInt(document.getElementById('cfgCC2Timeout').value)||1000,
+    sol_act:parseInt(document.getElementById('cfgSolAct').value)||255,
+    sol_hold:parseInt(document.getElementById('cfgSolHold').value)||128,
+    sol_time:parseInt(document.getElementById('cfgSolTime').value)||50,
+    angle_open:parseInt(document.getElementById('cfgAngleOpen').value)||30,
+    time_unpower:parseInt(document.getElementById('cfgTimeUnpower').value)||200,
+    wifi_ssid:document.getElementById('cfgWifiSsid').value
+  };
+  // Only send password if non-empty (avoid clearing saved password)
+  const pass=document.getElementById('cfgWifiPass').value;
+  if(pass.length>0)body.wifi_pass=pass;
+
+  // Fingers
+  if(cfgData&&cfgData.fingers){
+    body.fingers=cfgData.fingers.map((f,i)=>({
+      a:parseInt(document.getElementById('fAngle'+i).value)||f.a,
+      d:parseInt(document.getElementById('fDir'+i).value)||f.d
+    }));
+  }
+  // Notes airflow
+  if(cfgData&&cfgData.notes){
+    body.notes_air=cfgData.notes.map((n,i)=>({
+      mn:parseInt(document.getElementById('nMin'+i).value)||0,
+      mx:parseInt(document.getElementById('nMax'+i).value)||0
+    }));
+  }
+
+  showCfgStatus('Sauvegarde...','ok');
+  fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(body)})
+    .then(r=>r.json())
+    .then(d=>{
+      if(d.ok){
+        showCfgStatus('Config sauvegardee !','ok');
+        addLog("Config sauvegardee");
+      } else {
+        showCfgStatus('Erreur: '+(d.msg||'echec'),'err');
+      }
+    })
+    .catch(e=>showCfgStatus('Erreur: '+e,'err'));
+}
+
+function resetConfig(){
+  if(!confirm('Remettre tous les parametres aux valeurs par defaut ?'))return;
+  showCfgStatus('Reset...','ok');
+  fetch('/api/config/reset',{method:'POST'})
+    .then(r=>r.json())
+    .then(d=>{
+      if(d.ok){
+        showCfgStatus('Reset OK - rechargement...','ok');
+        addLog("Config reset aux defauts");
+        setTimeout(loadConfig,500);
+      } else {
+        showCfgStatus('Erreur reset','err');
+      }
+    })
+    .catch(e=>showCfgStatus('Erreur: '+e,'err'));
+}
+
+function showCfgStatus(msg,cls){
+  const el=document.getElementById('cfgStatus');
+  el.textContent=msg;el.className='cfg-status '+cls;
+  if(cls==='ok')setTimeout(()=>{el.textContent=''},3000);
 }
 
 // --- Utils ---
@@ -467,7 +621,6 @@ function addLog(msg){
   const ts=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')+':'+String(now.getSeconds()).padStart(2,'0');
   entry.textContent='['+ts+'] '+msg;
   box.insertBefore(entry,box.firstChild);
-  // Limiter a 50 entrees
   while(box.children.length>50)box.removeChild(box.lastChild);
 }
 
@@ -476,6 +629,7 @@ const KEY_MAP={'a':82,'z':83,'e':84,'r':86,'t':88,'y':89,'u':91,'i':93,'o':95,'p
   'q':98,'s':100,'d':101,'f':103};
 const keysDown=new Set();
 document.addEventListener('keydown',(e)=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;
   if(e.repeat)return;
   const note=KEY_MAP[e.key.toLowerCase()];
   if(note&&!keysDown.has(e.key)){

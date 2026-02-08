@@ -73,6 +73,26 @@ void WebConfigurator::setupRoutes() {
     handleApiConfig(request);
   });
 
+  // API Config POST (body handler pour JSON)
+  _server.on("/api/config", HTTP_POST,
+    [this](AsyncWebServerRequest* request) {
+      // Reponse envoyee dans le body handler a la fin
+      // Si on arrive ici sans body, renvoyer erreur
+      if (_configBody.length() == 0) {
+        request->send(400, "application/json", "{\"ok\":false,\"msg\":\"Body vide\"}");
+      }
+    },
+    NULL,  // pas d'upload handler
+    [this](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
+      handleApiConfigPost(request, data, len, index, total);
+    }
+  );
+
+  // API Config Reset
+  _server.on("/api/config/reset", HTTP_POST, [this](AsyncWebServerRequest* request) {
+    handleApiConfigReset(request);
+  });
+
   // Upload MIDI (multipart)
   _server.on("/api/midi", HTTP_POST,
     [this](AsyncWebServerRequest* request) {
@@ -126,27 +146,53 @@ void WebConfigurator::handleApiStatus(AsyncWebServerRequest* request) {
 }
 
 void WebConfigurator::handleApiConfig(AsyncWebServerRequest* request) {
+  // Lire depuis cfg (RuntimeConfig) au lieu des #defines
   String json = "{";
-  json += "\"midi_channel\":" + String(MIDI_CHANNEL);
-  json += ",\"servo_solenoid_delay\":" + String(SERVO_TO_SOLENOID_DELAY_MS);
+  json += "\"midi_ch\":" + String(cfg.midiChannel);
+  json += ",\"servo_delay\":" + String(cfg.servoToSolenoidDelayMs);
+  json += ",\"valve_interval\":" + String(cfg.minNoteIntervalForValveCloseMs);
+  json += ",\"min_note_dur\":" + String(cfg.minNoteDurationMs);
+  json += ",\"air_off\":" + String(cfg.servoAirflowOff);
+  json += ",\"air_min\":" + String(cfg.servoAirflowMin);
+  json += ",\"air_max\":" + String(cfg.servoAirflowMax);
+  json += ",\"vib_freq\":" + String(cfg.vibratoFrequencyHz, 1);
+  json += ",\"vib_amp\":" + String(cfg.vibratoMaxAmplitudeDeg, 1);
+  json += ",\"cc_vol\":" + String(cfg.ccVolumeDefault);
+  json += ",\"cc_expr\":" + String(cfg.ccExpressionDefault);
+  json += ",\"cc_mod\":" + String(cfg.ccModulationDefault);
+  json += ",\"cc_breath\":" + String(cfg.ccBreathDefault);
+  json += ",\"cc_bright\":" + String(cfg.ccBrightnessDefault);
+  json += ",\"cc2_on\":" + String(cfg.cc2Enabled ? "true" : "false");
+  json += ",\"cc2_thr\":" + String(cfg.cc2SilenceThreshold);
+  json += ",\"cc2_curve\":" + String(cfg.cc2ResponseCurve, 2);
+  json += ",\"cc2_timeout\":" + String(cfg.cc2TimeoutMs);
+  json += ",\"sol_act\":" + String(cfg.solenoidPwmActivation);
+  json += ",\"sol_hold\":" + String(cfg.solenoidPwmHolding);
+  json += ",\"sol_time\":" + String(cfg.solenoidActivationTimeMs);
+  json += ",\"angle_open\":" + String(cfg.fingerAngleOpen);
+  json += ",\"device\":\"" + String(cfg.deviceName) + "\"";
+  json += ",\"wifi_ssid\":\"" + String(cfg.wifiSsid) + "\"";
+  json += ",\"time_unpower\":" + String(cfg.timeUnpower);
   json += ",\"num_notes\":" + String(NUMBER_NOTES);
   json += ",\"num_fingers\":" + String(NUMBER_SERVOS_FINGER);
-  json += ",\"airflow_min\":" + String(SERVO_AIRFLOW_MIN);
-  json += ",\"airflow_max\":" + String(SERVO_AIRFLOW_MAX);
-  json += ",\"vibrato_freq\":" + String(VIBRATO_FREQUENCY_HZ, 1);
-  json += ",\"vibrato_amp\":" + String(VIBRATO_MAX_AMPLITUDE_DEG, 1);
-  json += ",\"cc2_enabled\":" + String(CC2_ENABLED ? "true" : "false");
-  json += ",\"cc2_threshold\":" + String(CC2_SILENCE_THRESHOLD);
-  json += ",\"cc2_curve\":" + String(CC2_RESPONSE_CURVE, 2);
-  json += ",\"device_name\":\"" + String(DEVICE_NAME) + "\"";
 
-  // Notes jouables
+  // Doigts
+  json += ",\"fingers\":[";
+  for (int i = 0; i < NUMBER_SERVOS_FINGER; i++) {
+    if (i > 0) json += ",";
+    json += "{\"ch\":" + String(FINGERS[i].pcaChannel);
+    json += ",\"a\":" + String(cfg.fingerClosedAngle[i]);
+    json += ",\"d\":" + String(cfg.fingerDirection[i]) + "}";
+  }
+  json += "]";
+
+  // Notes jouables avec airflow configurable
   json += ",\"notes\":[";
   for (int i = 0; i < NUMBER_NOTES; i++) {
     if (i > 0) json += ",";
     json += "{\"midi\":" + String(NOTES[i].midiNote);
-    json += ",\"air_min\":" + String(NOTES[i].airflowMinPercent);
-    json += ",\"air_max\":" + String(NOTES[i].airflowMaxPercent);
+    json += ",\"air_min\":" + String(cfg.noteAirflowMin[i]);
+    json += ",\"air_max\":" + String(cfg.noteAirflowMax[i]);
     json += ",\"fingers\":[";
     for (int f = 0; f < NUMBER_SERVOS_FINGER; f++) {
       if (f > 0) json += ",";
@@ -158,6 +204,104 @@ void WebConfigurator::handleApiConfig(AsyncWebServerRequest* request) {
 
   json += "}";
   request->send(200, "application/json", json);
+}
+
+void WebConfigurator::handleApiConfigPost(AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
+  // Accumuler le body
+  if (index == 0) {
+    _configBody = "";
+    _configBody.reserve(total);
+  }
+  _configBody += String((char*)data).substring(0, len);
+
+  // Fin du body
+  if (index + len == total) {
+    JsonDocument doc;
+    DeserializationError err = deserializeJson(doc, _configBody);
+
+    if (err) {
+      request->send(400, "application/json", "{\"ok\":false,\"msg\":\"JSON invalide\"}");
+      _configBody = "";
+      return;
+    }
+
+    // Appliquer les valeurs (chaque champ est optionnel)
+    if (doc.containsKey("midi_ch")) cfg.midiChannel = doc["midi_ch"];
+    if (doc.containsKey("servo_delay")) cfg.servoToSolenoidDelayMs = doc["servo_delay"];
+    if (doc.containsKey("valve_interval")) cfg.minNoteIntervalForValveCloseMs = doc["valve_interval"];
+    if (doc.containsKey("min_note_dur")) cfg.minNoteDurationMs = doc["min_note_dur"];
+    if (doc.containsKey("air_off")) cfg.servoAirflowOff = doc["air_off"];
+    if (doc.containsKey("air_min")) cfg.servoAirflowMin = doc["air_min"];
+    if (doc.containsKey("air_max")) cfg.servoAirflowMax = doc["air_max"];
+    if (doc.containsKey("vib_freq")) cfg.vibratoFrequencyHz = doc["vib_freq"];
+    if (doc.containsKey("vib_amp")) cfg.vibratoMaxAmplitudeDeg = doc["vib_amp"];
+    if (doc.containsKey("cc_vol")) cfg.ccVolumeDefault = doc["cc_vol"];
+    if (doc.containsKey("cc_expr")) cfg.ccExpressionDefault = doc["cc_expr"];
+    if (doc.containsKey("cc_mod")) cfg.ccModulationDefault = doc["cc_mod"];
+    if (doc.containsKey("cc_breath")) cfg.ccBreathDefault = doc["cc_breath"];
+    if (doc.containsKey("cc_bright")) cfg.ccBrightnessDefault = doc["cc_bright"];
+    if (doc.containsKey("cc2_on")) cfg.cc2Enabled = doc["cc2_on"].as<bool>();
+    if (doc.containsKey("cc2_thr")) cfg.cc2SilenceThreshold = doc["cc2_thr"];
+    if (doc.containsKey("cc2_curve")) cfg.cc2ResponseCurve = doc["cc2_curve"];
+    if (doc.containsKey("cc2_timeout")) cfg.cc2TimeoutMs = doc["cc2_timeout"];
+    if (doc.containsKey("sol_act")) cfg.solenoidPwmActivation = doc["sol_act"];
+    if (doc.containsKey("sol_hold")) cfg.solenoidPwmHolding = doc["sol_hold"];
+    if (doc.containsKey("sol_time")) cfg.solenoidActivationTimeMs = doc["sol_time"];
+    if (doc.containsKey("angle_open")) cfg.fingerAngleOpen = doc["angle_open"];
+    if (doc.containsKey("time_unpower")) cfg.timeUnpower = doc["time_unpower"];
+
+    if (doc.containsKey("device")) {
+      strncpy(cfg.deviceName, doc["device"] | cfg.deviceName, sizeof(cfg.deviceName) - 1);
+      cfg.deviceName[sizeof(cfg.deviceName) - 1] = '\0';
+    }
+    if (doc.containsKey("wifi_ssid")) {
+      strncpy(cfg.wifiSsid, doc["wifi_ssid"] | "", sizeof(cfg.wifiSsid) - 1);
+      cfg.wifiSsid[sizeof(cfg.wifiSsid) - 1] = '\0';
+    }
+    if (doc.containsKey("wifi_pass")) {
+      strncpy(cfg.wifiPassword, doc["wifi_pass"] | "", sizeof(cfg.wifiPassword) - 1);
+      cfg.wifiPassword[sizeof(cfg.wifiPassword) - 1] = '\0';
+    }
+
+    // Doigts
+    if (doc.containsKey("fingers")) {
+      JsonArray fingers = doc["fingers"];
+      for (int i = 0; i < NUMBER_SERVOS_FINGER && i < (int)fingers.size(); i++) {
+        if (fingers[i].containsKey("a")) cfg.fingerClosedAngle[i] = fingers[i]["a"];
+        if (fingers[i].containsKey("d")) cfg.fingerDirection[i] = fingers[i]["d"];
+      }
+    }
+
+    // Notes airflow
+    if (doc.containsKey("notes_air")) {
+      JsonArray notes = doc["notes_air"];
+      for (int i = 0; i < NUMBER_NOTES && i < (int)notes.size(); i++) {
+        if (notes[i].containsKey("mn")) cfg.noteAirflowMin[i] = notes[i]["mn"];
+        if (notes[i].containsKey("mx")) cfg.noteAirflowMax[i] = notes[i]["mx"];
+      }
+    }
+
+    // Sauvegarder sur LittleFS
+    bool saved = ConfigStorage::save();
+
+    if (DEBUG) {
+      Serial.println("DEBUG: WebConfigurator - Config mise a jour via web");
+    }
+
+    String resp = "{\"ok\":" + String(saved ? "true" : "false") + "}";
+    request->send(200, "application/json", resp);
+    _configBody = "";
+  }
+}
+
+void WebConfigurator::handleApiConfigReset(AsyncWebServerRequest* request) {
+  ConfigStorage::resetToDefaults();
+
+  if (DEBUG) {
+    Serial.println("DEBUG: WebConfigurator - Config reset aux defauts");
+  }
+
+  request->send(200, "application/json", "{\"ok\":true}");
 }
 
 void WebConfigurator::handleMidiUpload(AsyncWebServerRequest* request, const String& filename,

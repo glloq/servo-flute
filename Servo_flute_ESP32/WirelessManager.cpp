@@ -1,5 +1,6 @@
 #include "WirelessManager.h"
 #include "InstrumentManager.h"
+#include "ConfigStorage.h"
 
 WirelessManager::WirelessManager(StatusLed& led, HardwareInputs& inputs)
   : _led(led), _inputs(inputs), _instrument(nullptr),
@@ -24,9 +25,19 @@ void WirelessManager::begin(InstrumentManager* instrument) {
     _led.setPattern(LED_BLINK_FAST);  // Advertising actif
 
   } else {
-    // Mode WiFi - demarrer en AP par defaut
+    // Mode WiFi - tenter STA si credentials sauvegardees, sinon AP
     _wifiMidi.begin(instrument);
-    _led.setPattern(LED_TRIPLE_FLASH);  // Mode AP
+
+    if (strlen(cfg.wifiSsid) > 0) {
+      if (DEBUG) {
+        Serial.print("DEBUG: WirelessManager - Tentative STA: ");
+        Serial.println(cfg.wifiSsid);
+      }
+      _wifiMidi.startSTA(cfg.wifiSsid, cfg.wifiPassword);
+      _led.setPattern(LED_BLINK_FAST);  // Connexion en cours
+    } else {
+      _led.setPattern(LED_TRIPLE_FLASH);  // Mode AP
+    }
 
     // Initialiser le lecteur MIDI
     _midiPlayer = new MidiFilePlayer();

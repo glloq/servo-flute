@@ -1,5 +1,6 @@
 #include "BleMidiHandler.h"
 #include "InstrumentManager.h"
+#include "ConfigStorage.h"
 
 // Backend NimBLE pour BLE-MIDI (doit etre inclus avant BLE-MIDI)
 #include <hardware/BLEMIDI_ESP32_NimBLE.h>
@@ -123,6 +124,6 @@ void BleMidiHandler::onDisconnected() {
 }
 
 bool BleMidiHandler::isChannelAccepted(byte channel) {
-  if (MIDI_CHANNEL == 0) return true;
-  return (channel == MIDI_CHANNEL);
+  if (cfg.midiChannel == 0) return true;
+  return (channel == cfg.midiChannel);
 }

@@ -1,4 +1,5 @@
 #include "NoteSequencer.h"
+#include "ConfigStorage.h"
 
 NoteSequencer::NoteSequencer(EventQueue& eventQueue, FingerController& fingerCtrl, AirflowController& airflowCtrl)
   : _eventQueue(eventQueue), _fingerCtrl(fingerCtrl), _airflowCtrl(airflowCtrl),
@@ -48,7 +49,7 @@ void NoteSequencer::handleIdle() {
 void NoteSequencer::handlePositioning() {
   unsigned long elapsed = millis() - _stateStartTime;
 
-  if (elapsed >= SERVO_TO_SOLENOID_DELAY_MS) {
+  if (elapsed >= cfg.servoToSolenoidDelayMs) {
     _airflowCtrl.setAirflowForNote(_currentNote, _currentVelocity);
     _airflowCtrl.openSolenoid();
     transitionTo(STATE_PLAYING);
@@ -99,7 +100,7 @@ void NoteSequencer::processNextEvent() {
     eventAbsoluteTime = _playbackStartTime + event->timestamp;
   }
 
-  const unsigned long MECHANICAL_DELAY = SERVO_TO_SOLENOID_DELAY_MS;
+  const unsigned long MECHANICAL_DELAY = cfg.servoToSolenoidDelayMs;
 
   unsigned long startTime;
   if (event->type == EVENT_NOTE_ON) {
@@ -158,7 +159,7 @@ bool NoteSequencer::shouldCloseValveBetweenNotes() {
 
   if (nextNoteTime > currentTime) {
     unsigned long interval = nextNoteTime - currentTime;
-    if (interval < MIN_NOTE_INTERVAL_FOR_VALVE_CLOSE_MS) {
+    if (interval < cfg.minNoteIntervalForValveCloseMs) {
       if (DEBUG) {
         Serial.print("DEBUG: NoteSequencer - Valve GARDEE ouverte (note suivante dans ");
         Serial.print(interval);

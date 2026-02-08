@@ -1,5 +1,6 @@
 #include "WifiMidiHandler.h"
 #include "InstrumentManager.h"
+#include "ConfigStorage.h"
 
 #include <WiFi.h>
 #include <ESPmDNS.h>
@@ -212,6 +213,6 @@ void WifiMidiHandler::onAppleMidiDisconnected() {
 }
 
 bool WifiMidiHandler::isChannelAccepted(byte channel) {
-  if (MIDI_CHANNEL == 0) return true;
-  return (channel == MIDI_CHANNEL);
+  if (cfg.midiChannel == 0) return true;
+  return (channel == cfg.midiChannel);
 }
