@@ -18,7 +18,13 @@
  *    - Force par bouton long en mode WiFi
  *    - LED : triple flash (AP actif)
  *
- * Coordonne : BleMidiHandler, WifiMidiHandler, StatusLed, HardwareInputs
+ * En mode WiFi (STA et AP) :
+ * - Serveur web avec clavier virtuel, lecteur MIDI, config, monitoring
+ * - WebSocket pour controle temps reel
+ * - Upload et lecture de fichiers MIDI
+ *
+ * Coordonne : BleMidiHandler, WifiMidiHandler, WebConfigurator,
+ *             MidiFilePlayer, StatusLed, HardwareInputs
  ***********************************************************************************************/
 #ifndef WIRELESS_MANAGER_H
 #define WIRELESS_MANAGER_H
@@ -29,6 +35,8 @@
 #include "HardwareInputs.h"
 #include "BleMidiHandler.h"
 #include "WifiMidiHandler.h"
+#include "WebConfigurator.h"
+#include "MidiFilePlayer.h"
 
 // Forward declaration
 class InstrumentManager;
@@ -57,6 +65,8 @@ private:
 
   BleMidiHandler _bleMidi;
   WifiMidiHandler _wifiMidi;
+  WebConfigurator* _webConfig;
+  MidiFilePlayer* _midiPlayer;
 
   // Gestion des evenements bouton
   void handleButtonEvent(ButtonEvent event);

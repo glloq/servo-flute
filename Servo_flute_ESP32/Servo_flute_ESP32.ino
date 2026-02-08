@@ -5,6 +5,7 @@
  * - BLE-MIDI (Bluetooth Low Energy) via NimBLE
  * - WiFi-MIDI (rtpMIDI / AppleMIDI)
  * - Mode hotspot autonome (fallback / force par bouton)
+ * - Serveur web : clavier virtuel, lecteur fichiers MIDI, config, monitoring
  *
  * Hardware:
  * - ESP32-WROOM-32E
@@ -19,18 +20,25 @@
  * Modes de fonctionnement :
  * - Switch BT  : BLE-MIDI, LED cligno rapide/lent
  * - Switch WiFi : rtpMIDI + serveur web
- *   - STA (reseau existant) : LED double flash
- *   - AP  (hotspot)         : LED triple flash
+ *   - STA (reseau existant) : LED double flash, page web a servo-flute.local
+ *   - AP  (hotspot)         : LED triple flash, page web a 192.168.4.1
  *   - Bouton long (3s)      : force AP
  *
+ * Page web (mode WiFi) :
+ * - Clavier virtuel 14 notes (touch + souris + raccourcis clavier)
+ * - Lecteur de fichiers MIDI (upload drag&drop, play/pause/stop)
+ * - Configuration instrument (lecture)
+ * - Monitoring temps reel via WebSocket (CC, etat, heap)
+ *
  * Auteur: Servo-Flute Project
- * Version: ESP32 1.0
- * Date: 2026-02-07
+ * Version: ESP32 1.1
+ * Date: 2026-02-08
  ***********************************************************************************************/
 
 #include <Wire.h>
 #include <Adafruit_PWMServoDriver.h>
 #include <esp_task_wdt.h>
+#include <LittleFS.h>
 
 #include "settings.h"
 #include "EventQueue.h"
@@ -85,12 +93,26 @@ void setup() {
   // Communication serie pour debug
   if (DEBUG) {
     Serial.begin(115200);
-    // ESP32 n'a pas besoin d'attendre le port serie comme Leonardo
     delay(500);
     Serial.println();
     Serial.println("========================================");
     Serial.println("  SERVO FLUTE ESP32 - INITIALISATION");
     Serial.println("========================================");
+  }
+
+  // Initialiser LittleFS (pour stockage fichiers MIDI et config future)
+  if (!LittleFS.begin(true)) {  // true = formater si premier usage
+    if (DEBUG) {
+      Serial.println("ERREUR: LittleFS - Echec initialisation!");
+    }
+  } else {
+    if (DEBUG) {
+      Serial.print("DEBUG: LittleFS - OK (");
+      Serial.print(LittleFS.totalBytes() / 1024);
+      Serial.print("KB total, ");
+      Serial.print(LittleFS.usedBytes() / 1024);
+      Serial.println("KB utilise)");
+    }
   }
 
   // Initialiser les entrees hardware (bouton + switch)
@@ -105,6 +127,7 @@ void setup() {
   instrument->begin();
 
   // Creer et initialiser le wireless manager
+  // (inclut BLE/WiFi + serveur web + lecteur MIDI selon le mode)
   wireless = new WirelessManager(statusLed, inputs);
   wireless->begin(instrument);
 
@@ -131,6 +154,9 @@ void setup() {
     Serial.print("  - Watchdog: ");
     Serial.print(WATCHDOG_TIMEOUT_MS);
     Serial.println(" ms");
+    Serial.print("  - Heap libre: ");
+    Serial.print(ESP.getFreeHeap() / 1024);
+    Serial.println(" KB");
     Serial.println();
   }
 
@@ -156,7 +182,7 @@ void loop() {
   // Lire les entrees hardware
   inputs.update();
 
-  // Mettre a jour le wireless (BLE-MIDI ou WiFi-MIDI + gestion bouton)
+  // Mettre a jour le wireless (BLE/WiFi MIDI + web server + lecteur MIDI)
   wireless->update();
 
   // Mettre a jour l'instrument (state machine + power management)

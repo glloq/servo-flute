@@ -274,6 +274,23 @@ const uint16_t SERVO_FREQUENCY = 50;
 #define LED_TRIPLE_FLASH_PAUSE_MS 800 // Pause entre triples flashs
 
 /*******************************************************************************
+-----------------------  WEB CONFIGURATOR SETTINGS    ------------------------
+******************************************************************************/
+
+// WebSocket
+#define WS_MAX_CLIENTS 4              // Max clients WebSocket simultanes
+#define WS_CLEANUP_INTERVAL_MS 1000   // Intervalle nettoyage clients deconnectes
+#define WS_STATUS_INTERVAL_MS 500     // Intervalle envoi status aux clients
+
+/*******************************************************************************
+-----------------------  MIDI FILE PLAYER SETTINGS    ------------------------
+******************************************************************************/
+
+#define MIDI_FILE_MAX_SIZE 102400     // Taille max fichier MIDI (100 KB)
+#define MIDI_FILE_MAX_EVENTS 2000     // Nombre max d'evenements parses
+#define MIDI_FILE_PATH "/midi_temp.mid"  // Chemin temporaire sur LittleFS
+
+/*******************************************************************************
 -----------------------  WATCHDOG SETTINGS (ESP32)    ------------------------
 ******************************************************************************/
 #define WATCHDOG_TIMEOUT_MS 4000      // Timeout watchdog en ms
