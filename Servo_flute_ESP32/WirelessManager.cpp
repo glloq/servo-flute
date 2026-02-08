@@ -3,7 +3,8 @@
 
 WirelessManager::WirelessManager(StatusLed& led, HardwareInputs& inputs)
   : _led(led), _inputs(inputs), _instrument(nullptr),
-    _currentMode(MODE_BLUETOOTH) {
+    _currentMode(MODE_BLUETOOTH),
+    _webConfig(nullptr), _midiPlayer(nullptr) {
 }
 
 void WirelessManager::begin(InstrumentManager* instrument) {
@@ -24,10 +25,21 @@ void WirelessManager::begin(InstrumentManager* instrument) {
 
   } else {
     // Mode WiFi - demarrer en AP par defaut
-    // Phase 2 ajoutera la lecture de credentials WiFi depuis LittleFS
-    // pour tenter une connexion STA d'abord
     _wifiMidi.begin(instrument);
     _led.setPattern(LED_TRIPLE_FLASH);  // Mode AP
+
+    // Initialiser le lecteur MIDI
+    _midiPlayer = new MidiFilePlayer();
+    _midiPlayer->begin(instrument);
+
+    // Initialiser le serveur web (apres WiFi pour que le reseau soit pret)
+    _webConfig = new WebConfigurator();
+    _webConfig->setWirelessManager(this);
+    _webConfig->begin(instrument, _midiPlayer);
+
+    if (DEBUG) {
+      Serial.println("DEBUG: WirelessManager - Serveur web + lecteur MIDI initialises");
+    }
   }
 }
 
@@ -43,6 +55,16 @@ void WirelessManager::update() {
     _bleMidi.update();
   } else {
     _wifiMidi.update();
+
+    // Mettre a jour le lecteur MIDI (playback non-bloquant)
+    if (_midiPlayer) {
+      _midiPlayer->update();
+    }
+
+    // Mettre a jour le serveur web (status broadcast, cleanup WS)
+    if (_webConfig) {
+      _webConfig->update();
+    }
   }
 
   // Mettre a jour le pattern LED
@@ -84,13 +106,11 @@ String WirelessManager::getStatusText() const {
 void WirelessManager::handleButtonEvent(ButtonEvent event) {
   if (_currentMode == MODE_BLUETOOTH) {
     if (event == BUTTON_SHORT_PRESS) {
-      // Relancer l'advertising BLE
       if (DEBUG) {
         Serial.println("DEBUG: WirelessManager - Restart advertising BLE");
       }
       _bleMidi.startAdvertising();
     }
-    // Appui long en mode BT : pas d'action specifique pour l'instant
     if (event == BUTTON_LONG_PRESS) {
       if (DEBUG) {
         Serial.println("DEBUG: WirelessManager - Appui long en mode BT (ignore)");
@@ -100,7 +120,6 @@ void WirelessManager::handleButtonEvent(ButtonEvent event) {
   } else {
     // Mode WiFi
     if (event == BUTTON_SHORT_PRESS) {
-      // Afficher l'IP sur le port serie
       if (DEBUG) {
         Serial.print("DEBUG: WirelessManager - IP: ");
         Serial.println(_wifiMidi.getIPAddress());
@@ -108,7 +127,6 @@ void WirelessManager::handleButtonEvent(ButtonEvent event) {
     }
 
     if (event == BUTTON_LONG_PRESS) {
-      // Forcer le mode AP (hotspot)
       if (DEBUG) {
         Serial.println("DEBUG: WirelessManager - Forcer mode AP (hotspot)");
       }
