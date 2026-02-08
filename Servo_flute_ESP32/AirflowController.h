@@ -31,6 +31,11 @@ public:
   // Met a jour CC2 (Breath Controller) avec lissage et fallback velocity
   void updateCC2Breath(byte ccBreath);
 
+  // Calibration : positionner le servo airflow a un angle arbitraire
+  void testAirflowAngle(uint16_t angle);
+  // Calibration : tester solenoide open/close
+  void testSolenoid(bool open);
+
 private:
   Adafruit_PWMServoDriver& _pwm;
   bool _solenoidOpen;

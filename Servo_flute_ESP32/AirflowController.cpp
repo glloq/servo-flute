@@ -264,6 +264,24 @@ void AirflowController::update() {
   }
 }
 
+void AirflowController::testAirflowAngle(uint16_t angle) {
+  if (angle > 180) angle = 180;
+  setAirflowServoAngle(angle);
+
+  if (DEBUG) {
+    Serial.print("DEBUG: AirflowController - Test angle: ");
+    Serial.println(angle);
+  }
+}
+
+void AirflowController::testSolenoid(bool open) {
+  if (open) {
+    openSolenoid();
+  } else {
+    closeSolenoid();
+  }
+}
+
 void AirflowController::setAirflowServoAngle(uint16_t angle) {
   uint16_t pwmValue = angleToPWM(angle);
   _pwm.setPWM(NUM_SERVO_AIRFLOW, 0, pwmValue);

@@ -93,6 +93,19 @@ void FingerController::setServoAngle(int fingerIndex, uint16_t angle) {
   _pwm.setPWM(pcaChannel, 0, pwmValue);
 }
 
+void FingerController::testFingerAngle(int fingerIndex, uint16_t angle) {
+  if (fingerIndex < 0 || fingerIndex >= NUMBER_SERVOS_FINGER) return;
+  if (angle > 180) angle = 180;
+  setServoAngle(fingerIndex, angle);
+
+  if (DEBUG) {
+    Serial.print("DEBUG: FingerController - Test doigt ");
+    Serial.print(fingerIndex);
+    Serial.print(" angle: ");
+    Serial.println(angle);
+  }
+}
+
 uint16_t FingerController::angleToPWM(uint16_t angle) {
   if (angle < SERVO_MIN_ANGLE) angle = SERVO_MIN_ANGLE;
   if (angle > SERVO_MAX_ANGLE) angle = SERVO_MAX_ANGLE;

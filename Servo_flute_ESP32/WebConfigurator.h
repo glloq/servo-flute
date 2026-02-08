@@ -13,6 +13,9 @@
  * - GET  /api/config    Configuration JSON
  * - POST /api/config    Modifier la configuration
  * - POST /api/midi      Upload fichier MIDI
+ * - GET  /api/wifi/scan       Lancer scan WiFi
+ * - GET  /api/wifi/results    Resultats scan WiFi
+ * - POST /api/wifi/connect    Connexion a un reseau WiFi
  * - WS   /ws            WebSocket pour controle temps reel
  *
  * Protocole WebSocket (JSON) :
@@ -24,6 +27,9 @@
  *   {"t":"pause"}               Pause
  *   {"t":"stop"}                Stop
  *   {"t":"velocity","v":100}    Changer velocity par defaut
+ *   {"t":"test_finger","i":0,"a":90}  Test servo doigt
+ *   {"t":"test_air","a":60}           Test servo airflow
+ *   {"t":"test_sol","o":true}         Test solenoide
  *
  * Serveur→Client :
  *   {"t":"status",...}          Mise a jour status periodique

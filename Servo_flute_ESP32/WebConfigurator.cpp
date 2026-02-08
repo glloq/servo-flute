@@ -2,6 +2,7 @@
 #include "InstrumentManager.h"
 #include "WirelessManager.h"
 #include "web_content.h"
+#include <WiFi.h>
 
 WebConfigurator::WebConfigurator(uint16_t port)
   : _server(port), _ws("/ws"),
@@ -91,6 +92,77 @@ void WebConfigurator::setupRoutes() {
   // API Config Reset
   _server.on("/api/config/reset", HTTP_POST, [this](AsyncWebServerRequest* request) {
     handleApiConfigReset(request);
+  });
+
+  // API WiFi Scan (lance le scan)
+  _server.on("/api/wifi/scan", HTTP_GET, [this](AsyncWebServerRequest* request) {
+    if (_wirelessManager) {
+      _wirelessManager->getWifiMidi().startWifiScan();
+      request->send(200, "application/json", "{\"ok\":true,\"msg\":\"Scan lance\"}");
+    } else {
+      request->send(500, "application/json", "{\"ok\":false}");
+    }
+  });
+
+  // API WiFi Scan Results
+  _server.on("/api/wifi/results", HTTP_GET, [this](AsyncWebServerRequest* request) {
+    if (_wirelessManager) {
+      bool done = _wirelessManager->getWifiMidi().isScanComplete();
+      String json = "{\"done\":" + String(done ? "true" : "false");
+      if (done) {
+        json += ",\"networks\":" + _wirelessManager->getWifiMidi().getScanResultsJson();
+      }
+      json += "}";
+      request->send(200, "application/json", json);
+    } else {
+      request->send(500, "application/json", "{\"ok\":false}");
+    }
+  });
+
+  // API WiFi Connect (POST JSON {"ssid":"...","pass":"..."})
+  _server.on("/api/wifi/connect", HTTP_POST,
+    [this](AsyncWebServerRequest* request) {
+      if (_configBody.length() == 0) {
+        request->send(400, "application/json", "{\"ok\":false,\"msg\":\"Body vide\"}");
+      }
+    },
+    NULL,
+    [this](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
+      if (index == 0) { _configBody = ""; _configBody.reserve(total); }
+      _configBody += String((char*)data).substring(0, len);
+      if (index + len == total) {
+        JsonDocument doc;
+        DeserializationError err = deserializeJson(doc, _configBody);
+        if (err || !doc.containsKey("ssid")) {
+          request->send(400, "application/json", "{\"ok\":false,\"msg\":\"JSON invalide\"}");
+        } else if (_wirelessManager) {
+          const char* ssid = doc["ssid"];
+          const char* pass = doc["pass"] | "";
+          request->send(200, "application/json", "{\"ok\":true,\"msg\":\"Connexion en cours...\"}");
+          _wirelessManager->getWifiMidi().connectToNetwork(ssid, pass);
+        } else {
+          request->send(500, "application/json", "{\"ok\":false}");
+        }
+        _configBody = "";
+      }
+    }
+  );
+
+  // API WiFi Status
+  _server.on("/api/wifi/status", HTTP_GET, [this](AsyncWebServerRequest* request) {
+    String json = "{";
+    if (_wirelessManager) {
+      WifiMidiHandler& wm = _wirelessManager->getWifiMidi();
+      json += "\"state\":" + String(wm.getState());
+      json += ",\"ip\":\"" + wm.getIPAddress() + "\"";
+      json += ",\"ap\":" + String(wm.isAPMode() ? "true" : "false");
+      json += ",\"ssid\":\"" + String(cfg.wifiSsid) + "\"";
+      if (wm.getState() == WIFI_STATE_STA_CONNECTED) {
+        json += ",\"rssi\":" + String(WiFi.RSSI());
+      }
+    }
+    json += "}";
+    request->send(200, "application/json", json);
   });
 
   // Upload MIDI (multipart)
@@ -476,6 +548,41 @@ void WebConfigurator::processWsMessage(AsyncWebSocketClient* client, uint8_t* da
     if (_player) _player->stop();
   } else if (type == "panic") {
     _instrument->allSoundOff();
+
+  } else if (type == "test_finger") {
+    // {"t":"test_finger","i":0,"a":90}
+    int iIdx = msg.indexOf("\"i\":");
+    int aIdx = msg.indexOf("\"a\":");
+    if (iIdx >= 0 && aIdx >= 0) {
+      int fi = msg.substring(iIdx + 4).toInt();
+      int angle = msg.substring(aIdx + 4).toInt();
+      _instrument->getFingerCtrl().testFingerAngle(fi, (uint16_t)angle);
+    }
+
+  } else if (type == "test_air") {
+    // {"t":"test_air","a":60}
+    int aIdx = msg.indexOf("\"a\":");
+    if (aIdx >= 0) {
+      int angle = msg.substring(aIdx + 4).toInt();
+      _instrument->getAirflowCtrl().testAirflowAngle((uint16_t)angle);
+    }
+
+  } else if (type == "test_sol") {
+    // {"t":"test_sol","o":1}
+    int oIdx = msg.indexOf("\"o\":");
+    if (oIdx >= 0) {
+      int val = msg.substring(oIdx + 4).toInt();
+      _instrument->getAirflowCtrl().testSolenoid(val != 0);
+    }
+
+  } else if (type == "test_note") {
+    // {"t":"test_note","n":84} - joue le pattern de doigts + airflow pour une note
+    int nIdx = msg.indexOf("\"n\":");
+    if (nIdx >= 0) {
+      uint8_t note = (uint8_t)msg.substring(nIdx + 4).toInt();
+      _instrument->getFingerCtrl().setFingerPatternForNote(note);
+      _instrument->getAirflowCtrl().setAirflowForNote(note, _webVelocity);
+    }
   }
 }
 

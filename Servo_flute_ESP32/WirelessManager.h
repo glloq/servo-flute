@@ -56,6 +56,9 @@ public:
   bool isMidiConnected() const;
   String getStatusText() const;
 
+  // Acces au handler WiFi (pour scan, connect depuis le web)
+  WifiMidiHandler& getWifiMidi() { return _wifiMidi; }
+
 private:
   StatusLed& _led;
   HardwareInputs& _inputs;
