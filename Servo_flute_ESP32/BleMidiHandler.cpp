@@ -54,8 +54,6 @@ void BleMidiHandler::update() {
 
 void BleMidiHandler::startAdvertising() {
   if (!_advertising) {
-    // NimBLE redemarrage advertising
-    BLEMIDI_BLE.enableDebugging(Serial);
     _advertising = true;
 
     if (DEBUG) {
