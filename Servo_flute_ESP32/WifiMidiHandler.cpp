@@ -18,7 +18,7 @@ WifiMidiHandler* WifiMidiHandler::_instance = nullptr;
 
 WifiMidiHandler::WifiMidiHandler()
   : _instrument(nullptr), _state(WIFI_STATE_DISCONNECTED),
-    _connectStartTime(0) {
+    _connectStartTime(0), _dnsRunning(false) {
   _instance = this;
 }
 
@@ -35,10 +35,18 @@ void WifiMidiHandler::begin(InstrumentManager* instrument) {
 }
 
 void WifiMidiHandler::update() {
+  // Traiter les requetes DNS captive portal
+  if (_dnsRunning) {
+    _dnsServer.processNextRequest();
+  }
+
   // Verifier timeout connexion STA
   if (_state == WIFI_STATE_CONNECTING) {
     if (WiFi.status() == WL_CONNECTED) {
       _state = WIFI_STATE_STA_CONNECTED;
+
+      // Arreter le DNS captive portal en mode STA
+      if (_dnsRunning) { _dnsServer.stop(); _dnsRunning = false; }
 
       if (DEBUG) {
         Serial.print("DEBUG: WifiMidiHandler - Connecte! IP: ");
@@ -93,9 +101,14 @@ void WifiMidiHandler::startAP() {
 
   _state = WIFI_STATE_AP_ACTIVE;
 
+  // Captive portal : rediriger toutes les requetes DNS vers l'IP de l'AP
+  _dnsServer.start(53, "*", WiFi.softAPIP());
+  _dnsRunning = true;
+
   if (DEBUG) {
     Serial.print("DEBUG: WifiMidiHandler - AP actif, IP: ");
     Serial.println(WiFi.softAPIP());
+    Serial.println("DEBUG: WifiMidiHandler - Captive portal DNS actif");
   }
 
   // Configurer mDNS et rtpMIDI en mode AP aussi

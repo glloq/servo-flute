@@ -23,6 +23,7 @@
 
 #include <Arduino.h>
 #include <WiFi.h>
+#include <DNSServer.h>
 #include "settings.h"
 
 // Forward declaration
@@ -72,6 +73,8 @@ private:
   InstrumentManager* _instrument;
   WifiState _state;
   unsigned long _connectStartTime;
+  DNSServer _dnsServer;
+  bool _dnsRunning;
 
   // Callbacks MIDI (fonctions statiques)
   static WifiMidiHandler* _instance;

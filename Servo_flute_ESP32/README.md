@@ -155,7 +155,7 @@ Installation manuelle :
 ### Configuration carte
 
 - **Board** : ESP32 Dev Module (ou ESP32-WROOM-DA Module)
-- **Partition Scheme** : Default 4MB with spiffs (ou "Default 4MB with ffat" si disponible)
+- **Partition Scheme** : **Huge APP (3MB No OTA/1MB SPIFFS)** (le sketch depasse 1.3MB)
 - **Flash Size** : 4MB
 - **Upload Speed** : 921600
 

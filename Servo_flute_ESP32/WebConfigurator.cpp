@@ -176,14 +176,16 @@ void WebConfigurator::setupRoutes() {
     }
   );
 
-  // 404
+  // Captive portal : redirige toute URL inconnue vers /
+  // (permet l'ouverture automatique sur iOS/Android/Windows en mode AP)
   _server.onNotFound([](AsyncWebServerRequest* request) {
-    request->send(404, "text/plain", "Not found");
+    request->redirect("/");
   });
 }
 
 void WebConfigurator::handleRoot(AsyncWebServerRequest* request) {
-  request->send_P(200, "text/html", WEB_HTML_CONTENT);
+  AsyncWebServerResponse *response = request->beginResponse(200, "text/html", WEB_HTML_CONTENT);
+  request->send(response);
 }
 
 void WebConfigurator::handleApiStatus(AsyncWebServerRequest* request) {
