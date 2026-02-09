@@ -2,9 +2,9 @@
 #include "InstrumentManager.h"
 #include "ConfigStorage.h"
 
-// Backend NimBLE pour BLE-MIDI (doit etre inclus avant BLE-MIDI)
-#include <hardware/BLEMIDI_ESP32_NimBLE.h>
+// BLE-MIDI avec backend NimBLE
 #include <BLEMIDI_Transport.h>
+#include <hardware/BLEMIDI_ESP32_NimBLE.h>
 
 // Instance MIDI BLE globale
 BLEMIDI_CREATE_INSTANCE(DEVICE_NAME, bleMidi);
