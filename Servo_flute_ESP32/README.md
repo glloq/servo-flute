@@ -118,15 +118,46 @@ Messages JSON Client -> Serveur :
 
 ## Dependances Arduino
 
-- **NimBLE-Arduino** (h2zero) - BLE-MIDI
-- **AppleMIDI** (lathoub) - rtpMIDI
-- **MIDI Library** (FortySevenEffects) - Protocole MIDI
-- **Adafruit PWM Servo Driver** - PCA9685
-- **ESPAsyncWebServer** - Serveur web non-bloquant
-- **AsyncTCP** - TCP async pour ESPAsyncWebServer
-- **ArduinoJson** (bblanchon) - Serialisation JSON
-- **LittleFS** (built-in ESP32) - Systeme de fichiers
-- **ESPmDNS** (built-in) - Resolution .local
+### Board package
+
+Dans Arduino IDE : **Fichier** > **Preferences** > **URL de gestionnaire de cartes supplementaires** :
+```
+https://espressif.github.io/arduino-esp32/package_esp32_index.json
+```
+Puis **Outils** > **Type de carte** > **Gestionnaire de cartes** > installer **esp32** par Espressif.
+
+### Bibliotheques
+
+Installer via **Croquis** > **Inclure une bibliotheque** > **Gerer les bibliotheques** :
+
+| Bibliotheque | Auteur | Installation |
+|---|---|---|
+| NimBLE-Arduino | h2zero | Gestionnaire de bibliotheques |
+| BLE-MIDI | lathoub | Gestionnaire de bibliotheques |
+| AppleMIDI | lathoub | Gestionnaire de bibliotheques |
+| MIDI Library | FortySevenEffects | Gestionnaire de bibliotheques |
+| Adafruit PWM Servo Driver | Adafruit | Gestionnaire de bibliotheques |
+| ArduinoJson | Benoit Blanchon | Gestionnaire de bibliotheques |
+| AsyncTCP | dvarrel (ou me-no-dev) | ZIP GitHub* |
+| ESPAsyncWebServer | dvarrel (ou me-no-dev) | ZIP GitHub* |
+
+> **Important** : NimBLE-Arduino doit etre installe **avant** BLE-MIDI.
+> BLE-MIDI utilise NimBLE comme stack BLE sur ESP32.
+
+**LittleFS** et **ESPmDNS** sont integres au board package ESP32 (rien a installer).
+
+*Les bibliotheques AsyncTCP et ESPAsyncWebServer ne sont pas dans le gestionnaire standard.
+Installation manuelle :
+1. Telecharger le ZIP depuis GitHub (ex: https://github.com/dvarrel/AsyncTCP et https://github.com/dvarrel/ESPAsyncWebSrv)
+2. **Croquis** > **Inclure une bibliotheque** > **Ajouter une bibliotheque .ZIP**
+3. Selectionner le fichier ZIP telecharge
+
+### Configuration carte
+
+- **Board** : ESP32 Dev Module (ou ESP32-WROOM-DA Module)
+- **Partition Scheme** : Default 4MB with spiffs (ou "Default 4MB with ffat" si disponible)
+- **Flash Size** : 4MB
+- **Upload Speed** : 921600
 
 ## Structure des fichiers
 
