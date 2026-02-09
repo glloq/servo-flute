@@ -133,12 +133,16 @@ Installer via **Croquis** > **Inclure une bibliotheque** > **Gerer les bibliothe
 | Bibliotheque | Auteur | Installation |
 |---|---|---|
 | NimBLE-Arduino | h2zero | Gestionnaire de bibliotheques |
+| BLE-MIDI | lathoub | Gestionnaire de bibliotheques |
 | AppleMIDI | lathoub | Gestionnaire de bibliotheques |
 | MIDI Library | FortySevenEffects | Gestionnaire de bibliotheques |
 | Adafruit PWM Servo Driver | Adafruit | Gestionnaire de bibliotheques |
 | ArduinoJson | Benoit Blanchon | Gestionnaire de bibliotheques |
 | AsyncTCP | dvarrel (ou me-no-dev) | ZIP GitHub* |
 | ESPAsyncWebServer | dvarrel (ou me-no-dev) | ZIP GitHub* |
+
+> **Important** : NimBLE-Arduino doit etre installe **avant** BLE-MIDI.
+> BLE-MIDI utilise NimBLE comme stack BLE sur ESP32.
 
 **LittleFS** et **ESPmDNS** sont integres au board package ESP32 (rien a installer).
 
