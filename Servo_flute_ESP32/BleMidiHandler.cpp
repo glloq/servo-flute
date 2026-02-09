@@ -7,7 +7,9 @@
 #include <hardware/BLEMIDI_ESP32_NimBLE.h>
 
 // Instance MIDI BLE globale
-BLEMIDI_CREATE_INSTANCE(DEVICE_NAME, bleMidi);
+// Note: on ne peut pas utiliser "MIDI" (pris par WifiMidiHandler/AppleMIDI)
+// ni "bleMidi" (conflit avec le namespace BLEMIDI_NAMESPACE)
+BLEMIDI_CREATE_INSTANCE(DEVICE_NAME, MIDI_BLE);
 
 // Instance statique pour les callbacks
 BleMidiHandler* BleMidiHandler::_instance = nullptr;
@@ -27,16 +29,16 @@ void BleMidiHandler::begin(InstrumentManager* instrument) {
   }
 
   // Configurer les callbacks MIDI
-  MIDI.setHandleNoteOn(onNoteOn);
-  MIDI.setHandleNoteOff(onNoteOff);
-  MIDI.setHandleControlChange(onControlChange);
+  MIDI_BLE.setHandleNoteOn(onNoteOn);
+  MIDI_BLE.setHandleNoteOff(onNoteOff);
+  MIDI_BLE.setHandleControlChange(onControlChange);
 
   // Configurer les callbacks de connexion BLE
-  BLEMIDI.setHandleConnected(onConnected);
-  BLEMIDI.setHandleDisconnected(onDisconnected);
+  BLEMIDI_BLE.setHandleConnected(onConnected);
+  BLEMIDI_BLE.setHandleDisconnected(onDisconnected);
 
   // Demarrer MIDI (ecoute tous les canaux, filtrage fait dans les callbacks)
-  MIDI.begin(MIDI_CHANNEL_OMNI);
+  MIDI_BLE.begin(MIDI_CHANNEL_OMNI);
 
   _advertising = true;
 
@@ -47,13 +49,13 @@ void BleMidiHandler::begin(InstrumentManager* instrument) {
 
 void BleMidiHandler::update() {
   // Lire les messages MIDI BLE entrants (non-bloquant)
-  MIDI.read();
+  MIDI_BLE.read();
 }
 
 void BleMidiHandler::startAdvertising() {
   if (!_advertising) {
     // NimBLE redemarrage advertising
-    BLEMIDI.enableDebugging(Serial);
+    BLEMIDI_BLE.enableDebugging(Serial);
     _advertising = true;
 
     if (DEBUG) {
