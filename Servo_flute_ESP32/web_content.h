@@ -193,6 +193,54 @@ background:#e94560;border:2px solid #fff;cursor:pointer}
 .kf{width:5px;height:5px;border-radius:50%;border:1px solid #555}
 .kf.o{background:#4ecca3;border-color:#4ecca3}.kf.c{background:#2a1a0a;border-color:#555}
 .key .air-info{font-size:0.6em;color:#666;margin-top:2px;display:block}
+/* Calibration flute mini */
+.cal-flute-wrap{background:#0a0a1a;border-radius:8px;padding:10px;margin:8px 0;text-align:center}
+.cal-flute-wrap svg{width:100%;max-width:420px}
+.cal-flute-info{font-size:0.75em;color:#888;margin-top:4px}
+/* Note calibration panel */
+.note-cal{background:#0f3460;border:1px solid #0f3460;border-radius:10px;padding:14px;margin:10px 0;
+display:none;transition:all .2s}
+.note-cal.active{display:block;border-color:#e94560}
+.note-cal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.note-cal-header .ncn{font-size:1.4em;font-weight:bold;color:#e94560}
+.note-cal-header .ncm{font-size:0.8em;color:#888;margin-left:8px}
+.note-cal-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+/* Visual fingering table */
+.fing-tbl{width:100%;border-collapse:collapse;font-size:0.82em}
+.fing-tbl th{text-align:center;color:#e94560;padding:4px 3px;border-bottom:1px solid #0f3460;font-size:0.85em}
+.fing-tbl td{padding:5px 3px;border-bottom:1px solid #0a0a1a;text-align:center;vertical-align:middle}
+.fing-tbl tr:hover{background:rgba(78,204,163,0.05)}
+.fing-dot{width:16px;height:16px;border-radius:50%;display:inline-block;cursor:pointer;
+border:2px solid #555;transition:all .15s;vertical-align:middle}
+.fing-dot.open{background:#4ecca3;border-color:#4ecca3;box-shadow:0 0 6px rgba(78,204,163,0.5)}
+.fing-dot.closed{background:#2a1a0a;border-color:#555}
+.fing-dot:hover{transform:scale(1.2);border-color:#e94560}
+.fing-dots-cell{display:flex;gap:3px;justify-content:center;align-items:center}
+.fing-sep{width:1px;height:14px;background:#333;margin:0 2px}
+/* Sweep tool */
+.sweep-panel{background:#0a0a1a;border-radius:8px;padding:12px;margin:8px 0;display:none}
+.sweep-panel.active{display:block}
+.sweep-bar{height:24px;background:#16213e;border-radius:12px;position:relative;margin:8px 0;overflow:hidden}
+.sweep-cursor{position:absolute;top:0;width:4px;height:100%;background:#e94560;transition:left 0.1s linear}
+.sweep-range{position:absolute;top:0;height:100%;background:rgba(78,204,163,0.3);
+border-left:2px solid #4ecca3;border-right:2px solid #4ecca3}
+.sweep-btns{display:flex;gap:8px;flex-wrap:wrap}
+.sweep-btns button{flex:1;min-width:90px}
+/* Wizard */
+.wiz-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);
+z-index:100;display:none;justify-content:center;align-items:center;padding:16px}
+.wiz-overlay.active{display:flex}
+.wiz-box{background:#16213e;border-radius:12px;padding:20px;max-width:420px;width:100%;
+max-height:90vh;overflow-y:auto;border:2px solid #0f3460}
+.wiz-title{font-size:1.1em;color:#e94560;margin-bottom:6px}
+.wiz-step-info{font-size:0.8em;color:#888;margin-bottom:14px}
+.wiz-progress{display:flex;gap:4px;margin:10px 0;justify-content:center;flex-wrap:wrap}
+.wiz-progress .dot{width:8px;height:8px;border-radius:50%;background:#333}
+.wiz-progress .dot.done{background:#4ecca3}.wiz-progress .dot.cur{background:#e94560}
+.wiz-finger-row{display:flex;align-items:center;gap:8px;margin:4px 0;padding:6px;
+background:#0a0a1a;border-radius:6px}
+.wiz-finger-row span:first-child{color:#888;min-width:60px;font-size:0.85em}
+.wiz-finger-row .wiz-angle{color:#4ecca3;font-weight:bold;min-width:35px}
 </style>
 </head>
 <body>
@@ -298,13 +346,21 @@ background:#e94560;border:2px solid #fff;cursor:pointer}
 
 <!-- TAB: CALIBRATION -->
 <div class="tab" id="tab-calibration">
+  <!-- Mini flute visual feedback -->
+  <div class="cal-flute-wrap">
+    <svg class="flute-svg" id="calFluteSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="cal-flute-info" id="calFluteInfo">Bougez un slider pour voir l'effet</div>
+  </div>
+
   <div class="section">
-    <h3>Test servos doigts</h3>
+    <h3>Servos doigts
+      <button class="btn-action" style="float:right;font-size:0.8em" onclick="startWizard()">Assistant</button>
+    </h3>
     <div id="calFingers">Chargement...</div>
   </div>
 
   <div class="section">
-    <h3>Test airflow</h3>
+    <h3>Airflow servo</h3>
     <div class="cal-servo">
       <div class="cal-label">Servo airflow</div>
       <div class="cal-val" id="calAirVal">20</div>
@@ -314,7 +370,7 @@ background:#e94560;border:2px solid #fff;cursor:pointer}
   </div>
 
   <div class="section">
-    <h3>Test solenoide</h3>
+    <h3>Solenoide</h3>
     <div style="display:flex;gap:8px">
       <button class="btn-action" style="flex:1" onclick="testSolenoid(1)">OUVRIR</button>
       <button class="btn-action" style="flex:1" onclick="testSolenoid(0)">FERMER</button>
@@ -322,15 +378,46 @@ background:#e94560;border:2px solid #fff;cursor:pointer}
   </div>
 
   <div class="section">
-    <h3>Test note complete</h3>
+    <h3>Calibration par note</h3>
     <div class="cfg-row">
-      <label>Note MIDI</label>
-      <select id="calNoteSelect"></select>
-      <button class="btn-action" onclick="testNote()" style="margin-left:8px">Jouer position</button>
+      <label>Note</label>
+      <select id="calNoteSelect" onchange="selectCalNote()"></select>
+      <button class="btn-action" onclick="testNote()" style="margin-left:8px">Tester position</button>
     </div>
-    <p style="font-size:0.75em;color:#888;margin-top:6px">
-      Positionne les doigts + airflow pour la note (sans solenoide).
-    </p>
+    <!-- Contextual note calibration panel -->
+    <div class="note-cal" id="noteCalPanel">
+      <div class="note-cal-header">
+        <div><span class="ncn" id="ncNoteName">-</span><span class="ncm" id="ncNoteInfo"></span></div>
+      </div>
+      <div class="cal-servo">
+        <div class="cal-label">Air min % <span style="color:#4ecca3;float:right" id="ncAirMinVal">-</span></div>
+        <input type="range" class="cal-range" id="ncAirMin" min="0" max="100" value="0"
+          oninput="onNcAirChange()">
+      </div>
+      <div class="cal-servo">
+        <div class="cal-label">Air max % <span style="color:#4ecca3;float:right" id="ncAirMaxVal">-</span></div>
+        <input type="range" class="cal-range" id="ncAirMax" min="0" max="100" value="100"
+          oninput="onNcAirChange()">
+      </div>
+      <!-- Sweep tool -->
+      <div class="sweep-panel" id="sweepPanel">
+        <div style="font-size:0.85em;margin-bottom:6px;color:#a0a0a0">Sweep automatique du souffle</div>
+        <div class="sweep-bar" id="sweepBar">
+          <div class="sweep-range" id="sweepRange" style="display:none"></div>
+          <div class="sweep-cursor" id="sweepCursor" style="left:0%"></div>
+        </div>
+        <div style="font-size:0.85em;color:#4ecca3;text-align:center;font-weight:bold" id="sweepPct">0%</div>
+        <div class="sweep-btns">
+          <button class="btn-action" id="btnSweepMin" onclick="markSweepMin()" disabled>Debut du son</button>
+          <button class="btn-action" id="btnSweepMax" onclick="markSweepMax()" disabled>Fin du son</button>
+        </div>
+      </div>
+      <div class="note-cal-actions">
+        <button class="btn-action" onclick="startSweep()">Sweep souffle</button>
+        <button class="btn-action" onclick="testCalNote()">Tester</button>
+        <button class="btn-save" style="padding:8px 16px;font-size:0.85em" onclick="saveNoteCalibration()">Sauver</button>
+      </div>
+    </div>
   </div>
 
   <button class="panic-btn" onclick="sendPanic();resetCalibration()">TOUT ARRETER</button>
@@ -382,11 +469,13 @@ background:#e94560;border:2px solid #fff;cursor:pointer}
     </table>
   </div>
   <div class="section">
-    <h3>Airflow par note</h3>
-    <table class="tbl">
-      <thead><tr><th>MIDI</th><th>Note</th><th>Air min%</th><th>Air max%</th></tr></thead>
-      <tbody id="notesAirTable"></tbody>
+    <h3>Doigtes et airflow par note</h3>
+    <div style="overflow-x:auto">
+    <table class="fing-tbl" id="fingeringTable">
+      <thead><tr><th>Note</th><th>MIDI</th><th>Doigtes</th><th>Air min</th><th>Air max</th><th></th></tr></thead>
+      <tbody id="fingeringBody"></tbody>
     </table>
+    </div>
   </div>
   <div class="section">
     <h3>Power</h3>
@@ -464,12 +553,29 @@ background:#e94560;border:2px solid #fff;cursor:pointer}
   <button class="panic-btn" onclick="sendPanic()">ALL SOUND OFF</button>
 </div>
 
+<!-- Wizard overlay -->
+<div class="wiz-overlay" id="wizOverlay">
+  <div class="wiz-box">
+    <div class="wiz-title" id="wizTitle">Assistant calibration</div>
+    <div class="wiz-step-info" id="wizStepInfo"></div>
+    <div class="wiz-progress" id="wizProgress"></div>
+    <div id="wizBody"></div>
+    <div class="wiz-nav">
+      <button class="btn-secondary" id="wizPrev" onclick="wizPrev()" style="display:none">Retour</button>
+      <button class="btn-save" id="wizNext" onclick="wizNext()">Valider</button>
+      <button class="btn-action" onclick="wizClose()" style="min-width:auto;padding:8px 12px">Fermer</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const NOTE_NAMES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const STATES=["IDLE","POSITIONING","PLAYING","STOPPING"];
 let ws=null,velocity=100,wsConnected=false;
 let cfgData=null,notesData=[],numFingers=6;
 let curNote=null,curNoteData=null;
+let calNoteIdx=-1,sweepTimer=null,sweepPct=0,sweepMin=-1,sweepMax=-1;
+let wizStep=0,wizFingerData=[];
 
 // --- Helpers ---
 function midiToName(m){return NOTE_NAMES[m%12]+(Math.floor(m/12)-1)}
@@ -652,18 +758,24 @@ function buildCalibration(){
     c.appendChild(d);
   }
   // Note test select
-  const sel=$('calNoteSelect');sel.innerHTML='';
+  const sel=$('calNoteSelect');if(sel){sel.innerHTML='';
   notesData.forEach(n=>{
     const o=document.createElement('option');o.value=n.midi;
     o.textContent=midiToName(n.midi)+' (MIDI '+n.midi+')';sel.appendChild(o);
-  });
+  })}
   // Init airflow slider
   if(cfgData){$('calAirSlider').value=cfgData.air_off;$('calAirVal').textContent=cfgData.air_off}
+  // Build mini flute for calibration visual feedback
+  buildCalFlute();
+  // Reset note cal panel
+  calNoteIdx=-1;
+  const panel=$('noteCalPanel');if(panel)panel.classList.remove('active');
 }
 
 function testFinger(idx,angle){
   $('calF'+idx+'Val').textContent=angle;
   wsSend({t:'test_finger',i:idx,a:parseInt(angle)});
+  updateCalFlute();
 }
 function testAirflow(angle){
   $('calAirVal').textContent=angle;
@@ -675,9 +787,278 @@ function testNote(){
   if(midi)wsSend({t:'test_note',n:midi});
 }
 function resetCalibration(){
-  // Remettre airflow au repos
   if(cfgData){testAirflow(cfgData.air_off);$('calAirSlider').value=cfgData.air_off}
   testSolenoid(0);
+  if(sweepTimer){clearInterval(sweepTimer);sweepTimer=null}
+}
+
+// --- Calibration mini-flute (#4 visual feedback) ---
+function buildCalFlute(){
+  const svg=$('calFluteSvg');if(!svg)return;
+  const nf=numFingers,sp=50,sx=80,gap=30,cy=40,r=14;
+  const lc=Math.ceil(nf/2),rc=nf-lc;
+  const pos=[];
+  for(let i=0;i<lc;i++)pos.push(sx+i*sp);
+  const rx=sx+lc*sp+gap;
+  for(let i=0;i<rc;i++)pos.push(rx+i*sp);
+  const tw=(pos.length?pos[pos.length-1]:sx)+60;
+  svg.setAttribute('viewBox','0 0 '+tw+' 80');
+  let h='<defs><linearGradient id="cwg" x1="0" y1="0" x2="0" y2="1">';
+  h+='<stop offset="0%" stop-color="#C4A035"/><stop offset="45%" stop-color="#9B7A1C"/>';
+  h+='<stop offset="100%" stop-color="#6B4F10"/></linearGradient></defs>';
+  h+='<rect x="15" y="18" width="'+(tw-30)+'" height="44" rx="22" fill="url(#cwg)" stroke="#5C4A0A" stroke-width="2"/>';
+  h+='<ellipse cx="24" cy="'+cy+'" rx="13" ry="24" fill="#B08C20" stroke="#5C4A0A" stroke-width="2"/>';
+  for(let i=0;i<nf;i++){h+='<circle id="cfh'+i+'" cx="'+pos[i]+'" cy="'+cy+'" r="'+r+'" class="flute-hole closed"/>'}
+  if(lc>0&&rc>0){
+    const sepX=pos[lc-1]+sp/2+gap/2;
+    h+='<line x1="'+sepX+'" y1="24" x2="'+sepX+'" y2="56" stroke="#5C4A0A" stroke-width="1" stroke-dasharray="3,3" opacity="0.4"/>';
+  }
+  svg.innerHTML=h;
+}
+function updateCalFlute(){
+  if(!cfgData)return;
+  const ao=cfgData.angle_open||30;
+  for(let i=0;i<numFingers;i++){
+    const h=$('cfh'+i);if(!h)continue;
+    const slider=$('calF'+i);
+    if(!slider)continue;
+    const cur=parseInt(slider.value);
+    const closed=cfgData.fingers[i].a;
+    const isOpen=Math.abs(cur-closed)>ao/2;
+    h.setAttribute('class','flute-hole '+(isOpen?'open':'closed'));
+  }
+}
+
+// --- Calibration par note (#1) ---
+function selectCalNote(){
+  const midi=parseInt($('calNoteSelect').value);
+  const nd=notesData.find(n=>n.midi===midi);
+  const panel=$('noteCalPanel');
+  if(!nd){if(panel)panel.classList.remove('active');calNoteIdx=-1;return}
+  calNoteIdx=notesData.indexOf(nd);
+  panel.classList.add('active');
+  $('ncNoteName').textContent=midiToName(nd.midi);
+  $('ncNoteInfo').textContent='MIDI '+nd.midi;
+  $('ncAirMin').value=nd.air_min;$('ncAirMinVal').textContent=nd.air_min+'%';
+  $('ncAirMax').value=nd.air_max;$('ncAirMaxVal').textContent=nd.air_max+'%';
+  // Update cal flute to show this note fingering
+  for(let i=0;i<numFingers;i++){
+    const h=$('cfh'+i);if(!h)continue;
+    h.setAttribute('class','flute-hole '+(nd.fingers&&nd.fingers[i]?'open':'closed'));
+  }
+  $('calFluteInfo').textContent=midiToName(nd.midi)+': '+nd.fingers.map(function(f){return f?'O':'\u25CF'}).join(' ');
+  // Reset sweep
+  $('sweepPanel').classList.remove('active');
+}
+function onNcAirChange(){
+  const mn=parseInt($('ncAirMin').value),mx=parseInt($('ncAirMax').value);
+  $('ncAirMinVal').textContent=mn+'%';$('ncAirMaxVal').textContent=mx+'%';
+  // Live preview: send airflow at midpoint
+  if(cfgData){
+    const mid=(mn+mx)/2;
+    const angle=Math.round(cfgData.air_min+(cfgData.air_max-cfgData.air_min)*mid/100);
+    wsSend({t:'test_air',a:angle});
+    $('calAirVal').textContent=angle;$('calAirSlider').value=angle;
+  }
+}
+function testCalNote(){
+  if(calNoteIdx<0)return;
+  const nd=notesData[calNoteIdx];
+  wsSend({t:'test_note',n:nd.midi});
+  testSolenoid(1);
+  $('calFluteInfo').textContent='Test: '+midiToName(nd.midi)+' (solenoide ouvert)';
+}
+function saveNoteCalibration(){
+  if(calNoteIdx<0)return;
+  notesData[calNoteIdx].air_min=parseInt($('ncAirMin').value);
+  notesData[calNoteIdx].air_max=parseInt($('ncAirMax').value);
+  const body={notes_air:notesData.map(function(n){return{mn:n.air_min,mx:n.air_max}})};
+  fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(body)}).then(function(r){return r.json()}).then(function(d){
+    if(d.ok){$('calFluteInfo').textContent='Sauvegarde OK !';addLog("Cal note sauvee");
+      buildKeyboard();buildFingeringTable()}
+  }).catch(function(e){$('calFluteInfo').textContent='Erreur: '+e});
+}
+
+// --- Sweep airflow (#5) ---
+function startSweep(){
+  if(calNoteIdx<0)return;
+  testNote();testSolenoid(1);
+  sweepPct=0;sweepMin=-1;sweepMax=-1;
+  $('sweepPanel').classList.add('active');
+  $('sweepRange').style.display='none';
+  $('btnSweepMin').disabled=false;
+  $('btnSweepMax').disabled=true;
+  $('sweepPct').textContent='0%';
+  $('sweepCursor').style.left='0%';
+  if(sweepTimer)clearInterval(sweepTimer);
+  sweepTimer=setInterval(function(){
+    sweepPct+=1;
+    if(sweepPct>100){
+      clearInterval(sweepTimer);sweepTimer=null;
+      testSolenoid(0);
+      if(sweepMin>=0&&sweepMax<0)sweepMax=100;
+      applySweepResult();return;
+    }
+    $('sweepPct').textContent=sweepPct+'%';
+    $('sweepCursor').style.left=sweepPct+'%';
+    if(sweepMin>=0){
+      $('sweepRange').style.width=(sweepPct-sweepMin)+'%';
+    }
+    if(cfgData){
+      const angle=Math.round(cfgData.air_min+(cfgData.air_max-cfgData.air_min)*sweepPct/100);
+      wsSend({t:'test_air',a:angle});
+    }
+  },150);
+}
+function markSweepMin(){
+  sweepMin=sweepPct;
+  $('btnSweepMin').disabled=true;$('btnSweepMax').disabled=false;
+  $('sweepRange').style.display='block';
+  $('sweepRange').style.left=sweepPct+'%';$('sweepRange').style.width='0%';
+}
+function markSweepMax(){
+  sweepMax=sweepPct;
+  $('btnSweepMax').disabled=true;
+  if(sweepTimer){clearInterval(sweepTimer);sweepTimer=null}
+  testSolenoid(0);applySweepResult();
+}
+function applySweepResult(){
+  if(sweepMin>=0&&sweepMax>sweepMin){
+    $('ncAirMin').value=sweepMin;$('ncAirMinVal').textContent=sweepMin+'%';
+    $('ncAirMax').value=sweepMax;$('ncAirMaxVal').textContent=sweepMax+'%';
+    $('sweepRange').style.left=sweepMin+'%';
+    $('sweepRange').style.width=(sweepMax-sweepMin)+'%';
+    $('calFluteInfo').textContent='Sweep: '+sweepMin+'% - '+sweepMax+'%  (cliquez Sauver)';
+  }
+}
+
+// --- Wizard calibration doigts (#2) ---
+function startWizard(){
+  wizStep=0;wizFingerData=[];
+  for(let i=0;i<numFingers;i++){
+    wizFingerData.push({closed:cfgData?cfgData.fingers[i].a:90,dir:cfgData?cfgData.fingers[i].d:1});
+  }
+  $('wizOverlay').classList.add('active');
+  wizSetStep(0);
+}
+function wizSetStep(step){
+  wizStep=step;
+  const total=numFingers+1;
+  let dots='';
+  for(let i=0;i<total;i++){dots+='<span class="dot '+(i<step?'done':(i===step?'cur':''))+'"></span>'}
+  $('wizProgress').innerHTML=dots;
+
+  if(step<numFingers){
+    const i=step;const angle=wizFingerData[i].closed;
+    $('wizTitle').textContent='Doigt '+(i+1)+' / '+numFingers;
+    $('wizStepInfo').textContent='Etape '+(step+1)+' / '+total;
+    $('wizBody').innerHTML=
+      '<div style="color:#e0e0e0;margin-bottom:14px;line-height:1.4">'+
+      'Deplacez le slider jusqu\'a ce que le doigt <strong style="color:#e94560">couvre completement</strong> le trou '+(i+1)+'.</div>'+
+      '<div style="text-align:center;margin:12px 0"><div style="font-size:2em;font-weight:bold;color:#4ecca3" id="wizAngleVal">'+angle+'</div>'+
+      '<div style="font-size:0.75em;color:#888">degres</div></div>'+
+      '<input type="range" class="cal-range" id="wizSlider" min="0" max="180" value="'+angle+
+      '" oninput="wizSliderMove(this.value)">';
+    wsSend({t:'test_finger',i:i,a:angle});
+  }else{
+    $('wizTitle').textContent='Validation';
+    $('wizStepInfo').textContent='Etape '+total+' / '+total;
+    let s='<div style="color:#e0e0e0;margin-bottom:14px;line-height:1.4">'+
+      'Verifiez chaque doigt. Ajustez l\'amplitude d\'ouverture puis testez.</div>';
+    s+='<div class="cal-servo"><div class="cal-label">Angle ouverture (tous doigts) '+
+      '<span style="color:#4ecca3;float:right" id="wizOpenVal">'+(cfgData?cfgData.angle_open:30)+'</span></div>'+
+      '<input type="range" class="cal-range" id="wizOpenSlider" min="5" max="90" value="'+(cfgData?cfgData.angle_open:30)+
+      '" oninput="wizOpenChange(this.value)"></div>';
+    s+='<div style="margin-top:10px">';
+    for(let i=0;i<numFingers;i++){
+      s+='<div class="wiz-finger-row">'+
+        '<span>Doigt '+(i+1)+'</span>'+
+        '<span class="wiz-angle">'+wizFingerData[i].closed+'&deg;</span>'+
+        '<button class="btn-action" style="font-size:0.75em;padding:4px 8px" onclick="wizTestFinger('+i+',true)">Ouvrir</button>'+
+        '<button class="btn-action" style="font-size:0.75em;padding:4px 8px" onclick="wizTestFinger('+i+',false)">Fermer</button>'+
+        '<button class="btn-action" style="font-size:0.75em;padding:4px 8px" onclick="wizFlipDir('+i+')">Inverser</button></div>';
+    }
+    s+='</div>';
+    $('wizBody').innerHTML=s;
+  }
+  $('wizPrev').style.display=step>0?'':'none';
+  $('wizNext').textContent=step<numFingers?'Valider \u2192':'Sauvegarder';
+  $('wizNext').onclick=step<numFingers?wizNext:wizFinish;
+}
+function wizSliderMove(v){
+  wizFingerData[wizStep].closed=parseInt(v);
+  $('wizAngleVal').textContent=v;
+  wsSend({t:'test_finger',i:wizStep,a:parseInt(v)});
+}
+function wizNext(){wizSetStep(wizStep+1)}
+function wizPrev(){if(wizStep>0)wizSetStep(wizStep-1)}
+function wizTestFinger(i,open){
+  const closed=wizFingerData[i].closed;
+  const ao=parseInt($('wizOpenSlider')?$('wizOpenSlider').value:30);
+  const dir=wizFingerData[i].dir;
+  const angle=open?closed+ao*dir:closed;
+  wsSend({t:'test_finger',i:i,a:Math.max(0,Math.min(180,angle))});
+}
+function wizOpenChange(v){$('wizOpenVal').textContent=v}
+function wizFlipDir(i){
+  wizFingerData[i].dir*=-1;
+  addLog("Doigt "+(i+1)+": dir="+wizFingerData[i].dir);
+}
+function wizFinish(){
+  const openSlider=$('wizOpenSlider');
+  const body={
+    angle_open:openSlider?parseInt(openSlider.value):30,
+    fingers:wizFingerData.map(function(f){return{a:f.closed,d:f.dir}})
+  };
+  fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(body)}).then(function(r){return r.json()}).then(function(d){
+    if(d.ok){
+      $('wizOverlay').classList.remove('active');
+      addLog("Wizard: calibration sauvegardee");
+      loadConfig();
+    }
+  }).catch(function(e){addLog("Erreur wizard: "+e)});
+}
+function wizClose(){
+  $('wizOverlay').classList.remove('active');
+  resetCalibration();
+}
+
+// --- Visual fingering table (#3) ---
+function buildFingeringTable(){
+  const tb=$('fingeringBody');if(!tb)return;
+  tb.innerHTML='';
+  const lc=Math.ceil(numFingers/2);
+  notesData.forEach(function(n,idx){
+    const tr=document.createElement('tr');
+    let dots='<div class="fing-dots-cell">';
+    for(let i=0;i<numFingers;i++){
+      if(i===lc)dots+='<span class="fing-sep"></span>';
+      const open=n.fingers&&n.fingers[i]?true:false;
+      dots+='<span class="fing-dot '+(open?'open':'closed')+'" data-ni="'+idx+'" data-fi="'+i+
+        '" onclick="toggleFingerDot(this)"></span>';
+    }
+    dots+='</div>';
+    tr.innerHTML='<td style="font-weight:bold;color:#e0e0e0">'+midiToName(n.midi)+'</td>'+
+      '<td style="color:#888;font-size:0.8em">'+n.midi+'</td>'+
+      '<td>'+dots+'</td>'+
+      '<td><input type="number" id="nMin'+idx+'" min="0" max="100" value="'+n.air_min+'" style="width:48px"></td>'+
+      '<td><input type="number" id="nMax'+idx+'" min="0" max="100" value="'+n.air_max+'" style="width:48px"></td>'+
+      '<td><button class="btn-action" style="font-size:0.72em;padding:3px 6px" onclick="testTableNote('+idx+')">Test</button></td>';
+    tb.appendChild(tr);
+  });
+}
+function toggleFingerDot(el){
+  const ni=parseInt(el.dataset.ni),fi=parseInt(el.dataset.fi);
+  if(notesData[ni]&&notesData[ni].fingers){
+    notesData[ni].fingers[fi]=notesData[ni].fingers[fi]?0:1;
+    el.className='fing-dot '+(notesData[ni].fingers[fi]?'open':'closed');
+  }
+}
+function testTableNote(idx){
+  const n=notesData[idx];
+  if(n)wsSend({t:'test_note',n:n.midi});
 }
 
 // --- Config ---
@@ -716,19 +1097,11 @@ function loadConfig(){
         '<option value="-1"'+(f.d===-1?' selected':'')+'>-1</option></select></td>';
       ft.appendChild(tr);
     })}
-    // Notes airflow table
-    const nt=$('notesAirTable');nt.innerHTML='';
-    if(d.notes){d.notes.forEach((n,i)=>{
-      const tr=document.createElement('tr');
-      tr.innerHTML='<td>'+n.midi+'</td><td>'+midiToName(n.midi)+'</td>'+
-        '<td><input type="number" id="nMin'+i+'" min="0" max="100" value="'+n.air_min+'"></td>'+
-        '<td><input type="number" id="nMax'+i+'" min="0" max="100" value="'+n.air_max+'"></td>';
-      nt.appendChild(tr);
-    })}
-    // Construire clavier et calibration dynamiquement
+    // Construire UI dynamique
     buildFlute();
     buildKeyboard();
     buildCalibration();
+    buildFingeringTable();
     showCfgStatus('Config chargee','ok');
   }).catch(e=>{showCfgStatus('Erreur: '+e,'err')});
 }
