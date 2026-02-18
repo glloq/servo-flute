@@ -221,24 +221,7 @@ background:#e94560;border:2px solid #fff;cursor:pointer}
       <span class="fn" id="fluteNote">-</span>
       <span class="fs" id="fluteInfo">Selectionnez une note</span>
     </div>
-    <svg class="flute-svg" viewBox="0 0 440 80" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#C4A035"/><stop offset="45%" stop-color="#9B7A1C"/>
-          <stop offset="100%" stop-color="#6B4F10"/>
-        </linearGradient>
-      </defs>
-      <rect x="15" y="18" width="410" height="44" rx="22" fill="url(#wg)" stroke="#5C4A0A" stroke-width="2"/>
-      <ellipse cx="24" cy="40" rx="13" ry="24" fill="#B08C20" stroke="#5C4A0A" stroke-width="2"/>
-      <circle id="fh0" cx="110" cy="40" r="14" class="flute-hole closed"/>
-      <circle id="fh1" cx="160" cy="40" r="14" class="flute-hole closed"/>
-      <circle id="fh2" cx="210" cy="40" r="14" class="flute-hole closed"/>
-      <circle id="fh3" cx="270" cy="40" r="14" class="flute-hole closed"/>
-      <circle id="fh4" cx="320" cy="40" r="14" class="flute-hole closed"/>
-      <circle id="fh5" cx="370" cy="40" r="14" class="flute-hole closed"/>
-      <line x1="238" y1="24" x2="238" y2="56" stroke="#5C4A0A" stroke-width="1" stroke-dasharray="3,3" opacity="0.4"/>
-      <text x="160" y="76" text-anchor="middle" class="flute-lbl">Main gauche</text>
-      <text x="320" y="76" text-anchor="middle" class="flute-lbl">Main droite</text>
+    <svg class="flute-svg" id="fluteSvg" xmlns="http://www.w3.org/2000/svg">
     </svg>
   </div>
 
@@ -583,11 +566,36 @@ function noteOff(midi){wsSend({t:'nof',n:midi});if(curNote===midi)curNote=null}
 function sendCC(num,val){wsSend({t:'cc',c:parseInt(num),v:parseInt(val)})}
 
 function updateFlute(nd){
-  for(let i=0;i<6;i++){const h=$('fh'+i);if(!h)continue;
+  for(let i=0;i<numFingers;i++){const h=$('fh'+i);if(!h)continue;
     h.setAttribute('class','flute-hole '+(nd&&nd.fingers&&nd.fingers[i]?'open':'closed'))}
   if(nd){$('fluteNote').textContent=midiToName(nd.midi);
     $('fluteInfo').textContent='MIDI '+nd.midi+' | Souffle: '+nd.air_min+'-'+nd.air_max+'%'}
   else{$('fluteNote').textContent='-';$('fluteInfo').textContent='Selectionnez une note'}
+}
+function buildFlute(){
+  const svg=$('fluteSvg');if(!svg)return;
+  const nf=numFingers,sp=50,sx=80,gap=30,cy=40,r=14;
+  const lc=Math.ceil(nf/2),rc=nf-lc;
+  const pos=[];
+  for(let i=0;i<lc;i++)pos.push(sx+i*sp);
+  const rx=sx+lc*sp+gap;
+  for(let i=0;i<rc;i++)pos.push(rx+i*sp);
+  const tw=(pos.length?pos[pos.length-1]:sx)+60;
+  svg.setAttribute('viewBox','0 0 '+tw+' 80');
+  let h='<defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">';
+  h+='<stop offset="0%" stop-color="#C4A035"/><stop offset="45%" stop-color="#9B7A1C"/>';
+  h+='<stop offset="100%" stop-color="#6B4F10"/></linearGradient></defs>';
+  h+='<rect x="15" y="18" width="'+(tw-30)+'" height="44" rx="22" fill="url(#wg)" stroke="#5C4A0A" stroke-width="2"/>';
+  h+='<ellipse cx="24" cy="'+cy+'" rx="13" ry="24" fill="#B08C20" stroke="#5C4A0A" stroke-width="2"/>';
+  for(let i=0;i<nf;i++){h+='<circle id="fh'+i+'" cx="'+pos[i]+'" cy="'+cy+'" r="'+r+'" class="flute-hole closed"/>'}
+  if(lc>0&&rc>0){
+    const sepX=pos[lc-1]+sp/2+gap/2;
+    h+='<line x1="'+sepX+'" y1="24" x2="'+sepX+'" y2="56" stroke="#5C4A0A" stroke-width="1" stroke-dasharray="3,3" opacity="0.4"/>';
+    const lcx=(pos[0]+pos[lc-1])/2,rcx=(pos[lc]+pos[nf-1])/2;
+    h+='<text x="'+lcx+'" y="76" text-anchor="middle" class="flute-lbl">Main gauche</text>';
+    h+='<text x="'+rcx+'" y="76" text-anchor="middle" class="flute-lbl">Main droite</text>';
+  }
+  svg.innerHTML=h;
 }
 function updateAir(nd){
   const s=$('airSlider'),sec=$('airSection');if(!s||!sec)return;
@@ -718,6 +726,7 @@ function loadConfig(){
       nt.appendChild(tr);
     })}
     // Construire clavier et calibration dynamiquement
+    buildFlute();
     buildKeyboard();
     buildCalibration();
     showCfgStatus('Config chargee','ok');
