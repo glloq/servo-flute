@@ -160,6 +160,39 @@ border:none;border-radius:8px;font-size:0.95em;font-weight:bold;cursor:pointer}
   nav button{padding:8px 10px;font-size:0.75em}
   .slider-group label{min-width:55px;font-size:0.8em}
 }
+/* Flute graphic */
+.flute-section{background:#16213e;border-radius:10px;padding:14px;margin:8px 0}
+.flute-note-display{text-align:center;margin-bottom:10px}
+.flute-note-display .fn{font-size:2em;font-weight:bold;color:#e94560;display:block}
+.flute-note-display .fs{font-size:0.75em;color:#888;display:block;margin-top:2px}
+.flute-svg{width:100%;max-width:480px;display:block;margin:0 auto}
+.flute-hole{stroke:#5C4A0A;stroke-width:2;transition:fill .12s,filter .12s}
+.flute-hole.closed{fill:#2a1a0a}.flute-hole.open{fill:#4ecca3;filter:drop-shadow(0 0 6px rgba(78,204,163,0.7))}
+.flute-lbl{fill:#777;font-size:11px}
+.flute-hands{display:flex;justify-content:space-around;font-size:0.7em;color:#666;max-width:480px;margin:2px auto 0}
+/* Air control */
+.air-section{background:#16213e;border-radius:10px;padding:14px;margin:8px 0}
+.air-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:0.85em}
+.air-pct{font-weight:bold;color:#4ecca3;font-size:1.1em}
+.air-track{position:relative;height:34px;margin:4px 0}
+.air-bg{position:absolute;top:11px;left:0;right:0;height:12px;background:#0a0a1a;border-radius:6px}
+.air-fill{position:absolute;top:11px;height:12px;background:rgba(78,204,163,0.2);
+border-left:2px solid #4ecca3;border-right:2px solid #4ecca3;border-radius:6px;transition:left .2s,width .2s}
+.air-track input[type=range]{position:absolute;top:0;left:0;width:100%;height:34px;
+-webkit-appearance:none;appearance:none;background:transparent;z-index:2;cursor:pointer;margin:0;padding:0}
+.air-track input[type=range]::-webkit-slider-runnable-track{height:12px;background:transparent;margin-top:5px}
+.air-track input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;
+border-radius:50%;background:#e94560;border:2px solid #fff;cursor:pointer;margin-top:-5px}
+.air-track input[type=range]::-moz-range-track{height:12px;background:transparent}
+.air-track input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;
+background:#e94560;border:2px solid #fff;cursor:pointer}
+.air-labels{display:flex;justify-content:space-between;font-size:0.7em;color:#888}
+.air-off{opacity:0.35;pointer-events:none}
+/* Key finger dots */
+.kf-row{display:flex;gap:2px;justify-content:center;margin-top:4px}
+.kf{width:5px;height:5px;border-radius:50%;border:1px solid #555}
+.kf.o{background:#4ecca3;border-color:#4ecca3}.kf.c{background:#2a1a0a;border-color:#555}
+.key .air-info{font-size:0.6em;color:#666;margin-top:2px;display:block}
 </style>
 </head>
 <body>
@@ -182,17 +215,62 @@ border:none;border-radius:8px;font-size:0.95em;font-weight:bold;cursor:pointer}
 
 <!-- TAB: CLAVIER VIRTUEL (dynamique) -->
 <div class="tab active" id="tab-keyboard">
+  <!-- Representation graphique de la flute -->
+  <div class="flute-section">
+    <div class="flute-note-display">
+      <span class="fn" id="fluteNote">-</span>
+      <span class="fs" id="fluteInfo">Selectionnez une note</span>
+    </div>
+    <svg class="flute-svg" viewBox="0 0 440 80" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#C4A035"/><stop offset="45%" stop-color="#9B7A1C"/>
+          <stop offset="100%" stop-color="#6B4F10"/>
+        </linearGradient>
+      </defs>
+      <rect x="15" y="18" width="410" height="44" rx="22" fill="url(#wg)" stroke="#5C4A0A" stroke-width="2"/>
+      <ellipse cx="24" cy="40" rx="13" ry="24" fill="#B08C20" stroke="#5C4A0A" stroke-width="2"/>
+      <circle id="fh0" cx="110" cy="40" r="14" class="flute-hole closed"/>
+      <circle id="fh1" cx="160" cy="40" r="14" class="flute-hole closed"/>
+      <circle id="fh2" cx="210" cy="40" r="14" class="flute-hole closed"/>
+      <circle id="fh3" cx="270" cy="40" r="14" class="flute-hole closed"/>
+      <circle id="fh4" cx="320" cy="40" r="14" class="flute-hole closed"/>
+      <circle id="fh5" cx="370" cy="40" r="14" class="flute-hole closed"/>
+      <line x1="238" y1="24" x2="238" y2="56" stroke="#5C4A0A" stroke-width="1" stroke-dasharray="3,3" opacity="0.4"/>
+      <text x="160" y="76" text-anchor="middle" class="flute-lbl">Main gauche</text>
+      <text x="320" y="76" text-anchor="middle" class="flute-lbl">Main droite</text>
+    </svg>
+  </div>
+
+  <!-- Controle du souffle (debit d'air) -->
+  <div class="air-section air-off" id="airSection">
+    <div class="air-header">
+      <span>Souffle (debit d'air)</span>
+      <span class="air-pct" id="airPct">-</span>
+    </div>
+    <div class="air-track">
+      <div class="air-bg"></div>
+      <div class="air-fill" id="airFill" style="left:0%;width:100%"></div>
+      <input type="range" id="airSlider" min="0" max="127" value="64"
+        oninput="onAirChange(this.value)">
+    </div>
+    <div class="air-labels">
+      <span id="airMinL">Min: -</span>
+      <span id="airMaxL">Max: -</span>
+    </div>
+  </div>
+
+  <!-- Clavier des notes jouables -->
+  <div class="keyboard" id="pianoKeys">
+    <div style="text-align:center;color:#888;padding:20px">Chargement des notes...</div>
+  </div>
+
   <div class="slider-group">
     <label>Velocity</label>
     <input type="range" id="velSlider" min="1" max="127" value="100"
       oninput="setVelocity(this.value)">
     <span class="val" id="velVal">100</span>
   </div>
-
-  <div class="keyboard" id="pianoKeys">
-    <div style="text-align:center;color:#888;padding:20px">Chargement des notes...</div>
-  </div>
-
   <div class="slider-group">
     <label>Vol CC7</label>
     <input type="range" id="cc7Slider" min="0" max="127" value="127"
@@ -408,6 +486,7 @@ const NOTE_NAMES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const STATES=["IDLE","POSITIONING","PLAYING","STOPPING"];
 let ws=null,velocity=100,wsConnected=false;
 let cfgData=null,notesData=[],numFingers=6;
+let curNote=null,curNoteData=null;
 
 // --- Helpers ---
 function midiToName(m){return NOTE_NAMES[m%12]+(Math.floor(m/12)-1)}
@@ -480,7 +559,9 @@ function buildKeyboard(){
     const key=document.createElement('div');
     key.className='key'+(isBlackKey(n.midi)?' black':'');
     key.dataset.midi=n.midi;
-    key.innerHTML='<span class="note-name">'+name+'</span><span class="note-midi">MIDI '+n.midi+'</span>';
+    let dots='';
+    if(n.fingers){dots='<span class="kf-row">';n.fingers.forEach(f=>{dots+='<span class="kf '+(f?'o':'c')+'"></span>'});dots+='</span>'}
+    key.innerHTML='<span class="note-name">'+name+'</span><span class="note-midi">MIDI '+n.midi+'</span>'+dots+'<span class="air-info">'+n.air_min+'-'+n.air_max+'%</span>';
     key.addEventListener('touchstart',(e)=>{e.preventDefault();noteOn(n.midi);key.classList.add('pressed')},{passive:false});
     key.addEventListener('touchend',(e)=>{e.preventDefault();noteOff(n.midi);key.classList.remove('pressed')},{passive:false});
     key.addEventListener('touchcancel',()=>{noteOff(n.midi);key.classList.remove('pressed')});
@@ -492,9 +573,34 @@ function buildKeyboard(){
   buildKeyMap();
 }
 
-function noteOn(midi){wsSend({t:'non',n:midi,v:velocity});addLog("ON: "+midiToName(midi)+" ("+midi+")")}
-function noteOff(midi){wsSend({t:'nof',n:midi})}
+function noteOn(midi){
+  curNote=midi;curNoteData=notesData.find(n=>n.midi===midi)||null;
+  updateFlute(curNoteData);updateAir(curNoteData);
+  if(curNoteData){const mc=Math.round((curNoteData.air_min+curNoteData.air_max)/2*1.27);wsSend({t:'cc',c:2,v:mc})}
+  wsSend({t:'non',n:midi,v:velocity});addLog("ON: "+midiToName(midi)+" ("+midi+")")
+}
+function noteOff(midi){wsSend({t:'nof',n:midi});if(curNote===midi)curNote=null}
 function sendCC(num,val){wsSend({t:'cc',c:parseInt(num),v:parseInt(val)})}
+
+function updateFlute(nd){
+  for(let i=0;i<6;i++){const h=$('fh'+i);if(!h)continue;
+    h.setAttribute('class','flute-hole '+(nd&&nd.fingers&&nd.fingers[i]?'open':'closed'))}
+  if(nd){$('fluteNote').textContent=midiToName(nd.midi);
+    $('fluteInfo').textContent='MIDI '+nd.midi+' | Souffle: '+nd.air_min+'-'+nd.air_max+'%'}
+  else{$('fluteNote').textContent='-';$('fluteInfo').textContent='Selectionnez une note'}
+}
+function updateAir(nd){
+  const s=$('airSlider'),sec=$('airSection');if(!s||!sec)return;
+  if(nd){sec.classList.remove('air-off');
+    $('airFill').style.left=nd.air_min+'%';$('airFill').style.width=(nd.air_max-nd.air_min)+'%';
+    $('airMinL').textContent='Min: '+nd.air_min+'%';$('airMaxL').textContent='Max: '+nd.air_max+'%';
+    s.value=Math.round((nd.air_min+nd.air_max)/2*1.27);onAirChange(s.value)}
+  else{sec.classList.add('air-off');$('airPct').textContent='-'}
+}
+function onAirChange(v){
+  $('airPct').textContent=Math.round(v/1.27)+'%';
+  wsSend({t:'cc',c:2,v:parseInt(v)})
+}
 function sendPanic(){wsSend({t:'panic'});addLog("ALL SOUND OFF")}
 function setVelocity(v){velocity=parseInt(v);$('velVal').textContent=v;wsSend({t:'velocity',v:velocity})}
 
