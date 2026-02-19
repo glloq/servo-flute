@@ -241,6 +241,25 @@ max-height:90vh;overflow-y:auto;border:2px solid #0f3460}
 background:#0a0a1a;border-radius:6px}
 .wiz-finger-row span:first-child{color:#888;min-width:60px;font-size:0.85em}
 .wiz-finger-row .wiz-angle{color:#4ecca3;font-weight:bold;min-width:35px}
+/* Auto-calibration */
+.mic-badge{background:#4ecca3;color:#1a1a2e;font-size:0.65em;padding:2px 6px;
+border-radius:4px;margin-left:8px;vertical-align:middle;font-weight:bold}
+.mic-badge.off{background:#555;color:#888}
+.vu-wrap{display:flex;align-items:center;gap:8px;margin:6px 0}
+.vu-meter{flex:1;height:8px;background:#0a0a1a;border-radius:4px;overflow:hidden}
+.vu-fill{height:100%;background:#4ecca3;transition:width 0.1s;border-radius:4px}
+.vu-val{min-width:35px;font-size:0.75em;color:#4ecca3;text-align:right}
+.pitch-display{display:flex;justify-content:center;align-items:baseline;gap:10px;
+font-size:0.9em;margin:6px 0;padding:6px;background:#0a0a1a;border-radius:6px}
+.pitch-note{font-weight:bold;font-size:1.2em;color:#e94560;min-width:40px;text-align:center}
+.pitch-hz{color:#888;font-size:0.8em;min-width:55px}
+.pitch-cents{font-size:0.85em;min-width:50px;text-align:right;font-weight:bold}
+.pitch-cents.sharp{color:#e94560}.pitch-cents.flat{color:#4ecca3}.pitch-cents.ok{color:#4ecca3}
+.acal-progress{background:#0a0a1a;border-radius:6px;padding:10px;margin:8px 0}
+.acal-progress .note-label{font-size:0.9em;color:#e94560;font-weight:bold}
+.acal-results{font-size:0.8em;margin-top:6px}
+.acal-results .res-row{display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid #16213e}
+.acal-results .res-ok{color:#4ecca3}.acal-results .res-fail{color:#e94560}
 </style>
 </head>
 <body>
@@ -420,6 +439,39 @@ background:#0a0a1a;border-radius:6px}
     </div>
   </div>
 
+  <!-- Auto-calibration avec micro (conditionnel) -->
+  <div class="section" id="autoCalSection" style="display:none">
+    <h3>Auto-calibration <span class="mic-badge" id="micBadge">MIC</span></h3>
+    <div style="font-size:0.8em;color:#888;margin-bottom:8px">
+      Calibration automatique du debit d'air par analyse audio (micro INMP441)
+    </div>
+    <div class="vu-wrap">
+      <span style="font-size:0.75em;color:#a0a0a0;min-width:30px">Vol</span>
+      <div class="vu-meter"><div class="vu-fill" id="vuFill" style="width:0%"></div></div>
+      <span class="vu-val" id="vuVal">0%</span>
+    </div>
+    <div class="pitch-display">
+      <span class="pitch-note" id="pitchNote">-</span>
+      <span class="pitch-hz" id="pitchHz">- Hz</span>
+      <span class="pitch-cents ok" id="pitchCents">-</span>
+    </div>
+    <div style="display:flex;gap:8px;margin:10px 0;flex-wrap:wrap">
+      <button class="btn-action" id="btnAutoCalStart" onclick="startAutoCal()">Demarrer auto-calibration</button>
+      <button class="btn-action" id="btnAutoCalStop" onclick="stopAutoCal()" style="display:none">Arreter</button>
+    </div>
+    <div class="acal-progress" id="acalProgress" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span class="note-label" id="acalNoteLabel">-</span>
+        <span style="font-size:0.8em;color:#888" id="acalStep">-</span>
+      </div>
+      <div class="progress-bar" style="margin:6px 0">
+        <div class="progress-fill" id="acalFill" style="width:0%"></div>
+      </div>
+      <div style="font-size:0.8em;color:#a0a0a0;text-align:center" id="acalState">-</div>
+    </div>
+    <div class="acal-results" id="acalResults" style="display:none"></div>
+  </div>
+
   <button class="panic-btn" onclick="sendPanic();resetCalibration()">TOUT ARRETER</button>
 </div>
 
@@ -576,6 +628,7 @@ let cfgData=null,notesData=[],numFingers=6;
 let curNote=null,curNoteData=null;
 let calNoteIdx=-1,sweepTimer=null,sweepPct=0,sweepMin=-1,sweepMax=-1;
 let wizStep=0,wizFingerData=[];
+let micDetected=false,autoCalRunning=false;
 
 // --- Helpers ---
 function midiToName(m){return NOTE_NAMES[m%12]+(Math.floor(m/12)-1)}
@@ -619,6 +672,54 @@ function handleWsMsg(d){
     $('btnPlay').disabled=false;$('btnStop').disabled=false;
     addLog("MIDI: "+d.file+" ("+d.events+" evt)");
   }else if(d.t==='midi_error'){addLog("ERR MIDI: "+d.msg)}
+  else if(d.t==='audio'){
+    // VU meter update
+    const rms=Math.min(100,Math.round((d.rms||0)*500));
+    $('vuFill').style.width=rms+'%';
+    $('vuVal').textContent=rms+'%';
+    if(rms>60)$('vuFill').style.background='#e94560';
+    else if(rms>30)$('vuFill').style.background='#e9a645';
+    else $('vuFill').style.background='#4ecca3';
+    // Pitch display
+    if(d.midi>0){
+      $('pitchNote').textContent=midiToName(d.midi);
+      $('pitchHz').textContent=Math.round(d.hz)+' Hz';
+      const c=d.cents||0;
+      const ce=$('pitchCents');
+      ce.textContent=(c>=0?'+':'')+c+' ct';
+      ce.className='pitch-cents '+(Math.abs(c)<15?'ok':(c>0?'sharp':'flat'));
+    }else{
+      $('pitchNote').textContent='-';
+      $('pitchHz').textContent='- Hz';
+      $('pitchCents').textContent='-';$('pitchCents').className='pitch-cents ok';
+    }
+  }else if(d.t==='acal_prog'){
+    $('acalProgress').style.display='block';
+    $('acalNoteLabel').textContent=d.note||('-');
+    $('acalStep').textContent='Note '+(d.idx+1)+' / '+d.total;
+    $('acalFill').style.width=Math.round(((d.idx||0)/(d.total||1))*100)+'%';
+    const stNames={0:'Attente',1:'Preparation',2:'Stabilisation',3:'Sweep...',4:'Analyse',5:'Termine'};
+    $('acalState').textContent=stNames[d.st]||'...';
+  }else if(d.t==='acal_done'){
+    autoCalRunning=false;
+    $('btnAutoCalStart').style.display='';
+    $('btnAutoCalStop').style.display='none';
+    $('acalState').textContent='Calibration terminee !';
+    $('acalFill').style.width='100%';
+    addLog("Auto-cal: terminee");
+    // Show results
+    if(d.results){
+      let h='<div style="font-size:0.85em;font-weight:bold;color:#e94560;margin-bottom:4px">Resultats</div>';
+      d.results.forEach(function(r){
+        h+='<div class="res-row"><span>'+r.name+'</span><span class="'+(r.ok?'res-ok':'res-fail')+'">'+
+          (r.ok?r.min+'% - '+r.max+'%':'Echec')+'</span></div>';
+      });
+      $('acalResults').innerHTML=h;
+      $('acalResults').style.display='block';
+    }
+    // Reload config to reflect new values
+    setTimeout(loadConfig,1000);
+  }
 }
 
 function updateCC(num,val){
@@ -790,6 +891,7 @@ function resetCalibration(){
   if(cfgData){testAirflow(cfgData.air_off);$('calAirSlider').value=cfgData.air_off}
   testSolenoid(0);
   if(sweepTimer){clearInterval(sweepTimer);sweepTimer=null}
+  if(autoCalRunning)stopAutoCal();
 }
 
 // --- Calibration mini-flute (#4 visual feedback) ---
@@ -1025,6 +1127,32 @@ function wizClose(){
   resetCalibration();
 }
 
+// --- Auto-calibration micro ---
+function startAutoCal(){
+  if(!micDetected||autoCalRunning)return;
+  autoCalRunning=true;
+  $('btnAutoCalStart').style.display='none';
+  $('btnAutoCalStop').style.display='';
+  $('acalProgress').style.display='block';
+  $('acalResults').style.display='none';
+  $('acalFill').style.width='0%';
+  $('acalState').textContent='Demarrage...';
+  // Enable mic monitoring
+  wsSend({t:'mic_mon',on:true});
+  // Start auto-calibration
+  wsSend({t:'auto_cal',mode:'air'});
+  addLog("Auto-cal: demarree");
+}
+function stopAutoCal(){
+  autoCalRunning=false;
+  $('btnAutoCalStart').style.display='';
+  $('btnAutoCalStop').style.display='none';
+  wsSend({t:'auto_cal',mode:'stop'});
+  wsSend({t:'mic_mon',on:false});
+  $('acalState').textContent='Arrete';
+  addLog("Auto-cal: arretee");
+}
+
 // --- Visual fingering table (#3) ---
 function buildFingeringTable(){
   const tb=$('fingeringBody');if(!tb)return;
@@ -1097,6 +1225,10 @@ function loadConfig(){
         '<option value="-1"'+(f.d===-1?' selected':'')+'>-1</option></select></td>';
       ft.appendChild(tr);
     })}
+    // Microphone detection
+    micDetected=!!d.mic;
+    const acSec=$('autoCalSection');
+    if(acSec)acSec.style.display=micDetected?'':'none';
     // Construire UI dynamique
     buildFlute();
     buildKeyboard();
@@ -1279,7 +1411,8 @@ function showTab(name,btn){
   if(btn)btn.classList.add('active');
   if(name==='config')loadConfig();
   if(name==='wifi'){loadWifiStatus()}
-  if(name==='calibration'&&cfgData)buildCalibration();
+  if(name==='calibration'){if(cfgData)buildCalibration();if(micDetected)wsSend({t:'mic_mon',on:true})}
+  else{if(micDetected&&!autoCalRunning)wsSend({t:'mic_mon',on:false})}
 }
 
 // --- Log ---

@@ -8,10 +8,18 @@ WebConfigurator::WebConfigurator(uint16_t port)
   : _server(port), _ws("/ws"),
     _instrument(nullptr), _player(nullptr), _wirelessManager(nullptr),
     _webVelocity(100), _lastStatusBroadcast(0), _lastWsCleanup(0),
-    _uploadSize(0) {
+    _uploadSize(0)
+#if MIC_ENABLED
+    , _audio(nullptr), _autoCal(nullptr), _micMonitorEnabled(false), _lastAudioBroadcast(0)
+#endif
+{
 }
 
 WebConfigurator::~WebConfigurator() {
+#if MIC_ENABLED
+  delete _autoCal;
+  delete _audio;
+#endif
 }
 
 void WebConfigurator::begin(InstrumentManager* instrument, MidiFilePlayer* player) {
@@ -30,6 +38,22 @@ void WebConfigurator::begin(InstrumentManager* instrument, MidiFilePlayer* playe
 
   // Demarrer le serveur
   _server.begin();
+
+#if MIC_ENABLED
+  // Initialize microphone (INMP441 via I2S)
+  _audio = new AudioAnalyzer();
+  bool micOk = _audio->begin();
+  if (micOk && _instrument) {
+    _autoCal = new AutoCalibrator(
+      _instrument->getFingerCtrl(),
+      _instrument->getAirflowCtrl(),
+      *_audio);
+  }
+  if (DEBUG) {
+    Serial.print("DEBUG: WebConfigurator - Microphone INMP441: ");
+    Serial.println(micOk ? "DETECTE" : "ABSENT");
+  }
+#endif
 
   if (DEBUG) {
     Serial.println("DEBUG: WebConfigurator - Serveur web demarre");
@@ -52,6 +76,71 @@ void WebConfigurator::update() {
     }
     _lastStatusBroadcast = now;
   }
+
+#if MIC_ENABLED
+  // Update audio analyzer
+  if (_audio && _audio->isMicDetected()) {
+    _audio->update();
+
+    // Broadcast audio data if monitoring enabled
+    if (_micMonitorEnabled && _audio->isActive() && _ws.count() > 0) {
+      if (now - _lastAudioBroadcast >= AUTOCAL_AUDIO_INTERVAL_MS) {
+        String aj = "{\"t\":\"audio\"";
+        aj += ",\"rms\":" + String(_audio->getRMS(), 3);
+        aj += ",\"snd\":" + String(_audio->isSoundDetected() ? 1 : 0);
+        if (_audio->getPitchHz() > 0) {
+          aj += ",\"hz\":" + String(_audio->getPitchHz(), 1);
+          aj += ",\"midi\":" + String(_audio->getPitchMidi());
+          aj += ",\"cents\":" + String(_audio->getPitchCents(), 1);
+        }
+        aj += "}";
+        _ws.textAll(aj);
+        _lastAudioBroadcast = now;
+      }
+    }
+
+    // Update auto-calibrator
+    if (_autoCal && _autoCal->isRunning()) {
+      _autoCal->update();
+
+      // Broadcast progress
+      if (_ws.count() > 0 && now - _lastAudioBroadcast >= AUTOCAL_AUDIO_INTERVAL_MS) {
+        int ni = _autoCal->getCurrentNoteIndex();
+        byte midi = (ni >= 0 && ni < NUMBER_NOTES) ? NOTES[ni].midiNote : 0;
+        String noteName = "";
+        if (midi > 0) {
+          const char* names[] = {"C","C#","D","D#","E","F","F#","G","G#","A","A#","B"};
+          noteName = String(names[midi % 12]) + String((int)(midi / 12) - 1);
+        }
+        String pj = "{\"t\":\"acal_prog\"";
+        pj += ",\"idx\":" + String(ni);
+        pj += ",\"note\":\"" + noteName + "\"";
+        pj += ",\"total\":" + String(NUMBER_NOTES);
+        pj += ",\"angle\":" + String(_autoCal->getCurrentAngle());
+        pj += ",\"st\":" + String((int)_autoCal->getState());
+        pj += "}";
+        _ws.textAll(pj);
+      }
+    }
+    // Check completion (separate check - runs once when state transitions to COMPLETE)
+    if (_autoCal && _autoCal->isComplete()) {
+      _autoCal->applyResults();
+      const char* names[] = {"C","C#","D","D#","E","F","F#","G","G#","A","A#","B"};
+      String dj = "{\"t\":\"acal_done\",\"ok\":true,\"results\":[";
+      for (int i = 0; i < NUMBER_NOTES; i++) {
+        if (i > 0) dj += ",";
+        byte midi = NOTES[i].midiNote;
+        String nn = String(names[midi % 12]) + String((int)(midi / 12) - 1);
+        AutoCalNoteResult r = _autoCal->getResult(i);
+        dj += "{\"name\":\"" + nn + "\",\"ok\":" + String(r.valid ? "true" : "false");
+        dj += ",\"min\":" + String(r.airMin) + ",\"max\":" + String(r.airMax) + "}";
+      }
+      dj += "]}";
+      _ws.textAll(dj);
+      _autoCal->stop();  // Reset to IDLE to avoid re-sending
+    }
+  }
+#endif
 }
 
 void WebConfigurator::setWirelessManager(WirelessManager* wm) {
@@ -247,6 +336,12 @@ void WebConfigurator::handleApiConfig(AsyncWebServerRequest* request) {
   json += ",\"time_unpower\":" + String(cfg.timeUnpower);
   json += ",\"num_notes\":" + String(NUMBER_NOTES);
   json += ",\"num_fingers\":" + String(NUMBER_SERVOS_FINGER);
+
+#if MIC_ENABLED
+  json += ",\"mic\":" + String((_audio && _audio->isMicDetected()) ? "true" : "false");
+#else
+  json += ",\"mic\":false";
+#endif
 
   // Doigts
   json += ",\"fingers\":[";
@@ -583,6 +678,34 @@ void WebConfigurator::processWsMessage(AsyncWebSocketClient* client, uint8_t* da
       _instrument->getFingerCtrl().setFingerPatternForNote(note);
       _instrument->getAirflowCtrl().setAirflowForNote(note, _webVelocity);
     }
+
+#if MIC_ENABLED
+  } else if (type == "mic_mon") {
+    // {"t":"mic_mon","on":1} - Enable/disable mic monitoring
+    int oIdx = msg.indexOf("\"on\":");
+    if (oIdx >= 0) {
+      int val = msg.substring(oIdx + 5).toInt();
+      _micMonitorEnabled = (val != 0);
+      if (_audio) _audio->setActive(_micMonitorEnabled || (_autoCal && _autoCal->isRunning()));
+    }
+
+  } else if (type == "auto_cal") {
+    // {"t":"auto_cal","mode":"air"} or {"t":"auto_cal","mode":"stop"}
+    int mIdx = msg.indexOf("\"mode\":\"");
+    if (mIdx >= 0) {
+      mIdx += 8;
+      int mEnd = msg.indexOf("\"", mIdx);
+      String mode = msg.substring(mIdx, mEnd);
+
+      if (mode == "air" && _autoCal && _audio && _audio->isMicDetected()) {
+        _audio->setActive(true);
+        _micMonitorEnabled = true;  // Auto-enable monitoring during cal
+        _autoCal->start(ACAL_MODE_AIRFLOW);
+      } else if (mode == "stop") {
+        if (_autoCal) _autoCal->stop();
+      }
+    }
+#endif
   }
 }
 

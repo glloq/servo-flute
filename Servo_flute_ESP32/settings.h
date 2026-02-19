@@ -49,6 +49,38 @@ ESP32-WROOM Pin Assignment
 #define PIN_SERVOS_OFF 5          // GPIO5
 
 /*******************************************************************************
+---------------------------   INMP441 MICROPHONE     -------------------------
+Optional I2S MEMS microphone for automatic calibration.
+Set MIC_ENABLED to false if no mic is connected.
+******************************************************************************/
+#define MIC_ENABLED true
+
+// I2S Pins for INMP441
+#define MIC_PIN_BCLK  14         // GPIO14 - Bit Clock (SCK)
+#define MIC_PIN_LRCLK 15         // GPIO15 - Word Select (WS)
+#define MIC_PIN_DIN   32         // GPIO32 - Data In (SD)
+
+// I2S Configuration
+#define MIC_I2S_PORT    I2S_NUM_0
+#define MIC_SAMPLE_RATE 16000
+#define MIC_BUFFER_SIZE 1024
+#define MIC_DMA_BUF_COUNT 4
+#define MIC_DMA_BUF_LEN   256
+
+// Audio analysis thresholds
+#define MIC_RMS_THRESHOLD       0.02f   // Min RMS for "sound detected"
+#define MIC_PITCH_MIN_HZ        200.0f  // Lowest detectable pitch
+#define MIC_PITCH_MAX_HZ        4000.0f // Highest detectable pitch
+#define MIC_PITCH_TOLERANCE_CENTS 200   // Pitch tolerance for auto-cal
+#define MIC_YIN_THRESHOLD       0.15f   // YIN confidence threshold
+
+// Auto-calibration timing
+#define AUTOCAL_SETTLE_MS       300     // Wait after positioning servos
+#define AUTOCAL_STEP_MS         80      // Time per airflow step
+#define AUTOCAL_SILENCE_COUNT   3       // Consecutive silent steps = sound gone
+#define AUTOCAL_AUDIO_INTERVAL_MS 100   // Audio broadcast interval
+
+/*******************************************************************************
 ---------------------------   TIMING SETTINGS (ms)    ------------------------
 ******************************************************************************/
 // Delai total entre positionnement servos et activation solenoide
