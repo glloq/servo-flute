@@ -13,9 +13,10 @@ Portage de la Servo Flute v3 (Arduino Leonardo) vers l'ESP32-WROOM-32E, ajoutant
 | Connexion MIDI | USB filaire | BLE-MIDI + WiFi rtpMIDI |
 | Configuration | `#define` (recompilation) | JSON sur LittleFS (web) |
 | Interface | Serial Monitor | Page web SPA 6 onglets |
-| Calibration | Serial Monitor interactif | Interface web temps reel |
+| Calibration | Serial Monitor interactif | Interface web temps reel + auto-calibration micro |
 | WiFi | Non | STA + AP hotspot |
 | Playback MIDI | Non | Upload + lecture fichier .mid |
+| Auto-calibration | Non | INMP441 I2S (optionnel) |
 
 ## Materiel requis
 
@@ -29,6 +30,7 @@ Portage de la Servo Flute v3 (Arduino Leonardo) vers l'ESP32-WROOM-32E, ajoutant
 - **Diode de roue libre** (1N4007)
 - **Alimentation 5V 5A** minimum
 - **Interrupteur** BT/WiFi (optionnel, GPIO4)
+- **INMP441** micro MEMS I2S (optionnel, pour auto-calibration)
 
 ### Brochage ESP32
 
@@ -41,6 +43,9 @@ Portage de la Servo Flute v3 (Arduino Leonardo) vers l'ESP32-WROOM-32E, ajoutant
 | 5 | PCA9685 OE (power servos) |
 | 21 | I2C SDA (PCA9685) |
 | 22 | I2C SCL (PCA9685) |
+| 14 | INMP441 BCLK (optionnel) |
+| 15 | INMP441 LRCLK/WS (optionnel) |
+| 32 | INMP441 DIN/SD (optionnel) |
 
 ### Canaux PCA9685
 
@@ -67,10 +72,10 @@ Portage de la Servo Flute v3 (Arduino Leonardo) vers l'ESP32-WROOM-32E, ajoutant
 
 Accessible en mode WiFi, 6 onglets :
 
-1. **Clavier** - Notes dynamiques (touch, souris, raccourcis clavier AZERTY)
+1. **Clavier** - Notes dynamiques avec representation flute, touch/souris/clavier AZERTY
 2. **MIDI** - Upload et lecture de fichiers .mid (SMF Type 0/1)
-3. **Calibration** - Test temps reel des servos, solenoide, positions par note
-4. **Config** - Tous les parametres editables, sauvegarde persistante
+3. **Calibration** - Test temps reel servos, assistant doigts, sweep airflow, auto-calibration micro
+4. **Config** - Tous les parametres editables, table des doigtes visuelle, sauvegarde persistante
 5. **WiFi** - Scan reseaux, connexion depuis le hotspot
 6. **Monitor** - CC bars, heap, journal en direct (WebSocket)
 
@@ -114,6 +119,17 @@ Messages JSON Client -> Serveur :
 {"t":"test_air","a":60}           // Test servo airflow
 {"t":"test_sol","o":1}             // Test solenoide
 {"t":"test_note","n":84}           // Test position note complete
+{"t":"mic_mon","on":true}          // Activer/desactiver monitoring micro
+{"t":"auto_cal","mode":"air"}      // Demarrer auto-calibration airflow
+{"t":"auto_cal","mode":"stop"}     // Arreter auto-calibration
+```
+
+Messages JSON Serveur -> Client (micro INMP441, si detecte) :
+
+```json
+{"t":"audio","rms":0.12,"hz":440,"midi":69,"cents":-5}  // Monitoring audio temps reel
+{"t":"acal_prog","idx":3,"note":"C6","total":14,"st":3}  // Progression auto-calibration
+{"t":"acal_done","ok":true,"results":[...]}               // Resultats auto-calibration
 ```
 
 ## Dependances Arduino
@@ -176,6 +192,8 @@ Servo_flute_ESP32/
   WirelessManager.h/.cpp - Orchestrateur modes BT/WiFi/AP
   WebConfigurator.h/.cpp - Serveur web + WebSocket + API REST
   MidiFilePlayer.h/.cpp  - Parser et lecteur SMF (Type 0/1)
+  AudioAnalyzer.h/.cpp   - Driver I2S INMP441 + detection RMS + pitch YIN
+  AutoCalibrator.h/.cpp  - Machine d'etat auto-calibration airflow
   StatusLed.h/.cpp       - Patterns LED d'etat
   HardwareInputs.h/.cpp  - Bouton + switch avec debounce
   web_content.h          - HTML/CSS/JS embarque en PROGMEM

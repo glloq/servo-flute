@@ -12,8 +12,13 @@
    FingerCtrl | AirflowCtrl |    BleMidi | WifiMidi |
               |             |           |          |
          NoteSequencer  EventQueue   WebConfigurator
-                                     |         |
-                              MidiFilePlayer  ConfigStorage
+                                     |    |    |
+                              MidiFilePlayer | ConfigStorage
+                                             |
+                                    [si MIC_ENABLED]
+                                    AudioAnalyzer
+                                         |
+                                   AutoCalibrator
 ```
 
 ## Flux de donnees
@@ -87,6 +92,43 @@ Toutes les 500ms (`WS_STATUS_INTERVAL_MS`), WebConfigurator envoie a tous les cl
 }
 ```
 
+## Audio et auto-calibration (optionnel)
+
+Si `MIC_ENABLED` est `true` dans `settings.h` et qu'un micro INMP441 est detecte au demarrage :
+
+### AudioAnalyzer
+
+- Driver I2S en mode `I2S_MODE_MASTER | I2S_MODE_RX`, 16kHz, 32-bit, canal gauche
+- Detection de presence du micro : lecture de 256 samples, >10% non-zero = micro present
+- Analyse a ~25Hz (toutes les 40ms) : calcul RMS + detection pitch via algorithme YIN simplifie
+- Si le micro n'est pas detecte au `begin()`, le driver I2S est desinstalle pour liberer les ressources
+
+### AutoCalibrator
+
+Machine d'etat pour la calibration automatique du debit d'air :
+
+```
+IDLE --> PREPARE --> SETTLE --> SWEEP --> NOTE_DONE --> (note suivante ou COMPLETE)
+```
+
+- **PREPARE** : positionne les doigts pour la note, ouvre le solenoide
+- **SETTLE** : attend la stabilisation des servos (`AUTOCAL_SETTLE_MS`)
+- **SWEEP** : augmente progressivement l'angle airflow, detecte le debut du son (RMS > seuil + pitch correct) et la fin (silence apres son)
+- **NOTE_DONE** : stocke air_min/air_max, passe a la note suivante
+- **COMPLETE** : applique les resultats a la config et sauvegarde
+
+### Broadcast audio
+
+Quand le monitoring micro est actif (onglet Calibration), toutes les 100ms :
+```json
+{"t":"audio","rms":0.12,"hz":440.0,"midi":69,"cents":-5}
+```
+
+Pendant l'auto-calibration, progression :
+```json
+{"t":"acal_prog","idx":3,"note":"C6","total":14,"st":3}
+```
+
 ## Watchdog ESP32
 
 Task WDT configure a 4000ms. `esp_task_wdt_reset()` appele a chaque iteration de `loop()`.
@@ -96,10 +138,11 @@ Le `initSafeState()` est appele avant tout dans `setup()` pour que le materiel s
 ## Memoire
 
 Budget typique (ESP32-WROOM 520KB SRAM) :
-- PROGMEM (web_content.h) : ~36KB en flash, 0 en RAM
+- PROGMEM (web_content.h) : ~42KB en flash, 0 en RAM
 - RuntimeConfig cfg : ~300 bytes
 - ArduinoJson (parsing) : ~2KB temporaire
 - NimBLE stack : ~20KB
 - WiFi stack : ~40KB
 - AsyncWebServer + WS : ~15KB
-- Heap libre typique : ~150-180KB
+- AudioAnalyzer (si micro) : ~4KB (buffer I2S DMA) + ~8KB (buffer analyse)
+- Heap libre typique : ~150-180KB (sans micro), ~138-168KB (avec micro)
