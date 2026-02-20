@@ -1138,7 +1138,7 @@ function startAutoCal(){
   $('acalFill').style.width='0%';
   $('acalState').textContent='Demarrage...';
   // Enable mic monitoring
-  wsSend({t:'mic_mon',on:true});
+  wsSend({t:'mic_mon',on:1});
   // Start auto-calibration
   wsSend({t:'auto_cal',mode:'air'});
   addLog("Auto-cal: demarree");
@@ -1148,7 +1148,7 @@ function stopAutoCal(){
   $('btnAutoCalStart').style.display='';
   $('btnAutoCalStop').style.display='none';
   wsSend({t:'auto_cal',mode:'stop'});
-  wsSend({t:'mic_mon',on:false});
+  wsSend({t:'mic_mon',on:0});
   $('acalState').textContent='Arrete';
   addLog("Auto-cal: arretee");
 }
@@ -1411,8 +1411,8 @@ function showTab(name,btn){
   if(btn)btn.classList.add('active');
   if(name==='config')loadConfig();
   if(name==='wifi'){loadWifiStatus()}
-  if(name==='calibration'){if(cfgData)buildCalibration();if(micDetected)wsSend({t:'mic_mon',on:true})}
-  else{if(micDetected&&!autoCalRunning)wsSend({t:'mic_mon',on:false})}
+  if(name==='calibration'){if(cfgData)buildCalibration();if(micDetected)wsSend({t:'mic_mon',on:1})}
+  else{if(micDetected&&!autoCalRunning)wsSend({t:'mic_mon',on:0})}
 }
 
 // --- Log ---

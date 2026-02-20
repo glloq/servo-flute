@@ -10,7 +10,7 @@ WebConfigurator::WebConfigurator(uint16_t port)
     _webVelocity(100), _lastStatusBroadcast(0), _lastWsCleanup(0),
     _uploadSize(0)
 #if MIC_ENABLED
-    , _audio(nullptr), _autoCal(nullptr), _micMonitorEnabled(false), _lastAudioBroadcast(0)
+    , _audio(nullptr), _autoCal(nullptr), _micMonitorEnabled(false), _lastAudioBroadcast(0), _lastAcalBroadcast(0)
 #endif
 {
 }
@@ -103,8 +103,8 @@ void WebConfigurator::update() {
     if (_autoCal && _autoCal->isRunning()) {
       _autoCal->update();
 
-      // Broadcast progress
-      if (_ws.count() > 0 && now - _lastAudioBroadcast >= AUTOCAL_AUDIO_INTERVAL_MS) {
+      // Broadcast progress (separate timer from audio monitoring)
+      if (_ws.count() > 0 && now - _lastAcalBroadcast >= AUTOCAL_AUDIO_INTERVAL_MS) {
         int ni = _autoCal->getCurrentNoteIndex();
         byte midi = (ni >= 0 && ni < NUMBER_NOTES) ? NOTES[ni].midiNote : 0;
         String noteName = "";
@@ -120,6 +120,7 @@ void WebConfigurator::update() {
         pj += ",\"st\":" + String((int)_autoCal->getState());
         pj += "}";
         _ws.textAll(pj);
+        _lastAcalBroadcast = now;
       }
     }
     // Check completion (separate check - runs once when state transitions to COMPLETE)

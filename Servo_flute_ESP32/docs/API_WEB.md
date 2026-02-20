@@ -230,7 +230,7 @@ Connexion persistante pour le controle temps reel et le monitoring.
 - `rms` : niveau sonore RMS (0.0 - 1.0)
 - `hz` : frequence detectee en Hz (0 si pas de son)
 - `midi` : note MIDI la plus proche (0 si pas de pitch)
-- `cents` : ecart en cents par rapport a la note MIDI (-50 a +50)
+- `cents` : ecart en cents par rapport a la note MIDI (typiquement -50 a +50, peut etre plus large aux limites de detection)
 
 **Progression auto-calibration :**
 ```json

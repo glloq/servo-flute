@@ -159,25 +159,27 @@ void AutoCalibrator::update() {
     }
 
     case ACAL_NOTE_DONE: {
-      // Close solenoid
-      _airflow.testSolenoid(false);
-      _airflow.setAirflowToRest();
+      // First entry: close solenoid and store result
+      if (elapsed < 10) {
+        _airflow.testSolenoid(false);
+        _airflow.setAirflowToRest();
 
-      // Store result
-      _results[_currentNote].valid = _foundMin;
-      _results[_currentNote].airMin = (uint8_t)constrain(_airMinPct, 0, 100);
-      _results[_currentNote].airMax = (uint8_t)constrain(_airMaxPct, 0, 100);
+        // Store result
+        _results[_currentNote].valid = _foundMin;
+        _results[_currentNote].airMin = (uint8_t)constrain(_airMinPct, 0, 100);
+        _results[_currentNote].airMax = (uint8_t)constrain(_airMaxPct, 0, 100);
 
-      if (DEBUG) {
-        Serial.print("DEBUG: AutoCal - Note ");
-        Serial.print(_currentNote);
-        Serial.print(" result: ");
-        Serial.print(_foundMin ? "OK" : "FAIL");
-        Serial.print(" min=");
-        Serial.print(_airMinPct);
-        Serial.print("% max=");
-        Serial.print(_airMaxPct);
-        Serial.println("%");
+        if (DEBUG) {
+          Serial.print("DEBUG: AutoCal - Note ");
+          Serial.print(_currentNote);
+          Serial.print(" result: ");
+          Serial.print(_foundMin ? "OK" : "FAIL");
+          Serial.print(" min=");
+          Serial.print(_airMinPct);
+          Serial.print("% max=");
+          Serial.print(_airMaxPct);
+          Serial.println("%");
+        }
       }
 
       // Wait briefly before next note

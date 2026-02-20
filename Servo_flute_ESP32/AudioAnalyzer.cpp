@@ -166,8 +166,12 @@ float AudioAnalyzer::computeRMS() {
 float AudioAnalyzer::computePitchYIN() {
   // Simplified YIN algorithm for pitch detection
   const int tauMin = (int)(MIC_SAMPLE_RATE / MIC_PITCH_MAX_HZ);   // ~4
-  const int tauMax = (int)(MIC_SAMPLE_RATE / MIC_PITCH_MIN_HZ);   // ~80
+  int tauMax = (int)(MIC_SAMPLE_RATE / MIC_PITCH_MIN_HZ);         // ~80
   const int W = (int)_validSamples / 2;  // Window size
+
+  // Safety clamp: yinBuf is stack-allocated, limit to avoid overflow
+  const int TAU_LIMIT = 256;
+  if (tauMax > TAU_LIMIT) tauMax = TAU_LIMIT;
 
   if (W < tauMax + 1) return 0;
 
@@ -176,8 +180,8 @@ float AudioAnalyzer::computePitchYIN() {
   float bestTau = 0;
   bool found = false;
 
-  // Pre-allocate on stack (tauMax ~80, so ~320 bytes)
-  float yinBuf[82];  // tauMax + 2 safety
+  // Pre-allocate on stack (max TAU_LIMIT + 2)
+  float yinBuf[TAU_LIMIT + 2];
   yinBuf[0] = 1.0f;
 
   for (int tau = 1; tau <= tauMax; tau++) {

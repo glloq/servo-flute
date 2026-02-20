@@ -117,6 +117,7 @@ private:
   AutoCalibrator* _autoCal;
   bool _micMonitorEnabled;
   unsigned long _lastAudioBroadcast;
+  unsigned long _lastAcalBroadcast;
 #endif
 };
 
