@@ -113,6 +113,7 @@ void ConfigStorage::initDefaults() {
   cfg.hideCalibration = false;
   cfg.solenoidPin = SOLENOID_PIN;
   strncpy(cfg.instrumentColor, "#D4B044", sizeof(cfg.instrumentColor));
+  cfg.kbdMode = 0;
 }
 
 bool ConfigStorage::load() {
@@ -212,6 +213,7 @@ bool ConfigStorage::load() {
   cfg.timeUnpower = doc["time_unpower"] | cfg.timeUnpower;
   cfg.hideCalibration = doc["hide_calib"] | (cfg.hideCalibration ? 1 : 0);
   cfg.solenoidPin = doc["sol_pin"] | cfg.solenoidPin;
+  cfg.kbdMode = doc["kbd_mode"] | cfg.kbdMode;
   const char* color = doc["color"];
   if (color) { strncpy(cfg.instrumentColor, color, sizeof(cfg.instrumentColor) - 1); cfg.instrumentColor[sizeof(cfg.instrumentColor) - 1] = '\0'; }
   cfg.airAttackMode = doc["air_atk_mode"] | cfg.airAttackMode;
@@ -322,6 +324,7 @@ bool ConfigStorage::save() {
   doc["time_unpower"] = cfg.timeUnpower;
   doc["hide_calib"] = cfg.hideCalibration ? 1 : 0;
   doc["sol_pin"] = cfg.solenoidPin;
+  doc["kbd_mode"] = cfg.kbdMode;
   doc["color"] = cfg.instrumentColor;
   doc["air_atk_mode"] = cfg.airAttackMode;
   doc["air_atk_off"] = cfg.airAttackOffset;

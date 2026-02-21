@@ -390,6 +390,7 @@ void WebConfigurator::handleApiConfig(AsyncWebServerRequest* request) {
   json += ",\"time_unpower\":" + String(cfg.timeUnpower);
   json += ",\"hide_calib\":" + String(cfg.hideCalibration ? "true" : "false");
   json += ",\"sol_pin\":" + String(cfg.solenoidPin);
+  json += ",\"kbd_mode\":" + String(cfg.kbdMode);
   json += ",\"color\":\"" + String(cfg.instrumentColor) + "\"";
   json += ",\"air_atk_mode\":" + String(cfg.airAttackMode);
   json += ",\"air_atk_off\":" + String(cfg.airAttackOffset);
@@ -508,6 +509,7 @@ void WebConfigurator::handleApiConfigFinalize(AsyncWebServerRequest* request) {
     if (doc.containsKey("time_unpower")) cfg.timeUnpower = doc["time_unpower"];
     if (doc.containsKey("hide_calib")) cfg.hideCalibration = doc["hide_calib"].as<bool>();
     if (doc.containsKey("sol_pin")) cfg.solenoidPin = doc["sol_pin"];
+    if (doc.containsKey("kbd_mode")) cfg.kbdMode = doc["kbd_mode"];
     if (doc.containsKey("color")) {
       strncpy(cfg.instrumentColor, doc["color"] | "#D4B044", sizeof(cfg.instrumentColor) - 1);
       cfg.instrumentColor[sizeof(cfg.instrumentColor) - 1] = '\0';
