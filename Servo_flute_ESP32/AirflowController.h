@@ -28,6 +28,10 @@ public:
   // Met a jour les valeurs CC (appele par InstrumentManager)
   void setCCValues(byte ccVolume, byte ccExpression, byte ccModulation);
 
+  // CC73 (Attack Time) : change le mode d'attaque en temps reel
+  // 0-42=stable, 43-84=accent, 85-127=crescendo ; valeur dans la plage = intensite
+  void setCC73Attack(byte ccValue);
+
   // Met a jour CC2 (Breath Controller) avec lissage et fallback velocity
   void updateCC2Breath(byte ccBreath);
 
@@ -59,6 +63,12 @@ private:
   bool _vibratoActive;
   uint16_t _currentMinAngle;
   uint16_t _currentMaxAngle;
+
+  // Transition attaque (modes accent/crescendo)
+  bool _attackActive;
+  unsigned long _attackStartTime;
+  uint16_t _attackStartAngle;
+  uint16_t _attackTargetAngle;
 
   void setAirflowServoAngle(uint16_t angle);
   uint16_t angleToPWM(uint16_t angle);

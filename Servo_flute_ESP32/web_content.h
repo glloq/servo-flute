@@ -372,7 +372,7 @@ max-height:120px;overflow-y:auto;color:#9aa}
   <div id="step4" class="step-panel" style="display:none">
     <div class="section">
       <h3>Comportement du souffle</h3>
-      <p style="font-size:.8em;color:#888;margin:0 0 12px">Definissez comment le servo airflow reagit au debut de chaque note (attaque) et l'influence de la velocite MIDI sur le volume de souffle.</p>
+      <p style="font-size:.8em;color:#888;margin:0 0 12px">Definissez comment le servo airflow reagit au debut de chaque note (attaque) et l'influence de la velocite MIDI sur le volume de souffle.<br>Ces valeurs servent de defaut ; <b>CC73 (Attack Time)</b> peut changer le mode en temps reel via MIDI : 0-42=Stable, 43-84=Accent, 85-127=Crescendo.</p>
       <div class="cfg-row"><label>Mode d'attaque</label>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="btn btn-s expr-mode" data-mode="0" onclick="setAirMode(0)">Stable</button>

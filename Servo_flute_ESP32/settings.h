@@ -319,6 +319,7 @@ Standard MIDI constants used across the codebase.
 #define MIDI_CC_BREATH 2              // CC 2: Breath Controller
 #define MIDI_CC_VOLUME 7              // CC 7: Channel Volume
 #define MIDI_CC_EXPRESSION 11         // CC 11: Expression
+#define MIDI_CC_ATTACK_TIME 73        // CC 73: Attack Time (mode attaque souffle)
 #define MIDI_CC_BRIGHTNESS 74         // CC 74: Sound Brightness
 #define MIDI_CC_ALL_SOUND_OFF 120     // CC 120: All Sound Off
 #define MIDI_CC_RESET_ALL_CONTROLLERS 121 // CC 121: Reset All Controllers

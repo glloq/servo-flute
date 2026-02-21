@@ -215,6 +215,14 @@ void InstrumentManager::handleControlChange(byte ccNumber, byte ccValue) {
       }
       break;
 
+    case MIDI_CC_ATTACK_TIME:  // Attack Time (mode attaque souffle)
+      _airflowCtrl.setCC73Attack(ccValue);
+      if (DEBUG) {
+        Serial.print("DEBUG: CC 73 (Attack Time) = ");
+        Serial.println(ccValue);
+      }
+      break;
+
     case MIDI_CC_BRIGHTNESS:  // Brightness
       _ccBrightness = ccValue;
       break;

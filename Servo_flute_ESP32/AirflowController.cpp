@@ -40,7 +40,8 @@ AirflowController::AirflowController(Adafruit_PWMServoDriver& pwm)
     _ccBreath(cfg.ccBreathDefault),
     _cc2BufferIndex(0), _cc2BufferCount(0), _lastCC2Time(0), _lastVelocity(64),
     _baseAngleWithoutVibrato(cfg.servoAirflowOff), _vibratoActive(false),
-    _currentMinAngle(cfg.servoAirflowMin), _currentMaxAngle(cfg.servoAirflowMax) {
+    _currentMinAngle(cfg.servoAirflowMin), _currentMaxAngle(cfg.servoAirflowMax),
+    _attackActive(false), _attackStartTime(0), _attackStartAngle(0), _attackTargetAngle(0) {
   for (uint8_t i = 0; i < CC2_SMOOTHING_BUFFER_SIZE; i++) {
     _cc2SmoothingBuffer[i] = cfg.ccBreathDefault;
   }
@@ -157,8 +158,15 @@ void AirflowController::setAirflowForNote(byte midiNote, byte velocity) {
     return;
   }
 
-  // 3. Airflow source definit l'angle de base
-  baseAngle = map(airflowSource, 1, MIDI_CC_MAX, minAngle, effectiveMaxAngle);
+  // 3. Airflow source definit l'angle de base (module par velocityResponse)
+  {
+    float vr = cfg.airVelocityResponse / 100.0f;
+    // vr=0 : angle fixe au milieu de la plage (velocite ignoree)
+    // vr=100 : plage complete selon velocite/CC2
+    float midAngle = minAngle + (effectiveMaxAngle - minAngle) * 0.5f;
+    float rawAngle = map(airflowSource, 1, MIDI_CC_MAX, minAngle, effectiveMaxAngle);
+    baseAngle = (uint16_t)(midAngle + (rawAngle - midAngle) * vr + 0.5f);
+  }
 
   // 4. CC11 (Expression) module dans la plage
   float expressionFactor = _ccExpression / (float)MIDI_CC_MAX;
@@ -169,7 +177,25 @@ void AirflowController::setAirflowForNote(byte midiNote, byte velocity) {
   if (finalAngleWithoutVibrato > cfg.servoAirflowMax) finalAngleWithoutVibrato = cfg.servoAirflowMax;
 
   _baseAngleWithoutVibrato = (uint16_t)(finalAngleWithoutVibrato + 0.5);
+  _attackTargetAngle = _baseAngleWithoutVibrato;
   _vibratoActive = (_ccModulation > 0);
+
+  // 6. Mode d'attaque (accent / crescendo)
+  _attackActive = false;
+  if (cfg.airAttackMode != 0 && cfg.airAttackMs > 0 && cfg.airAttackOffset > 0) {
+    int16_t offsetDeg = (int16_t)((_attackTargetAngle - minAngle) * cfg.airAttackOffset / 100);
+    if (offsetDeg < 1) offsetDeg = 1;
+    if (cfg.airAttackMode == 1) {
+      // Accent: demarre plus fort (au-dessus de la cible)
+      _attackStartAngle = _attackTargetAngle + offsetDeg;
+      if (_attackStartAngle > cfg.servoAirflowMax) _attackStartAngle = cfg.servoAirflowMax;
+    } else {
+      // Crescendo: demarre plus faible (en-dessous de la cible)
+      _attackStartAngle = (_attackTargetAngle > offsetDeg) ? _attackTargetAngle - offsetDeg : minAngle;
+    }
+    _attackStartTime = millis();
+    _attackActive = true;
+  }
 
   if (DEBUG) {
     Serial.print("DEBUG: AirflowController - Note: ");
@@ -182,10 +208,20 @@ void AirflowController::setAirflowForNote(byte midiNote, byte velocity) {
     Serial.print(maxAngle);
     Serial.print(" | Final: ");
     Serial.print(_baseAngleWithoutVibrato);
+    if (_attackActive) {
+      Serial.print(" | Atk: ");
+      Serial.print(_attackStartAngle);
+      Serial.print("->target ");
+      Serial.print(cfg.airAttackMs);
+      Serial.print("ms");
+    }
     Serial.println("deg");
   }
 
-  if (_vibratoActive) {
+  if (_attackActive) {
+    // Positionner a l'angle de depart, update() fera la transition
+    setAirflowServoAngle(_attackStartAngle);
+  } else if (_vibratoActive) {
     update();
   } else {
     setAirflowServoAngle(_baseAngleWithoutVibrato);
@@ -249,12 +285,27 @@ void AirflowController::update() {
   }
   #endif
 
-  // Appliquer vibrato si actif
-  if (_vibratoActive && _ccModulation > 0 && _solenoidOpen) {
-    float vibratoAmplitude = (_ccModulation / (float)MIDI_CC_MAX) * cfg.vibratoMaxAmplitudeDeg;
-    float vibratoOffset = fastSin(millis(), cfg.vibratoFrequencyHz) * vibratoAmplitude;
+  // Transition d'attaque (accent / crescendo)
+  uint16_t currentBase = _baseAngleWithoutVibrato;
+  if (_attackActive && _solenoidOpen) {
+    unsigned long elapsed = millis() - _attackStartTime;
+    if (elapsed >= cfg.airAttackMs) {
+      _attackActive = false;
+      currentBase = _attackTargetAngle;
+    } else {
+      float t = (float)elapsed / cfg.airAttackMs;
+      currentBase = _attackStartAngle + (int16_t)((_attackTargetAngle - _attackStartAngle) * t);
+    }
+  }
 
-    int16_t finalAngle = _baseAngleWithoutVibrato + (int16_t)(vibratoOffset + 0.5);
+  // Appliquer vibrato si actif
+  if ((_vibratoActive && _ccModulation > 0 && _solenoidOpen) || _attackActive) {
+    float vibratoAmplitude = (_vibratoActive && _ccModulation > 0) ?
+      (_ccModulation / (float)MIDI_CC_MAX) * cfg.vibratoMaxAmplitudeDeg : 0;
+    float vibratoOffset = vibratoAmplitude > 0 ?
+      fastSin(millis(), cfg.vibratoFrequencyHz) * vibratoAmplitude : 0;
+
+    int16_t finalAngle = currentBase + (int16_t)(vibratoOffset + 0.5);
 
     if (finalAngle < (int16_t)_currentMinAngle) finalAngle = _currentMinAngle;
     if (finalAngle > (int16_t)_currentMaxAngle) finalAngle = _currentMaxAngle;
@@ -314,6 +365,30 @@ void AirflowController::setCCValues(byte ccVolume, byte ccExpression, byte ccMod
   _ccVolume = ccVolume;
   _ccExpression = ccExpression;
   _ccModulation = ccModulation;
+}
+
+void AirflowController::setCC73Attack(byte ccValue) {
+  // 0-42 = stable, 43-84 = accent, 85-127 = crescendo
+  // La position dans chaque plage definit l'intensite (offset %)
+  if (ccValue <= 42) {
+    cfg.airAttackMode = 0;  // Stable
+    cfg.airAttackOffset = 0;
+  } else if (ccValue <= 84) {
+    cfg.airAttackMode = 1;  // Accent
+    cfg.airAttackOffset = 5 + (ccValue - 43) * 45 / 41;  // 5-50%
+  } else {
+    cfg.airAttackMode = 2;  // Crescendo
+    cfg.airAttackOffset = 5 + (ccValue - 85) * 45 / 42;  // 5-50%
+  }
+
+  if (DEBUG) {
+    const char* modes[] = {"Stable", "Accent", "Crescendo"};
+    Serial.print("DEBUG: CC73 Attack -> ");
+    Serial.print(modes[cfg.airAttackMode]);
+    Serial.print(" offset=");
+    Serial.print(cfg.airAttackOffset);
+    Serial.println("%");
+  }
 }
 
 void AirflowController::updateCC2Breath(byte ccBreath) {
