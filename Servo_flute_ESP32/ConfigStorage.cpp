@@ -11,6 +11,7 @@ void ConfigStorage::initDefaults() {
   cfg.numNotes = DEFAULT_NUM_NOTES;
   cfg.airflowPcaChannel = DEFAULT_AIRFLOW_PCA_CHANNEL;
   cfg.fingerAngleOpen = ANGLE_OPEN;
+  strncpy(cfg.embouchure, "trav", sizeof(cfg.embouchure));
 
   // Zero-fill all arrays first
   memset(cfg.fingers, 0, sizeof(cfg.fingers));
@@ -117,6 +118,10 @@ bool ConfigStorage::load() {
 
   cfg.airflowPcaChannel = doc["air_pca"] | cfg.airflowPcaChannel;
   cfg.fingerAngleOpen = doc["angle_open"] | cfg.fingerAngleOpen;
+  if (doc.containsKey("embouchure")) {
+    strncpy(cfg.embouchure, doc["embouchure"] | "trav", sizeof(cfg.embouchure) - 1);
+    cfg.embouchure[sizeof(cfg.embouchure) - 1] = '\0';
+  }
 
   // --- Fingers ---
   JsonArray fingers = doc["fingers"];
@@ -203,6 +208,7 @@ bool ConfigStorage::save() {
   doc["num_notes"] = cfg.numNotes;
   doc["air_pca"] = cfg.airflowPcaChannel;
   doc["angle_open"] = cfg.fingerAngleOpen;
+  doc["embouchure"] = cfg.embouchure;
 
   // --- Fingers ---
   JsonArray fingers = doc["fingers"].to<JsonArray>();
