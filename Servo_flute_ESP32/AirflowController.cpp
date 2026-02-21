@@ -367,6 +367,30 @@ void AirflowController::setCCValues(byte ccVolume, byte ccExpression, byte ccMod
   _ccModulation = ccModulation;
 }
 
+void AirflowController::setCC73Attack(byte ccValue) {
+  // 0-42 = stable, 43-84 = accent, 85-127 = crescendo
+  // La position dans chaque plage definit l'intensite (offset %)
+  if (ccValue <= 42) {
+    cfg.airAttackMode = 0;  // Stable
+    cfg.airAttackOffset = 0;
+  } else if (ccValue <= 84) {
+    cfg.airAttackMode = 1;  // Accent
+    cfg.airAttackOffset = 5 + (ccValue - 43) * 45 / 41;  // 5-50%
+  } else {
+    cfg.airAttackMode = 2;  // Crescendo
+    cfg.airAttackOffset = 5 + (ccValue - 85) * 45 / 42;  // 5-50%
+  }
+
+  if (DEBUG) {
+    const char* modes[] = {"Stable", "Accent", "Crescendo"};
+    Serial.print("DEBUG: CC73 Attack -> ");
+    Serial.print(modes[cfg.airAttackMode]);
+    Serial.print(" offset=");
+    Serial.print(cfg.airAttackOffset);
+    Serial.println("%");
+  }
+}
+
 void AirflowController::updateCC2Breath(byte ccBreath) {
   if (!cfg.cc2Enabled) return;
 
