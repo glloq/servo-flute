@@ -22,143 +22,191 @@ const char WEB_HTML_CONTENT[] PROGMEM = R"rawliteral(
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-background:#1a1a2e;color:#e0e0e0;overflow-x:hidden;min-height:100vh}
+background:#1a1a2e;color:#e0e0e0;overflow-x:hidden;min-height:100vh;padding-bottom:36px}
 .hdr{background:#16213e;padding:10px 16px;display:flex;justify-content:space-between;
 align-items:center;border-bottom:2px solid #0f3460;position:sticky;top:0;z-index:10}
-.hdr h1{font-size:1.1em;color:#e94560}
+.hdr h1{font-size:1.1em;color:#e94560;display:flex;align-items:center}
 .hdr-r{display:flex;align-items:center;gap:12px}
 .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
-.dot.on{background:#4ecca3;box-shadow:0 0 6px #4ecca3}.dot.off{background:#555}
-.gear-btn{background:none;border:none;color:#888;font-size:1.4em;cursor:pointer;padding:4px}
+.dot.on{background:#4ecca3;box-shadow:0 0 6px #4ecca3}.dot.off{background:#777}
+.unsaved-badge{display:none;background:#e9a645;color:#1a1a2e;font-size:.6em;padding:2px 6px;
+border-radius:8px;font-weight:bold;margin-left:8px;vertical-align:middle}
+.unsaved-badge.show{display:inline-block}
+.gear-btn{background:none;border:none;color:#9aa;font-size:1.3em;cursor:pointer;padding:4px;
+display:flex;align-items:center}
 .gear-btn:hover{color:#e94560}
 .tabs{display:flex;background:#16213e;border-bottom:1px solid #0f3460;overflow-x:auto}
-.tabs button{flex:1;background:none;border:none;color:#888;padding:12px 8px;font-size:0.85em;
-cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;min-width:80px}
+.tabs button{flex:1;background:none;border:none;color:#9aa;padding:12px 8px;font-size:0.85em;
+cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;min-width:80px;
+display:flex;align-items:center;justify-content:center;gap:6px}
 .tabs button.active{color:#e94560;border-bottom-color:#e94560}
+.tabs button svg{width:14px;height:14px;flex-shrink:0}
 .tab{display:none;padding:12px}.tab.active{display:block}
 .section{background:#16213e;border-radius:8px;padding:12px;margin-bottom:12px;border:1px solid #0f3460}
 .section h3{color:#e94560;font-size:0.9em;margin-bottom:8px}
-/* Buttons */
-.btn{padding:8px 16px;border:none;border-radius:6px;cursor:pointer;font-size:0.85em}
+.btn{padding:8px 16px;border:none;border-radius:6px;cursor:pointer;font-size:0.85em;
+position:relative;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
 .btn-p{background:#e94560;color:#fff}.btn-p:hover{background:#d63650}
 .btn-s{background:#0f3460;color:#e0e0e0;border:1px solid #1a4080}.btn-s:hover{background:#1a4080}
 .btn-g{background:#4ecca3;color:#1a1a2e}.btn-g:hover{background:#3db892}
 .btn:disabled{opacity:.4;cursor:default}
 .btn-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-/* Inputs */
+.btn svg{width:14px;height:14px;flex-shrink:0}
+.btn.loading{color:transparent !important;pointer-events:none}
+.btn.loading::after{content:'';position:absolute;width:14px;height:14px;border:2px solid transparent;
+border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;
+top:50%;left:50%;margin:-7px 0 0 -7px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes testPulse{0%{box-shadow:0 0 0 0 rgba(78,204,163,.7)}70%{box-shadow:0 0 0 10px rgba(78,204,163,0)}100%{box-shadow:0 0 0 0 rgba(78,204,163,0)}}
+.test-pulse{animation:testPulse .6s ease}
 input[type=range]{width:100%;accent-color:#e94560}
 input[type=number],input[type=text],input[type=password],select{background:#0d1b3e;border:1px solid #1a4080;
 color:#e0e0e0;padding:6px 8px;border-radius:4px;font-size:0.85em;width:100%}
 .cfg-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 .cfg-row label{flex:0 0 140px;font-size:0.8em;color:#aaa;text-align:right}
 .cfg-row input,.cfg-row select{flex:1}
-/* Keyboard */
 .keys{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:8px 0}
 .key{background:linear-gradient(180deg,#2a2a4a,#1a1a2e);border:1px solid #0f3460;
 border-radius:6px;padding:10px 8px;text-align:center;cursor:pointer;user-select:none;
-min-width:60px;flex:0 0 auto;transition:background .1s}
-.key.black{background:linear-gradient(180deg,#1a1a2e,#0a0a1e);border-color:#333}
-.key.pressed,.key:active{background:#e94560;border-color:#e94560}
+min-width:60px;flex:0 0 auto;transition:all .15s}
+.key.black{background:linear-gradient(180deg,#1a1a2e,#0a0a1e);border-color:#444}
+.key.pressed,.key:active{background:#e94560;border-color:#e94560;transform:scale(.96)}
 .note-name{display:block;font-weight:bold;font-size:1em;color:#fff}
-.note-midi{display:block;font-size:0.65em;color:#888;margin-top:2px}
+.note-midi{display:block;font-size:0.65em;color:#9aa;margin-top:2px}
+.key-shortcut{display:none;font-size:.55em;color:#777;margin-top:2px}
+.key:hover .key-shortcut{display:block}
 .kf-row{display:flex;gap:3px;justify-content:center;margin-top:4px}
-.kf{width:8px;height:8px;border-radius:50%;border:1px solid #555}
-.kf.c{background:#333}.kf.o{background:#4ecca3}
-/* SVG Flute */
+.kf{width:8px;height:8px;border-radius:50%;border:1px solid #777}
+.kf.c{background:#444}.kf.o{background:#4ecca3}
 .flute-box{background:#0d1b3e;border-radius:8px;padding:12px;text-align:center;margin-bottom:8px}
 .flute-box svg{width:100%;max-width:600px;height:auto}
-.flute-hole{stroke:#5C4A0A;stroke-width:2}
+.flute-hole{stroke:#5C4A0A;stroke-width:2;transition:all .2s}
 .flute-hole.closed{fill:#3a2a0a}.flute-hole.open{fill:#4ecca3}
 .flute-hole.thumb{filter:drop-shadow(0 0 3px #e94560)}
-.flute-lbl{font-size:11px;fill:#888}
+.flute-hole:hover{filter:drop-shadow(0 0 6px #e94560);cursor:pointer}
+@keyframes holePulse{0%,100%{filter:drop-shadow(0 0 4px #4ecca3)}50%{filter:drop-shadow(0 0 14px #4ecca3)}}
+.flute-hole.playing{animation:holePulse 1s ease-in-out infinite}
+.flute-lbl{font-size:11px;fill:#9aa}
 .flute-num{font-size:10px;fill:#fff;font-weight:bold;pointer-events:none}
-.flute-info{text-align:center;font-size:0.8em;color:#888;margin-top:4px}
-/* Calibration steps */
+.flute-info{text-align:center;font-size:0.8em;color:#9aa;margin-top:4px}
+.toast-container{position:fixed;top:56px;right:12px;z-index:200;display:flex;flex-direction:column;
+gap:8px;pointer-events:none}
+.toast{padding:10px 16px;border-radius:8px;font-size:.82em;color:#fff;opacity:0;
+transform:translateX(40px);transition:all .3s ease;display:flex;align-items:center;gap:8px;
+max-width:320px;pointer-events:auto;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.toast.show{opacity:1;transform:translateX(0)}
+.toast.success{background:rgba(45,107,79,.95);border:1px solid #4ecca3}
+.toast.error{background:rgba(107,45,58,.95);border:1px solid #e94560}
+.toast.info{background:rgba(45,58,107,.95);border:1px solid #4a7eca}
+.toast svg{flex-shrink:0;width:16px;height:16px}
+.skeleton{background:linear-gradient(90deg,#16213e 25%,#1e2d50 50%,#16213e 75%);
+background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px;min-height:20px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skeleton-key{width:60px;height:70px;border-radius:6px;display:inline-block}
+.skeleton-row{height:16px;margin-bottom:8px}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeInUp .3s ease forwards}
+.fade-delay-1{animation-delay:.05s;opacity:0}.fade-delay-2{animation-delay:.1s;opacity:0}
+.fade-delay-3{animation-delay:.15s;opacity:0}.fade-delay-4{animation-delay:.2s;opacity:0}
+.step-panel{transition:opacity .3s ease,transform .3s ease}
 .steps{display:flex;align-items:center;justify-content:center;gap:0;padding:12px 0}
-.step-dot{width:12px;height:12px;border-radius:50%;background:#333;cursor:pointer;transition:.2s}
+.step-dot{width:12px;height:12px;border-radius:50%;background:#444;cursor:pointer;transition:.2s}
 .step-dot.active{background:#e94560;box-shadow:0 0 8px #e94560}.step-dot.done{background:#4ecca3}
-.step-line{width:40px;height:2px;background:#333}
-.step-labels{display:flex;justify-content:center;gap:34px;font-size:0.75em;color:#888;margin-bottom:8px}
-.cal-card{background:#0d1b3e;border:1px solid #1a4080;border-radius:8px;padding:10px;margin-bottom:8px}
+.step-dot.locked{opacity:.4;cursor:not-allowed}
+.step-line{width:40px;height:2px;background:#444}
+.step-labels{display:flex;justify-content:center;gap:34px;font-size:0.75em;color:#9aa;margin-bottom:8px}
+.cal-card{background:linear-gradient(135deg,#0d1b3e 0%,#101f45 100%);border:1px solid #1a4080;
+border-radius:8px;padding:10px;margin-bottom:8px}
 .cal-card h4{font-size:0.85em;color:#e94560;margin-bottom:6px}
-/* Fingering table */
+.cal-card.pca-conflict{border-color:#e9a645;box-shadow:0 0 8px rgba(233,166,69,.3)}
+.pca-warn{color:#e9a645;font-size:.75em;margin-top:4px;display:none}
+.pca-conflict .pca-warn{display:block}
 .fg-row{display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid #0f3460}
 .fg-row:last-child{border-bottom:none}
 .fg-note{font-weight:bold;min-width:50px;font-size:0.9em}
-.fg-midi{color:#888;font-size:0.75em;min-width:36px}
+.fg-midi{color:#9aa;font-size:0.75em;min-width:36px}
+.fg-octave{background:#0f3460;padding:4px 10px;font-size:.75em;color:#e94560;
+font-weight:bold;border-radius:4px;margin:6px 0}
 .fg-dots{display:flex;gap:4px;flex:1}
-.fg-dot{width:18px;height:18px;border-radius:50%;border:2px solid #555;cursor:pointer;transition:.15s}
-.fg-dot.closed{background:#333}.fg-dot.open{background:#4ecca3;border-color:#4ecca3}
+.fg-dot{width:18px;height:18px;border-radius:50%;border:2px solid #777;cursor:pointer;transition:.15s}
+.fg-dot.closed{background:#444}.fg-dot.open{background:#4ecca3;border-color:#4ecca3}
 .fg-dot.thumb{border-style:dashed;border-color:#e94560}
-/* Airflow per note */
 .air-card{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #0f3460;flex-wrap:wrap}
 .air-note{font-weight:bold;min-width:40px;font-size:0.85em}
 .air-sliders{flex:1;min-width:150px}
-.air-vals{font-size:0.75em;color:#888;display:flex;justify-content:space-between}
-/* Settings overlay */
+.air-vals{font-size:0.75em;color:#9aa;display:flex;justify-content:space-between}
+.dual-range{position:relative;height:28px;margin:4px 0}
+.dual-range-track{position:absolute;top:12px;left:0;right:0;height:4px;background:#0f3460;border-radius:2px}
+.dual-range-fill{position:absolute;top:12px;height:4px;background:#e94560;border-radius:2px}
+.dual-range input[type=range]{position:absolute;top:0;width:100%;margin:0;pointer-events:none;
+-webkit-appearance:none;appearance:none;background:transparent;height:28px}
+.dual-range input[type=range]::-webkit-slider-thumb{pointer-events:all;-webkit-appearance:none;
+width:16px;height:16px;background:#e94560;border-radius:50%;cursor:pointer;border:2px solid #fff}
+.dual-range input[type=range]::-moz-range-thumb{pointer-events:all;width:16px;height:16px;
+background:#e94560;border-radius:50%;cursor:pointer;border:2px solid #fff}
+.undo-bar{display:flex;gap:6px;align-items:center;margin-bottom:8px}
+.undo-bar button{padding:4px 10px;font-size:.8em}.undo-bar span{font-size:.75em;color:#777}
 .settings-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;
 background:rgba(0,0,0,.85);z-index:100;overflow-y:auto}
 .settings-overlay.open{display:block}
-.settings-box{max-width:600px;margin:0 auto;padding:16px}
+.settings-box{max-width:600px;margin:0 auto;padding:16px;padding-bottom:48px}
 .settings-box h2{color:#e94560;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
-.close-btn{background:none;border:none;color:#888;font-size:1.5em;cursor:pointer}
+.close-btn{background:none;border:none;color:#9aa;font-size:1.5em;cursor:pointer}
 .close-btn:hover{color:#e94560}
-/* MIDI player */
 .drop-zone{border:2px dashed #0f3460;border-radius:8px;padding:30px;text-align:center;
-color:#555;cursor:pointer;transition:border-color .2s}
+color:#777;cursor:pointer;transition:border-color .2s}
 .drop-zone.hover{border-color:#e94560;color:#e94560}
 .transport{display:flex;gap:8px;justify-content:center;align-items:center;margin:12px 0}
-.transport button{width:44px;height:44px;border-radius:50%;font-size:1.2em}
+.transport button{width:44px;height:44px;border-radius:50%;font-size:1.2em;
+display:flex;align-items:center;justify-content:center}
 .progress-bar{height:6px;background:#0f3460;border-radius:3px;overflow:hidden;margin:8px 0}
 .progress-fill{height:100%;background:#e94560;width:0%;transition:width .3s}
-.file-info{font-size:0.8em;color:#888;text-align:center}
-/* Monitor */
+.file-info{font-size:0.8em;color:#9aa;text-align:center}
+.upload-bar{height:4px;background:#0f3460;border-radius:2px;overflow:hidden;margin-top:8px;display:none}
+.upload-fill{height:100%;background:#4ecca3;width:0%;transition:width .15s}
 .cc-bar{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:0.8em}
-.cc-label{min-width:70px;color:#888}.cc-val{min-width:24px;text-align:right}
+.cc-label{min-width:70px;color:#9aa}.cc-val{min-width:24px;text-align:right}
 .cc-track{flex:1;height:6px;background:#0f3460;border-radius:3px;overflow:hidden}
 .cc-fill{height:100%;background:#4ecca3;transition:width .2s}
-/* VU meter */
 .vu{display:flex;align-items:center;gap:8px;margin:8px 0}
 .vu-track{flex:1;height:10px;background:#0f3460;border-radius:5px;overflow:hidden}
 .vu-fill{height:100%;background:#4ecca3;width:0%;transition:width .1s}
 .vu-val{font-size:0.8em;min-width:36px;text-align:right}
-/* MIC badge */
 .mic-badge{display:inline-block;background:#4ecca3;color:#1a1a2e;font-size:0.7em;
 padding:2px 8px;border-radius:10px;font-weight:bold}
-.mic-badge.off{background:#555;color:#888}
-/* Pitch display */
+.mic-badge.off{background:#777;color:#9aa}
 .pitch{display:flex;gap:16px;align-items:center;font-size:0.9em}
 .pitch-note{font-size:1.4em;font-weight:bold;color:#e94560;min-width:50px}
-.pitch-hz{color:#888;font-size:0.85em}
+.pitch-hz{color:#9aa;font-size:0.85em}
 .pitch-cents{font-size:0.85em}.pitch-cents.ok{color:#4ecca3}.pitch-cents.sharp{color:#e94560}.pitch-cents.flat{color:#e9a645}
-/* Auto-cal progress */
 .acal-progress{background:#0d1b3e;border-radius:8px;padding:12px;display:none}
 .acal-bar{height:8px;background:#0f3460;border-radius:4px;overflow:hidden;margin:6px 0}
 .acal-fill{height:100%;background:#e94560;width:0%;transition:width .3s}
-.acal-info{font-size:0.8em;color:#888;display:flex;justify-content:space-between}
-/* WiFi */
+.acal-info{font-size:0.8em;color:#9aa;display:flex;justify-content:space-between}
 .wifi-item{padding:8px;border-bottom:1px solid #0f3460;cursor:pointer;display:flex;justify-content:space-between}
 .wifi-item:hover{background:#0f3460}
-/* Status bar */
-.status-bar{background:#0d1117;padding:6px 16px;font-size:0.75em;color:#555;
+.status-bar{background:#0d1117;padding:6px 16px;font-size:0.75em;color:#777;
 display:flex;justify-content:space-between;position:fixed;bottom:0;left:0;right:0;z-index:5}
 .log{background:#0a0a1a;border-radius:4px;padding:8px;font-family:monospace;font-size:0.75em;
-max-height:120px;overflow-y:auto;color:#888}
+max-height:120px;overflow-y:auto;color:#9aa}
 </style>
 </head>
 <body>
+<div class="toast-container" id="toastContainer"></div>
 <div class="hdr">
-  <h1 id="devName">ServoFlute</h1>
+  <h1 id="devName">ServoFlute<span class="unsaved-badge" id="unsavedBadge">modifie</span></h1>
   <div class="hdr-r">
     <span class="dot off" id="sDot"></span>
-    <button class="gear-btn" onclick="toggleSettings()" title="Reglages">&#9881;</button>
+    <button class="gear-btn" onclick="toggleSettings()" title="Reglages" id="gearBtn">
+      <svg viewBox="0 0 16 16" width="18" height="18"><circle cx="8" cy="8" r="2" fill="currentColor"/><path d="M14.3 6.7l-1.2-.2a5.2 5.2 0 00-.5-1.1l.7-1-1.7-1.7-1 .7c-.3-.2-.7-.4-1.1-.5L9.3 1.7H7.7l-.2 1.2c-.4.1-.8.3-1.1.5l-1-.7L3.7 4.4l.7 1c-.2.3-.4.7-.5 1.1L2.7 6.7v1.6l1.2.2c.1.4.3.8.5 1.1l-.7 1 1.7 1.7 1-.7c.3.2.7.4 1.1.5l.2 1.2h1.6l.2-1.2c.4-.1.8-.3 1.1-.5l1 .7 1.7-1.7-.7-1c.2-.3.4-.7.5-1.1l1.2-.2V6.7z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+    </button>
   </div>
 </div>
 
 <div class="tabs">
-  <button class="active" onclick="showTab('keyboard',this)">Clavier</button>
-  <button onclick="showTab('midi',this)">MIDI</button>
-  <button onclick="showTab('calib',this)">Calibration</button>
+  <button class="active" onclick="showTab('keyboard',this)"><svg viewBox="0 0 16 14" width="14" height="12"><rect x="1" y="1" width="14" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="4" width="2" height="2" rx=".5" fill="currentColor"/><rect x="7" y="4" width="2" height="2" rx=".5" fill="currentColor"/><rect x="11" y="4" width="2" height="2" rx=".5" fill="currentColor"/><rect x="4" y="8" width="8" height="2" rx=".5" fill="currentColor"/></svg>Clavier</button>
+  <button onclick="showTab('midi',this)"><svg viewBox="0 0 14 16" width="12" height="14"><path d="M12 1v10.5a2.5 2.5 0 11-2-2.45V3.5L5 5v8a2.5 2.5 0 11-2-2.45V1l9-2z" fill="currentColor" opacity=".85"/></svg>MIDI</button>
+  <button onclick="showTab('calib',this)"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M6.5 1L7 4H5L2 8h3l-.5 7 6-9H7.5l2-5z" fill="currentColor" opacity=".85"/></svg>Calibration</button>
 </div>
 
 <!-- TAB: KEYBOARD -->
@@ -184,15 +232,16 @@ max-height:120px;overflow-y:auto;color:#888}
       Glisser-deposer un fichier MIDI ou cliquer
       <input type="file" id="midiFile" accept=".mid,.midi" style="display:none" onchange="uploadMidi(this)">
     </div>
+    <div class="upload-bar" id="uploadBar"><div class="upload-fill" id="uploadFill"></div></div>
     <div class="file-info" id="fileInfo" style="margin-top:8px">
       <span id="fName"></span> &bull; <span id="fEvents"></span> evt &bull; <span id="fDuration"></span>
     </div>
   </div>
   <div class="section">
     <div class="transport">
-      <button class="btn btn-g" id="btnPlay" onclick="wsSend({t:'play'})" disabled>&#9654;</button>
-      <button class="btn btn-s" id="btnPause" onclick="wsSend({t:'pause'})" disabled>&#10074;&#10074;</button>
-      <button class="btn btn-p" id="btnStop" onclick="wsSend({t:'stop'})" disabled>&#9632;</button>
+      <button class="btn btn-g" id="btnPlay" onclick="wsSend({t:'play'})" disabled><svg viewBox="0 0 16 16" width="18" height="18"><path d="M4 2l10 6-10 6z" fill="currentColor"/></svg></button>
+      <button class="btn btn-s" id="btnPause" onclick="wsSend({t:'pause'})" disabled><svg viewBox="0 0 16 16" width="18" height="18"><rect x="3" y="2" width="3.5" height="12" rx="1" fill="currentColor"/><rect x="9.5" y="2" width="3.5" height="12" rx="1" fill="currentColor"/></svg></button>
+      <button class="btn btn-p" id="btnStop" onclick="wsSend({t:'stop'})" disabled><svg viewBox="0 0 16 16" width="18" height="18"><rect x="3" y="3" width="10" height="10" rx="1" fill="currentColor"/></svg></button>
     </div>
     <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
     <div class="file-info" id="progressText">--:-- / --:--</div>
@@ -213,7 +262,7 @@ max-height:120px;overflow-y:auto;color:#888}
   </div>
 
   <!-- STEP 1: FINGERS -->
-  <div id="step1">
+  <div id="step1" class="step-panel">
     <div class="section">
       <h3>Configuration des servos</h3>
       <div class="cfg-row"><label>Nombre de doigts</label>
@@ -236,12 +285,12 @@ max-height:120px;overflow-y:auto;color:#888}
     </div>
     <div id="fingerCards"></div>
     <div class="btn-row" style="justify-content:flex-end">
-      <button class="btn btn-p" onclick="saveStep1()">Sauver &amp; Continuer &rarr;</button>
+      <button class="btn btn-p" id="btnSaveStep1" onclick="saveStep1()"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M12.7 1H3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V3.3L12.7 1zM8 13a2.5 2.5 0 110-5 2.5 2.5 0 010 5zM11 5H5V2h6v3z" fill="currentColor"/></svg>Sauver &amp; Continuer &rarr;</button>
     </div>
   </div>
 
   <!-- STEP 2: FINGERINGS -->
-  <div id="step2" style="display:none">
+  <div id="step2" class="step-panel" style="display:none">
     <div class="section">
       <h3>Doigtes par note</h3>
       <div class="cfg-row"><label>Preset</label>
@@ -252,6 +301,11 @@ max-height:120px;overflow-y:auto;color:#888}
       </div>
     </div>
     <div class="section" id="fingeringSection">
+      <div class="undo-bar">
+        <button class="btn btn-s" id="undoBtn" onclick="undoFp()" disabled title="Ctrl+Z"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M4 7h8a3 3 0 010 6H9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7 4L4 7l3 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Annuler</button>
+        <button class="btn btn-s" id="redoBtn" onclick="redoFp()" disabled title="Ctrl+Y"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M12 7H4a3 3 0 000 6h3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M9 4l3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Retablir</button>
+        <span id="undoInfo"></span>
+      </div>
       <div id="fingeringRows"></div>
       <div class="btn-row">
         <button class="btn btn-s" onclick="addNote()">+ Ajouter note</button>
@@ -259,13 +313,13 @@ max-height:120px;overflow-y:auto;color:#888}
       </div>
     </div>
     <div class="btn-row" style="justify-content:space-between">
-      <button class="btn btn-s" onclick="goStep(1)">&larr; Retour</button>
-      <button class="btn btn-p" onclick="saveStep2()">Sauver &amp; Continuer &rarr;</button>
+      <button class="btn btn-s" onclick="goStep(1)"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Retour</button>
+      <button class="btn btn-p" id="btnSaveStep2" onclick="saveStep2()"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M12.7 1H3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V3.3L12.7 1zM8 13a2.5 2.5 0 110-5 2.5 2.5 0 010 5zM11 5H5V2h6v3z" fill="currentColor"/></svg>Sauver &amp; Continuer &rarr;</button>
     </div>
   </div>
 
   <!-- STEP 3: AIRFLOW -->
-  <div id="step3" style="display:none">
+  <div id="step3" class="step-panel" style="display:none">
     <div class="section" id="micSection" style="display:none">
       <h3><span class="mic-badge" id="micBadge">MIC</span> Auto-calibration</h3>
       <div class="vu"><span style="font-size:.8em;min-width:24px">VU</span>
@@ -292,8 +346,8 @@ max-height:120px;overflow-y:auto;color:#888}
       <div id="airflowRows"></div>
     </div>
     <div class="btn-row" style="justify-content:space-between">
-      <button class="btn btn-s" onclick="goStep(2)">&larr; Retour</button>
-      <button class="btn btn-g" onclick="saveStep3()">Sauver &amp; Terminer &#10003;</button>
+      <button class="btn btn-s" onclick="goStep(2)"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Retour</button>
+      <button class="btn btn-g" id="btnSaveStep3" onclick="saveStep3()"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M3 8l3.5 4L13 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Sauver &amp; Terminer</button>
     </div>
   </div>
 </div>
@@ -325,6 +379,14 @@ max-height:120px;overflow-y:auto;color:#888}
   <div class="section"><h3>Vibrato</h3>
     <div class="cfg-row"><label>Frequence (Hz)</label><input type="number" id="cfgVibF" min="0" max="20" step="0.5"></div>
     <div class="cfg-row"><label>Amplitude (deg)</label><input type="number" id="cfgVibA" min="0" max="30" step="0.5"></div>
+  </div>
+
+  <div class="section"><h3>CC Defaults</h3>
+    <div class="cfg-row"><label>Volume (CC7)</label><input type="number" id="cfgCCVol" min="0" max="127"></div>
+    <div class="cfg-row"><label>Expression (CC11)</label><input type="number" id="cfgCCExpr" min="0" max="127"></div>
+    <div class="cfg-row"><label>Modulation (CC1)</label><input type="number" id="cfgCCMod" min="0" max="127"></div>
+    <div class="cfg-row"><label>Breath (CC2)</label><input type="number" id="cfgCCBreath" min="0" max="127"></div>
+    <div class="cfg-row"><label>Brightness (CC74)</label><input type="number" id="cfgCCBright" min="0" max="127"></div>
   </div>
 
   <div class="section"><h3>Breath CC2</h3>
@@ -369,10 +431,10 @@ max-height:120px;overflow-y:auto;color:#888}
   </div>
 
   <div class="btn-row" style="justify-content:center;margin-top:16px">
-    <button class="btn btn-g" onclick="saveSettings()">Sauvegarder</button>
+    <button class="btn btn-g" id="btnSaveSettings" onclick="saveSettings()"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M12.7 1H3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V3.3L12.7 1zM8 13a2.5 2.5 0 110-5 2.5 2.5 0 010 5zM11 5H5V2h6v3z" fill="currentColor"/></svg>Sauvegarder</button>
     <button class="btn btn-s" onclick="resetConfig()">Reset defauts</button>
   </div>
-  <div style="font-size:.75em;color:#888;text-align:center;margin-top:8px" id="settingsMsg"></div>
+  <div style="font-size:.75em;color:#9aa;text-align:center;margin-top:8px" id="settingsMsg"></div>
 </div>
 </div>
 
