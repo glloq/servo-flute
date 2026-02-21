@@ -49,6 +49,11 @@
 #include "ConfigStorage.h"
 #include "MidiFilePlayer.h"
 
+#if MIC_ENABLED
+#include "AudioAnalyzer.h"
+#include "AutoCalibrator.h"
+#endif
+
 // Forward declarations
 class InstrumentManager;
 class WirelessManager;
@@ -105,6 +110,15 @@ private:
   // Fichier temporaire pour upload MIDI
   File _uploadFile;
   size_t _uploadSize;
+
+#if MIC_ENABLED
+  // Audio analyzer (INMP441 microphone)
+  AudioAnalyzer* _audio;
+  AutoCalibrator* _autoCal;
+  bool _micMonitorEnabled;
+  unsigned long _lastAudioBroadcast;
+  unsigned long _lastAcalBroadcast;
+#endif
 };
 
 #endif

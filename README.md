@@ -20,6 +20,7 @@ La **Servo Flute V3** est un instrument robotique qui transforme des messages MI
 - ✅ **Vibrato optimisé** - sin() LUT pour CPU efficace
 - ✅ **Watchdog timer** - Auto-restart en cas de blocage
 - ✅ **Outil de calibration** - Interface Serial Monitor intuitive
+- ✅ **Auto-calibration micro** - INMP441 I2S pour calibration airflow automatique
 - ✅ **Documentation complète** - Architecture, MIDI, Configuration
 
 ---
@@ -32,10 +33,11 @@ La **Servo Flute V3** est un instrument robotique qui transforme des messages MI
 - un module PCA9685
 - 7 servomoteurs 9g bas de gamme (avec dent metalique) => 6 doigts et 1 servo air flow
 - Alimentation 5V 5A minimum
-- Un solenoide 5V/6V avec 2N min (ideal secutiré a 5N ) il faut viser 500mA maximum de consomation pour eviter la surchauffe (idéal autour de 300mA) 
+- Un solenoide 5V/6V avec 2N min (ideal secutiré a 5N ) il faut viser 500mA maximum de consomation pour eviter la surchauffe (idéal autour de 300mA)
 - un mofset adapté a la puissance
 - une diode de roue libre
-- un condensateur adapté 
+- un condensateur adapté
+- (Optionnel) **Micro INMP441** I2S MEMS pour auto-calibration du debit d'air 
   
   #### Mécanique :
   

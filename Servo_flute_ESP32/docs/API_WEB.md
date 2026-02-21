@@ -32,6 +32,8 @@ Retourne l'etat courant en JSON.
 
 Retourne la configuration complete. Inclut les tableaux dynamiques `fingers` et `notes` qui permettent a l'interface web de s'adapter au nombre de doigts/notes de l'instrument.
 
+Le champ `mic` indique si un microphone INMP441 a ete detecte au demarrage. L'interface web utilise ce champ pour afficher ou masquer la section auto-calibration.
+
 ```json
 {
   "midi_ch": 0,
@@ -49,6 +51,7 @@ Retourne la configuration complete. Inclut les tableaux dynamiques `fingers` et 
   "time_unpower": 200,
   "num_notes": 14,
   "num_fingers": 6,
+  "mic": true,
   "fingers": [
     {"ch": 0, "a": 90, "d": -1},
     {"ch": 1, "a": 95, "d": 1}
@@ -185,6 +188,9 @@ Connexion persistante pour le controle temps reel et le monitoring.
 | Test airflow | `{"t":"test_air","a":60}` | Positionner servo airflow |
 | Test solenoide | `{"t":"test_sol","o":1}` | Ouvrir/fermer solenoide |
 | Test note | `{"t":"test_note","n":84}` | Position complete pour une note |
+| Monitoring micro | `{"t":"mic_mon","on":true}` | Activer/desactiver le flux audio |
+| Auto-calibration | `{"t":"auto_cal","mode":"air"}` | Demarrer auto-cal airflow |
+| Stop auto-cal | `{"t":"auto_cal","mode":"stop"}` | Arreter auto-cal en cours |
 
 ### Messages Serveur -> Client
 
@@ -209,3 +215,52 @@ Connexion persistante pour le controle temps reel et le monitoring.
 ```json
 {"t": "midi_error", "msg": "Format MIDI invalide"}
 ```
+
+**Audio monitoring (si micro INMP441 detecte et monitoring actif, toutes les 100ms) :**
+```json
+{
+  "t": "audio",
+  "rms": 0.12,
+  "hz": 440.0,
+  "midi": 69,
+  "cents": -5
+}
+```
+
+- `rms` : niveau sonore RMS (0.0 - 1.0)
+- `hz` : frequence detectee en Hz (0 si pas de son)
+- `midi` : note MIDI la plus proche (0 si pas de pitch)
+- `cents` : ecart en cents par rapport a la note MIDI (typiquement -50 a +50, peut etre plus large aux limites de detection)
+
+**Progression auto-calibration :**
+```json
+{
+  "t": "acal_prog",
+  "idx": 3,
+  "note": "C6",
+  "total": 14,
+  "angle": 75,
+  "st": 3
+}
+```
+
+- `idx` : index de la note en cours (0-based)
+- `note` : nom de la note (ex: "C6", "F#5")
+- `total` : nombre total de notes
+- `st` : etat de la machine (0=idle, 1=prepare, 2=settle, 3=sweep, 4=note_done, 5=complete)
+
+**Resultats auto-calibration :**
+```json
+{
+  "t": "acal_done",
+  "ok": true,
+  "results": [
+    {"name": "A#5", "ok": true, "min": 15, "max": 65},
+    {"name": "B5", "ok": true, "min": 10, "max": 58},
+    {"name": "C6", "ok": false, "min": 0, "max": 0}
+  ]
+}
+```
+
+- `results[].ok` : `true` si la calibration a reussi pour cette note
+- `results[].min` / `max` : pourcentages airflow detectes (0-100)

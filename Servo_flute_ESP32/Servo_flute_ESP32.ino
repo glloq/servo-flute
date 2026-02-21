@@ -74,17 +74,17 @@ void initSafeState() {
   pinMode(SOLENOID_PIN, OUTPUT);
   digitalWrite(SOLENOID_PIN, LOW);
 
-  // Servo airflow en position repos
-  uint16_t pulseWidth = map(SERVO_AIRFLOW_OFF, 0, 180, SERVO_PULSE_MIN, SERVO_PULSE_MAX);
-  pwm.setPWM(NUM_SERVO_AIRFLOW, 0, pulseWidth);
+  // Servo airflow en position repos (utilise defaut avant chargement config)
+  uint16_t pulseWidth = map(SERVO_AIRFLOW_OFF, SERVO_MIN_ANGLE, SERVO_MAX_ANGLE, SERVO_PULSE_MIN, SERVO_PULSE_MAX);
+  pwm.setPWM(DEFAULT_AIRFLOW_PCA_CHANNEL, 0, pulseWidth);
 
-  // Tous les servos doigts en position fermee
-  for (int i = 0; i < NUMBER_SERVOS_FINGER; i++) {
-    pulseWidth = map(FINGERS[i].closedAngle, 0, 180, SERVO_PULSE_MIN, SERVO_PULSE_MAX);
-    pwm.setPWM(i, 0, pulseWidth);
+  // Tous les servos doigts en position fermee (utilise defauts)
+  for (int i = 0; i < DEFAULT_NUM_FINGERS; i++) {
+    pulseWidth = map(DEFAULT_FINGERS[i].closedAngle, SERVO_MIN_ANGLE, SERVO_MAX_ANGLE, SERVO_PULSE_MIN, SERVO_PULSE_MAX);
+    pwm.setPWM(DEFAULT_FINGERS[i].pcaChannel, 0, pulseWidth);
   }
 
-  delay(100);
+  delay(SAFE_STATE_SETTLE_MS);
 }
 
 void setup() {
@@ -94,7 +94,7 @@ void setup() {
   // Communication serie pour debug
   if (DEBUG) {
     Serial.begin(115200);
-    delay(500);
+    delay(SERIAL_STARTUP_DELAY_MS);
     Serial.println();
     Serial.println("========================================");
     Serial.println("  SERVO FLUTE ESP32 - INITIALISATION");
@@ -149,14 +149,14 @@ void setup() {
     Serial.println();
     Serial.println("Configuration:");
     Serial.print("  - Notes jouables: ");
-    Serial.print(NUMBER_NOTES);
+    Serial.print(cfg.numNotes);
     Serial.print(" (MIDI ");
-    Serial.print(FIRST_MIDI_NOTE);
+    Serial.print(cfg.numNotes > 0 ? cfg.notes[0].midiNote : 0);
     Serial.print(" - ");
-    Serial.print(NOTES[NUMBER_NOTES - 1].midiNote);
+    Serial.print(cfg.numNotes > 0 ? cfg.notes[cfg.numNotes - 1].midiNote : 0);
     Serial.println(")");
     Serial.print("  - Servos doigts: ");
-    Serial.println(NUMBER_SERVOS_FINGER);
+    Serial.println(cfg.numFingers);
     Serial.print("  - Delai servos->solenoide: ");
     Serial.print(SERVO_TO_SOLENOID_DELAY_MS);
     Serial.println(" ms");
