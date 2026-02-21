@@ -7,7 +7,7 @@
 WebConfigurator::WebConfigurator(uint16_t port)
   : _server(port), _ws("/ws"),
     _instrument(nullptr), _player(nullptr), _wirelessManager(nullptr),
-    _webVelocity(100), _lastStatusBroadcast(0), _lastWsCleanup(0),
+    _webVelocity(WEB_DEFAULT_VELOCITY), _lastStatusBroadcast(0), _lastWsCleanup(0),
     _uploadSize(0)
 #if MIC_ENABLED
     , _audio(nullptr), _autoCal(nullptr), _micMonitorEnabled(false), _lastAudioBroadcast(0), _lastAcalBroadcast(0)
@@ -543,7 +543,7 @@ void WebConfigurator::handleMidiUpload(AsyncWebServerRequest* request, const Str
 void WebConfigurator::handleMidiUploadComplete(AsyncWebServerRequest* request) {
   if (_uploadSize > MIDI_FILE_MAX_SIZE) {
     LittleFS.remove(MIDI_FILE_PATH);
-    String resp = "{\"ok\":false,\"msg\":\"Fichier trop volumineux (max 100KB)\"}";
+    String resp = "{\"ok\":false,\"msg\":\"Fichier trop volumineux (max " + String(MIDI_FILE_MAX_SIZE / 1024) + "KB)\"}";
     request->send(400, "application/json", resp);
     _ws.textAll("{\"t\":\"midi_error\",\"msg\":\"Fichier trop volumineux\"}");
     return;
@@ -652,7 +652,7 @@ void WebConfigurator::processWsMessage(AsyncWebSocketClient* client, uint8_t* da
     if (vIdx >= 0) {
       _webVelocity = (uint8_t)msg.substring(vIdx + 4).toInt();
       if (_webVelocity < 1) _webVelocity = 1;
-      if (_webVelocity > 127) _webVelocity = 127;
+      if (_webVelocity > MIDI_VELOCITY_MAX) _webVelocity = MIDI_VELOCITY_MAX;
     }
 
   } else if (type == "play") {

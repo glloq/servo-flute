@@ -30,7 +30,7 @@ inline float fastSin(unsigned long timeMs, float frequency) {
   unsigned long phase = timeMs % period;
   uint8_t index = (uint8_t)((phase * 256UL) / period);
 
-  return pgm_read_byte(&SIN_LUT[index]) / 127.0;
+  return pgm_read_byte(&SIN_LUT[index]) / SIN_LUT_SCALE;
 }
 
 AirflowController::AirflowController(Adafruit_PWMServoDriver& pwm)
@@ -71,7 +71,7 @@ void AirflowController::setAirflowVelocity(byte velocity) {
   if (velocity == 0) {
     angle = cfg.servoAirflowOff;
   } else {
-    angle = map(velocity, 1, 127, cfg.servoAirflowMin, cfg.servoAirflowMax);
+    angle = map(velocity, 1, MIDI_VELOCITY_MAX, cfg.servoAirflowMin, cfg.servoAirflowMax);
   }
 
   setAirflowServoAngle(angle);
@@ -112,7 +112,7 @@ void AirflowController::setAirflowForNote(byte midiNote, byte velocity) {
   _lastVelocity = velocity;
 
   // 1. CC7 (Volume) reduit la limite haute
-  float volumeFactor = _ccVolume / 127.0;
+  float volumeFactor = _ccVolume / (float)MIDI_CC_MAX;
   uint16_t effectiveMaxAngle = minAngle + (maxAngle - minAngle) * volumeFactor;
 
   // 2. Determiner source airflow : CC2 ou velocity
@@ -139,9 +139,9 @@ void AirflowController::setAirflowForNote(byte midiNote, byte velocity) {
         if (smoothedCC2 < cfg.cc2SilenceThreshold) {
           airflowSource = 0;
         } else {
-          float normalizedCC2 = smoothedCC2 / 127.0;
+          float normalizedCC2 = smoothedCC2 / (float)MIDI_CC_MAX;
           float curvedCC2 = pow(normalizedCC2, cfg.cc2ResponseCurve);
-          airflowSource = (byte)(curvedCC2 * 127);
+          airflowSource = (byte)(curvedCC2 * MIDI_CC_MAX);
         }
       }
     } else {
@@ -158,10 +158,10 @@ void AirflowController::setAirflowForNote(byte midiNote, byte velocity) {
   }
 
   // 3. Airflow source definit l'angle de base
-  baseAngle = map(airflowSource, 1, 127, minAngle, effectiveMaxAngle);
+  baseAngle = map(airflowSource, 1, MIDI_CC_MAX, minAngle, effectiveMaxAngle);
 
   // 4. CC11 (Expression) module dans la plage
-  float expressionFactor = _ccExpression / 127.0;
+  float expressionFactor = _ccExpression / (float)MIDI_CC_MAX;
   float finalAngleWithoutVibrato = minAngle + (baseAngle - minAngle) * expressionFactor;
 
   // 5. Limiter
@@ -251,7 +251,7 @@ void AirflowController::update() {
 
   // Appliquer vibrato si actif
   if (_vibratoActive && _ccModulation > 0 && _solenoidOpen) {
-    float vibratoAmplitude = (_ccModulation / 127.0) * cfg.vibratoMaxAmplitudeDeg;
+    float vibratoAmplitude = (_ccModulation / (float)MIDI_CC_MAX) * cfg.vibratoMaxAmplitudeDeg;
     float vibratoOffset = fastSin(millis(), cfg.vibratoFrequencyHz) * vibratoAmplitude;
 
     int16_t finalAngle = _baseAngleWithoutVibrato + (int16_t)(vibratoOffset + 0.5);
@@ -264,7 +264,7 @@ void AirflowController::update() {
 }
 
 void AirflowController::testAirflowAngle(uint16_t angle) {
-  if (angle > 180) angle = 180;
+  if (angle > SERVO_MAX_ANGLE) angle = SERVO_MAX_ANGLE;
   setAirflowServoAngle(angle);
 
   if (DEBUG) {
@@ -305,7 +305,7 @@ void AirflowController::setSolenoidPWM(uint8_t pwmValue) {
     if (SOLENOID_ACTIVE_HIGH) {
       analogWrite(SOLENOID_PIN, pwmValue);
     } else {
-      analogWrite(SOLENOID_PIN, 255 - pwmValue);
+      analogWrite(SOLENOID_PIN, PWM_MAX_VALUE - pwmValue);
     }
   #endif
 }

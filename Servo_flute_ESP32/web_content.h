@@ -170,7 +170,7 @@ max-height:120px;overflow-y:auto;color:#888}
   <div class="section">
     <div class="cfg-row"><label>Velocity</label>
       <input type="range" min="1" max="127" value="100" id="velSlider" oninput="setVelocity(this.value)">
-      <span id="velVal" style="min-width:28px;text-align:right">100</span>
+      <span id="velVal" style="min-width:28px;text-align:right"></span>
     </div>
   </div>
   <div class="keys" id="pianoKeys"></div>
@@ -382,9 +382,13 @@ max-height:120px;overflow-y:auto;color:#888}
 </div>
 
 <script>
+// --- Constants (mirrored from settings.h) ---
+const MIDI_CC_MAX=127,MIDI_VEL_MAX=127,MAX_FINGERS=15;
+const WEB_DEF_VEL=100,TEST_SOL_MS=2000,VU_SCALE=500,PITCH_OK_CT=15;
+
 const N=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const STATES=['IDLE','POSITIONING','PLAYING','STOPPING'];
-let ws=null,velocity=100,CFG=null,curNote=null;
+let ws=null,velocity=WEB_DEF_VEL,CFG=null,curNote=null;
 let calibStep=1,fileLoaded=false,playerDuration=0;
 let micDetected=false,autoCalRunning=false;
 
@@ -429,12 +433,12 @@ function handleWs(d){
     $('btnPlay').disabled=false;$('btnStop').disabled=false;addLog('MIDI: '+d.file)
   }else if(d.t==='midi_error'){addLog('ERR: '+d.msg)}
   else if(d.t==='audio'){
-    const rms=Math.min(100,Math.round((d.rms||0)*500));
+    const rms=Math.min(100,Math.round((d.rms||0)*VU_SCALE));
     $('vuFill').style.width=rms+'%';$('vuVal').textContent=rms+'%';
     $('vuFill').style.background=rms>60?'#e94560':rms>30?'#e9a645':'#4ecca3';
     if(d.midi>0){$('pitchNote').textContent=mn(d.midi);$('pitchHz').textContent=Math.round(d.hz)+' Hz';
       const c=d.cents||0;$('pitchCents').textContent=(c>=0?'+':'')+c.toFixed(0)+' ct';
-      $('pitchCents').className='pitch-cents '+(Math.abs(c)<15?'ok':c>0?'sharp':'flat')}
+      $('pitchCents').className='pitch-cents '+(Math.abs(c)<PITCH_OK_CT?'ok':c>0?'sharp':'flat')}
     else{$('pitchNote').textContent='-';$('pitchHz').textContent='- Hz';$('pitchCents').textContent='-'}
   }else if(d.t==='acal_prog'){
     $('acalProgress').style.display='block';$('acalStep').textContent='Note '+(d.idx+1)+'/'+d.total+' '+d.note;
@@ -450,7 +454,7 @@ function handleWs(d){
     setTimeout(loadConfig,1000)
   }
 }
-function updateCC(n,v){if(v===undefined)return;const p=(v/127*100).toFixed(0);
+function updateCC(n,v){if(v===undefined)return;const p=(v/MIDI_CC_MAX*100).toFixed(0);
   const b=$('ccBar'+n),t=$('ccV'+n);if(b)b.style.width=p+'%';if(t)t.textContent=v}
 
 // --- Load config ---
@@ -574,7 +578,7 @@ function goStep(s){
 
 function changeFingers(delta){
   if(!CFG)return;let nf=CFG.num_fingers+delta;
-  if(nf<1)nf=1;if(nf>15)nf=15;CFG.num_fingers=nf;
+  if(nf<1)nf=1;if(nf>MAX_FINGERS)nf=MAX_FINGERS;CFG.num_fingers=nf;
   // Add defaults for new fingers
   while(CFG.fingers.length<nf)CFG.fingers.push({ch:CFG.fingers.length,a:90,d:1,th:0});
   $('numFingersDisp').textContent=nf;buildFingerCards();buildFlute(CFG,'calFluteSvg',true)
@@ -705,7 +709,7 @@ function buildAirflowRows(){
 }
 
 function testCalNote(midi){wsSend({t:'test_note',n:midi});wsSend({t:'test_sol',o:1});
-  setTimeout(()=>wsSend({t:'test_sol',o:0}),2000)}
+  setTimeout(()=>wsSend({t:'test_sol',o:0}),TEST_SOL_MS)}
 
 function startAutoCal(){autoCalRunning=true;$('btnAcalStart').style.display='none';$('btnAcalStop').style.display='';
   $('acalProgress').style.display='block';$('acalResults').style.display='none';wsSend({t:'auto_cal',mode:'air'})}
@@ -781,7 +785,7 @@ function connectWifi(){const ssid=$('wifiSsid').value,pass=$('wifiPass').value;
     .catch(e=>{$('wifiMsg').textContent='Erreur: '+e})}
 
 // --- INIT ---
-window.addEventListener('load',()=>{wsConnect();loadConfig()});
+window.addEventListener('load',()=>{$('velVal').textContent=WEB_DEF_VEL;$('velSlider').value=WEB_DEF_VEL;wsConnect();loadConfig()});
 </script>
 </body>
 </html>

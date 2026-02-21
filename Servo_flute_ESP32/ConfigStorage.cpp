@@ -112,6 +112,7 @@ bool ConfigStorage::load() {
   if (cfg.numFingers > MAX_FINGER_SERVOS) cfg.numFingers = MAX_FINGER_SERVOS;
 
   cfg.numNotes = doc["num_notes"] | cfg.numNotes;
+  if (cfg.numNotes < 1) cfg.numNotes = 1;
   if (cfg.numNotes > MAX_NOTES) cfg.numNotes = MAX_NOTES;
 
   cfg.airflowPcaChannel = doc["air_pca"] | cfg.airflowPcaChannel;
@@ -173,13 +174,13 @@ bool ConfigStorage::load() {
   cfg.timeUnpower = doc["time_unpower"] | cfg.timeUnpower;
 
   const char* ssid = doc["wifi_ssid"];
-  if (ssid) strncpy(cfg.wifiSsid, ssid, sizeof(cfg.wifiSsid) - 1);
+  if (ssid) { strncpy(cfg.wifiSsid, ssid, sizeof(cfg.wifiSsid) - 1); cfg.wifiSsid[sizeof(cfg.wifiSsid) - 1] = '\0'; }
 
   const char* pass = doc["wifi_pass"];
-  if (pass) strncpy(cfg.wifiPassword, pass, sizeof(cfg.wifiPassword) - 1);
+  if (pass) { strncpy(cfg.wifiPassword, pass, sizeof(cfg.wifiPassword) - 1); cfg.wifiPassword[sizeof(cfg.wifiPassword) - 1] = '\0'; }
 
   const char* name = doc["device"];
-  if (name) strncpy(cfg.deviceName, name, sizeof(cfg.deviceName) - 1);
+  if (name) { strncpy(cfg.deviceName, name, sizeof(cfg.deviceName) - 1); cfg.deviceName[sizeof(cfg.deviceName) - 1] = '\0'; }
 
   if (DEBUG) {
     Serial.println("DEBUG: ConfigStorage - Config chargee depuis LittleFS");
@@ -223,7 +224,7 @@ bool ConfigStorage::save() {
     n["amn"] = cfg.notes[i].airflowMinPercent;
     n["amx"] = cfg.notes[i].airflowMaxPercent;
     JsonArray fp = n["fp"].to<JsonArray>();
-    for (int f = 0; f < cfg.numFingers; f++) {
+    for (int f = 0; f < MAX_FINGER_SERVOS; f++) {
       fp.add(cfg.notes[i].fingerPattern[f] ? 1 : 0);
     }
   }

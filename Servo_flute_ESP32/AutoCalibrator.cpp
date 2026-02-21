@@ -95,7 +95,7 @@ void AutoCalibrator::update() {
       // Increment airflow angle
       _currentAngle++;
 
-      if (_currentAngle > (int)cfg.servoAirflowMax + 5) {
+      if (_currentAngle > (int)cfg.servoAirflowMax + AUTOCAL_SWEEP_OVERSHOOT) {
         // Reached max angle - note done
         if (_foundMin) {
           _airMaxPct = 100;
@@ -114,7 +114,7 @@ void AutoCalibrator::update() {
 
       // Check if pitch is close to expected (within tolerance)
       bool pitchOk = (detectedMidi > 0) &&
-                     (abs(detectedMidi - expectedMidi) <= 3);  // +/-3 semitones
+                     (abs(detectedMidi - expectedMidi) <= AUTOCAL_PITCH_TOLERANCE_SEMI);
 
       if (!_foundMin) {
         // Looking for sound onset
@@ -140,7 +140,7 @@ void AutoCalibrator::update() {
             // Sound has stopped or pitch went wrong
             _airMaxPct = angleToPct(_currentAngle - AUTOCAL_SILENCE_COUNT);
             if (_airMaxPct > 100) _airMaxPct = 100;
-            if (_airMaxPct < _airMinPct) _airMaxPct = _airMinPct + 5;
+            if (_airMaxPct < _airMinPct) _airMaxPct = _airMinPct + AUTOCAL_MIN_RANGE_PCT;
 
             if (DEBUG) {
               Serial.print("DEBUG: AutoCal - air_max found at ");
@@ -160,7 +160,7 @@ void AutoCalibrator::update() {
 
     case ACAL_NOTE_DONE: {
       // First entry: close solenoid and store result
-      if (elapsed < 10) {
+      if (elapsed < AUTOCAL_STORE_DELAY_MS) {
         _airflow.testSolenoid(false);
         _airflow.setAirflowToRest();
 
@@ -183,7 +183,7 @@ void AutoCalibrator::update() {
       }
 
       // Wait briefly before next note
-      if (elapsed >= 200) {
+      if (elapsed >= AUTOCAL_NOTE_INTERVAL_MS) {
         advanceToNextNote();
       }
       break;

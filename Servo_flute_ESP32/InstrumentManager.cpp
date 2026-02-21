@@ -33,7 +33,7 @@ void InstrumentManager::begin() {
   // Initialiser le PCA9685
   _pwm.begin();
   _pwm.setPWMFreq(SERVO_FREQUENCY);
-  delay(10);
+  delay(PWM_INIT_DELAY_MS);
 
   // Initialiser les controleurs
   _fingerCtrl.begin();
@@ -144,7 +144,7 @@ void InstrumentManager::powerOffServos() {
 }
 
 void InstrumentManager::handleControlChange(byte ccNumber, byte ccValue) {
-  if (ccValue > 127) {
+  if (ccValue > MIDI_CC_MAX) {
     if (DEBUG) {
       Serial.print("ERREUR: CC invalide - valeur: ");
       Serial.println(ccValue);
@@ -155,9 +155,9 @@ void InstrumentManager::handleControlChange(byte ccNumber, byte ccValue) {
   unsigned long currentTime = millis();
 
   // Rate limiting CC2 (Breath Controller) separe
-  if (ccNumber == 2) {
+  if (ccNumber == MIDI_CC_BREATH) {
     if (cfg.cc2Enabled) {
-      if (currentTime - _cc2WindowStart >= 1000) {
+      if (currentTime - _cc2WindowStart >= CC_RATE_WINDOW_MS) {
         _cc2WindowStart = currentTime;
         _cc2Count = 0;
       }
@@ -168,11 +168,11 @@ void InstrumentManager::handleControlChange(byte ccNumber, byte ccValue) {
     }
   } else {
     // Rate limiting normal
-    if (currentTime - _ccWindowStart >= 1000) {
+    if (currentTime - _ccWindowStart >= CC_RATE_WINDOW_MS) {
       _ccWindowStart = currentTime;
       _ccCount = 0;
     }
-    if (ccNumber != 120 && ccNumber != 121 && ccNumber != 123) {
+    if (ccNumber != MIDI_CC_ALL_SOUND_OFF && ccNumber != MIDI_CC_RESET_ALL_CONTROLLERS && ccNumber != MIDI_CC_ALL_NOTES_OFF) {
       _ccCount++;
       if (_ccCount > CC_RATE_LIMIT_PER_SECOND) {
         return;
@@ -183,7 +183,7 @@ void InstrumentManager::handleControlChange(byte ccNumber, byte ccValue) {
   _lastCCTime = currentTime;
 
   switch (ccNumber) {
-    case 1:  // Modulation (Vibrato)
+    case MIDI_CC_MODULATION:  // Vibrato
       _ccModulation = ccValue;
       _airflowCtrl.setCCValues(_ccVolume, _ccExpression, _ccModulation);
       if (DEBUG) {
@@ -192,12 +192,12 @@ void InstrumentManager::handleControlChange(byte ccNumber, byte ccValue) {
       }
       break;
 
-    case 2:  // Breath Controller
+    case MIDI_CC_BREATH:  // Breath Controller
       _ccBreath = ccValue;
       _airflowCtrl.updateCC2Breath(ccValue);
       break;
 
-    case 7:  // Volume
+    case MIDI_CC_VOLUME:  // Volume
       _ccVolume = ccValue;
       _airflowCtrl.setCCValues(_ccVolume, _ccExpression, _ccModulation);
       if (DEBUG) {
@@ -206,7 +206,7 @@ void InstrumentManager::handleControlChange(byte ccNumber, byte ccValue) {
       }
       break;
 
-    case 11: // Expression
+    case MIDI_CC_EXPRESSION:  // Expression
       _ccExpression = ccValue;
       _airflowCtrl.setCCValues(_ccVolume, _ccExpression, _ccModulation);
       if (DEBUG) {
@@ -215,19 +215,19 @@ void InstrumentManager::handleControlChange(byte ccNumber, byte ccValue) {
       }
       break;
 
-    case 74: // Brightness
+    case MIDI_CC_BRIGHTNESS:  // Brightness
       _ccBrightness = ccValue;
       break;
 
-    case 120: // All Sound Off
+    case MIDI_CC_ALL_SOUND_OFF:
       allSoundOff();
       break;
 
-    case 121: // Reset All Controllers
+    case MIDI_CC_RESET_ALL_CONTROLLERS:
       resetAllControllers();
       break;
 
-    case 123: // All Notes Off
+    case MIDI_CC_ALL_NOTES_OFF:
       allSoundOff();
       break;
 

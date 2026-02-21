@@ -75,16 +75,16 @@ void initSafeState() {
   digitalWrite(SOLENOID_PIN, LOW);
 
   // Servo airflow en position repos (utilise defaut avant chargement config)
-  uint16_t pulseWidth = map(SERVO_AIRFLOW_OFF, 0, 180, SERVO_PULSE_MIN, SERVO_PULSE_MAX);
+  uint16_t pulseWidth = map(SERVO_AIRFLOW_OFF, SERVO_MIN_ANGLE, SERVO_MAX_ANGLE, SERVO_PULSE_MIN, SERVO_PULSE_MAX);
   pwm.setPWM(DEFAULT_AIRFLOW_PCA_CHANNEL, 0, pulseWidth);
 
   // Tous les servos doigts en position fermee (utilise defauts)
   for (int i = 0; i < DEFAULT_NUM_FINGERS; i++) {
-    pulseWidth = map(DEFAULT_FINGERS[i].closedAngle, 0, 180, SERVO_PULSE_MIN, SERVO_PULSE_MAX);
+    pulseWidth = map(DEFAULT_FINGERS[i].closedAngle, SERVO_MIN_ANGLE, SERVO_MAX_ANGLE, SERVO_PULSE_MIN, SERVO_PULSE_MAX);
     pwm.setPWM(DEFAULT_FINGERS[i].pcaChannel, 0, pulseWidth);
   }
 
-  delay(100);
+  delay(SAFE_STATE_SETTLE_MS);
 }
 
 void setup() {
@@ -94,7 +94,7 @@ void setup() {
   // Communication serie pour debug
   if (DEBUG) {
     Serial.begin(115200);
-    delay(500);
+    delay(SERIAL_STARTUP_DELAY_MS);
     Serial.println();
     Serial.println("========================================");
     Serial.println("  SERVO FLUTE ESP32 - INITIALISATION");

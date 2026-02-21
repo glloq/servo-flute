@@ -80,6 +80,11 @@ Set MIC_ENABLED to false if no mic is connected.
 #define AUTOCAL_STEP_MS         80      // Time per airflow step
 #define AUTOCAL_SILENCE_COUNT   3       // Consecutive silent steps = sound gone
 #define AUTOCAL_AUDIO_INTERVAL_MS 100   // Audio broadcast interval
+#define AUTOCAL_SWEEP_OVERSHOOT 5       // Degrees past max to check during sweep
+#define AUTOCAL_PITCH_TOLERANCE_SEMI 3  // Pitch tolerance in semitones
+#define AUTOCAL_MIN_RANGE_PCT   5       // Minimum range pct between air_min and air_max
+#define AUTOCAL_STORE_DELAY_MS  10      // Delay before storing result in NOTE_DONE state
+#define AUTOCAL_NOTE_INTERVAL_MS 200    // Pause between notes during auto-cal
 
 /*******************************************************************************
 ---------------------------   TIMING SETTINGS (ms)    ------------------------
@@ -303,5 +308,51 @@ const uint16_t SERVO_FREQUENCY = 50;
 -----------------------  WATCHDOG SETTINGS (ESP32)    ------------------------
 ******************************************************************************/
 #define WATCHDOG_TIMEOUT_MS 4000      // Timeout watchdog en ms
+
+/*******************************************************************************
+-----------------------  MIDI PROTOCOL CONSTANTS     -----------------------
+Standard MIDI constants used across the codebase.
+******************************************************************************/
+#define MIDI_CC_MAX 127               // Maximum value for any MIDI CC or velocity
+#define MIDI_VELOCITY_MAX 127         // Maximum MIDI velocity
+#define MIDI_CC_MODULATION 1          // CC 1: Modulation (vibrato)
+#define MIDI_CC_BREATH 2              // CC 2: Breath Controller
+#define MIDI_CC_VOLUME 7              // CC 7: Channel Volume
+#define MIDI_CC_EXPRESSION 11         // CC 11: Expression
+#define MIDI_CC_BRIGHTNESS 74         // CC 74: Sound Brightness
+#define MIDI_CC_ALL_SOUND_OFF 120     // CC 120: All Sound Off
+#define MIDI_CC_RESET_ALL_CONTROLLERS 121 // CC 121: Reset All Controllers
+#define MIDI_CC_ALL_NOTES_OFF 123     // CC 123: All Notes Off
+
+/*******************************************************************************
+-----------------------  RATE LIMITING CONSTANTS     -----------------------
+******************************************************************************/
+#define CC_RATE_WINDOW_MS 1000        // Window for CC rate limiting (ms)
+
+/*******************************************************************************
+-----------------------  PWM / SIGNAL CONSTANTS      -----------------------
+******************************************************************************/
+#define PWM_MAX_VALUE 255             // Max PWM value (8-bit)
+
+/*******************************************************************************
+---------------------  SINE LUT CONSTANTS (VIBRATO)  ----------------------
+******************************************************************************/
+#define SIN_LUT_SIZE 256              // Number of entries in sine lookup table
+#define SIN_LUT_SCALE 127.0f          // Amplitude scale of sine LUT values
+
+/*******************************************************************************
+-----------------------  INIT / STARTUP DELAYS       -----------------------
+******************************************************************************/
+#define SAFE_STATE_SETTLE_MS 100      // Delay after safe state init (servo settle)
+#define SERIAL_STARTUP_DELAY_MS 500   // Delay for serial port initialization
+#define PWM_INIT_DELAY_MS 10          // Delay after PCA9685 frequency set
+
+/*******************************************************************************
+-----------------------  WEB INTERFACE CONSTANTS     -----------------------
+******************************************************************************/
+#define WEB_DEFAULT_VELOCITY 100      // Default velocity for web keyboard
+#define TEST_NOTE_SOLENOID_MS 2000    // Solenoid open duration for note test (ms)
+#define VU_METER_SCALE 500            // RMS to percentage scale for VU meter
+#define PITCH_OK_CENTS 15             // Pitch tolerance (cents) shown as "OK"
 
 #endif

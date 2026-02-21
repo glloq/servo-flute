@@ -80,8 +80,8 @@ uint16_t FingerController::calculateServoAngle(int fingerIndex, bool isOpen) {
   } else {
     int16_t angle = baseAngle + (cfg.fingerAngleOpen * cfg.fingers[fingerIndex].direction);
 
-    if (angle < 0) angle = 0;
-    if (angle > 180) angle = 180;
+    if (angle < SERVO_MIN_ANGLE) angle = SERVO_MIN_ANGLE;
+    if (angle > SERVO_MAX_ANGLE) angle = SERVO_MAX_ANGLE;
 
     return (uint16_t)angle;
   }
@@ -95,7 +95,7 @@ void FingerController::setServoAngle(int fingerIndex, uint16_t angle) {
 
 void FingerController::testFingerAngle(int fingerIndex, uint16_t angle) {
   if (fingerIndex < 0 || fingerIndex >= cfg.numFingers) return;
-  if (angle > 180) angle = 180;
+  if (angle > SERVO_MAX_ANGLE) angle = SERVO_MAX_ANGLE;
   setServoAngle(fingerIndex, angle);
 
   if (DEBUG) {
