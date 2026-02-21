@@ -154,11 +154,11 @@ struct DefaultFingerConfig {
 const DefaultFingerConfig DEFAULT_FINGERS[DEFAULT_NUM_FINGERS] = {
   // PCA  Ferme  Sens  Pouce
   {  0,   90,   -1,   false },  // Trou 1
-  {  1,   95,    1,   false },  // Trou 2
-  {  2,   90,    1,   false },  // Trou 3
-  {  3,   100,   1,   false },  // Trou 4
+  {  1,   95,   -1,   false },  // Trou 2
+  {  2,   90,   -1,   false },  // Trou 3
+  {  3,   100,  -1,   false },  // Trou 4
   {  4,   95,   -1,   false },  // Trou 5
-  {  5,   90,    1,   false }   // Trou 6
+  {  5,   90,   -1,   false }   // Trou 6
 };
 
 /*******************************************************************************

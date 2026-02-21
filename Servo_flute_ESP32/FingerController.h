@@ -11,9 +11,9 @@ public:
 
   void begin();
 
-  // Applique un pattern de doigtes binaire (false=ferme, true=ouvert)
+  // Applique un pattern de doigtes (0=ferme, 1=ouvert, 2=demi-ouvert)
   // Taille du pattern = cfg.numFingers
-  void setFingerPattern(const bool pattern[MAX_FINGER_SERVOS]);
+  void setFingerPattern(const uint8_t pattern[MAX_FINGER_SERVOS]);
 
   // Applique un pattern pour une note MIDI specifique
   void setFingerPatternForNote(byte midiNote);
@@ -27,7 +27,7 @@ public:
 private:
   Adafruit_PWMServoDriver& _pwm;
 
-  uint16_t calculateServoAngle(int fingerIndex, bool isOpen);
+  uint16_t calculateServoAngle(int fingerIndex, uint8_t openState);
   void setServoAngle(int fingerIndex, uint16_t angle);
   uint16_t angleToPWM(uint16_t angle);
 };

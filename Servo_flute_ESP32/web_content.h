@@ -80,11 +80,11 @@ min-width:60px;flex:0 0 auto;transition:all .15s}
 .key:hover .key-shortcut{display:block}
 .kf-row{display:flex;gap:3px;justify-content:center;margin-top:4px}
 .kf{width:8px;height:8px;border-radius:50%;border:1px solid #777}
-.kf.c{background:#444}.kf.o{background:#4ecca3}
+.kf.c{background:#444}.kf.o{background:#4ecca3}.kf.h{background:linear-gradient(180deg,#4ecca3 50%,#444 50%)}
 .flute-box{background:#0d1b3e;border-radius:8px;padding:12px;text-align:center;margin-bottom:8px}
 .flute-box svg{width:100%;max-width:600px;height:auto}
 .flute-hole{stroke:#5C4A0A;stroke-width:2;transition:all .2s}
-.flute-hole.closed{fill:#3a2a0a}.flute-hole.open{fill:#4ecca3}
+.flute-hole.closed{fill:#3a2a0a}.flute-hole.open{fill:#4ecca3}.flute-hole.half{fill:#4ecca3;fill-opacity:.5}
 .flute-hole.thumb{filter:drop-shadow(0 0 3px #e94560)}
 .flute-hole:hover{filter:drop-shadow(0 0 6px #e94560);cursor:pointer}
 @keyframes holePulse{0%,100%{filter:drop-shadow(0 0 4px #4ecca3)}50%{filter:drop-shadow(0 0 14px #4ecca3)}}
@@ -129,7 +129,7 @@ border-radius:8px;padding:10px;margin-bottom:8px}
 font-weight:bold;border-radius:4px;margin:6px 0}
 .fg-dots{display:flex;gap:4px;flex:1}
 .fg-dot{width:18px;height:18px;border-radius:50%;border:2px solid #777;cursor:pointer;transition:.15s}
-.fg-dot.closed{background:#444}.fg-dot.open{background:#4ecca3;border-color:#4ecca3}
+.fg-dot.closed{background:#444}.fg-dot.open{background:#4ecca3;border-color:#4ecca3}.fg-dot.half{background:linear-gradient(180deg,#4ecca3 50%,#444 50%);border-color:#4ecca3}
 .fg-dot.thumb{border-style:dashed;border-color:#e94560}
 .air-card{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #0f3460;flex-wrap:wrap}
 .air-note{font-weight:bold;min-width:40px;font-size:0.85em}
@@ -501,6 +501,7 @@ max-height:120px;overflow-y:auto;color:#9aa}
   </div>
 
   <div class="section"><h3>Interface</h3>
+    <div class="cfg-row"><label>Couleur instrument</label><input type="color" id="cfgColor" value="#D4B044" style="width:40px;height:28px;flex:0;padding:0;border:1px solid #555;border-radius:4px;cursor:pointer"></div>
     <div class="cfg-row"><label>Cacher Calibration</label><input type="checkbox" id="cfgHideCalib" style="width:auto;flex:0"></div>
   </div>
 
@@ -763,7 +764,7 @@ function buildKeyboard(){
   CFG.notes.forEach((n,idx)=>{
     const name=mn(n.midi);const key=document.createElement('div');
     key.className='key'+(isBlack(n.midi)?' black':'')+' fade-in fade-delay-'+(Math.min(4,(idx%4)+1));key.dataset.midi=n.midi;
-    let dots='<span class="kf-row">';for(let f=0;f<CFG.num_fingers;f++)dots+='<span class="kf '+(n.fp[f]?'o':'c')+'"></span>';dots+='</span>';
+    let dots='<span class="kf-row">';for(let f=0;f<CFG.num_fingers;f++)dots+='<span class="kf '+kfClass(n.fp[f])+'"></span>';dots+='</span>';
     const sc=idx<KC.length?KC[idx].toUpperCase():'';
     key.innerHTML='<span class="note-name">'+name+'</span><span class="note-midi">'+n.midi+'</span>'+dots+(sc?'<span class="key-shortcut">'+sc+'</span>':'');
     key.addEventListener('touchstart',e=>{e.preventDefault();noteOn(n.midi);key.classList.add('pressed')},{passive:false});
@@ -804,17 +805,21 @@ document.addEventListener('keydown',e=>{if(!e.ctrlKey)return;
 
 // --- SVG FLUTE ---
 // Gradients for flute body materials
+function hexDarken(hex,f){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return '#'+[r,g,b].map(c=>Math.round(c*f).toString(16).padStart(2,'0')).join('')}
+function hexLighten(hex,f){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return '#'+[r,g,b].map(c=>Math.min(255,Math.round(c+(255-c)*f)).toString(16).padStart(2,'0')).join('')}
 function fluteGrad(g,em){
-  const clay=em==='oca';
-  const c1=clay?'#C47038':'#D4B044',c2=clay?'#A85828':'#C4A035',c3=clay?'#7A3818':'#9B7A1C',c4=clay?'#5C2810':'#6B4F10';
+  const base=(CFG&&CFG.color)?CFG.color:(em==='oca'?'#C47038':'#D4B044');
+  const c1=base,c2=hexDarken(base,.85),c3=hexDarken(base,.6),c4=hexDarken(base,.4);
   return '<defs><linearGradient id="wg_'+g+'" x1="0" y1="0" x2="0" y2="1">'+
     '<stop offset="0%" stop-color="'+c1+'"/><stop offset="35%" stop-color="'+c2+'"/>'+
     '<stop offset="70%" stop-color="'+c3+'"/><stop offset="100%" stop-color="'+c4+'"/></linearGradient>'+
     '<linearGradient id="lp_'+g+'" x1="0" y1="0" x2="0" y2="1">'+
-    '<stop offset="0%" stop-color="'+(clay?'#D88050':'#E8CC60')+'"/><stop offset="40%" stop-color="'+c1+'"/>'+
-    '<stop offset="100%" stop-color="'+(clay?'#8A4820':'#A8862A')+'"/></linearGradient>'+
+    '<stop offset="0%" stop-color="'+hexLighten(base,.25)+'"/><stop offset="40%" stop-color="'+c1+'"/>'+
+    '<stop offset="100%" stop-color="'+c4+'"/></linearGradient>'+
     '<linearGradient id="cr_'+g+'" x1="0" y1="0" x2="0" y2="1">'+
-    '<stop offset="0%" stop-color="'+(clay?'#9A5028':'#B89530')+'"/><stop offset="50%" stop-color="'+(clay?'#6A3018':'#8A6A18')+'"/>'+
+    '<stop offset="0%" stop-color="'+c2+'"/><stop offset="50%" stop-color="'+c3+'"/>'+
     '<stop offset="100%" stop-color="'+c4+'"/></linearGradient>'+
     '<linearGradient id="eh_'+g+'" x1="0" y1="0" x2="0" y2="1">'+
     '<stop offset="0%" stop-color="#1A1008"/><stop offset="100%" stop-color="#0A0600"/></linearGradient></defs>'
@@ -952,7 +957,7 @@ function buildOcarina(cfg,svgId,showNums){
 function updateFluteForNote(midi){
   if(!CFG)return;const nd=CFG.notes.find(n=>n.midi===midi);
   for(let i=0;i<CFG.num_fingers;i++){const el=$('fh_fluteSvg_'+i);
-    if(el)el.setAttribute('class','flute-hole '+(nd&&nd.fp[i]?'open':'closed')+(CFG.fingers[i]&&CFG.fingers[i].th?' thumb':''))}
+    if(el){const v=nd?nd.fp[i]:0;el.setAttribute('class','flute-hole '+(v===1?'open':v===2?'half':'closed')+(CFG.fingers[i]&&CFG.fingers[i].th?' thumb':''))}}
   $('fluteNote').textContent=nd?mn(nd.midi):'-';$('fluteInfo').textContent=nd?'MIDI '+nd.midi:''
 }
 
@@ -1124,13 +1129,13 @@ function buildFingerCards(){
 function buildInstrumentSelect(){
   const s=$('instrumentSelect');if(!s)return;
   s.innerHTML='<option value="">-- Personnalis\u00e9 --</option>';
-  const emNames={trav:'Fl\u00fbtes traversieres',bec:'Fl\u00fbtes a bec / sifflets',naf:'Fl\u00fbtes am\u00e9rindiennes',end:'Embouchure libre',oca:'Ocarinas'};
+  const emNames={trav:'Traversieres',bec:'A bec / sifflets',naf:'Am\u00e9rindiennes',end:'Emb. libre',oca:'Ocarinas'};
   const emOrder=['bec','trav','end','naf','oca'];
   const groups={};PR.forEach(p=>{const k=p.em||'trav';(groups[k]=groups[k]||[]).push(p)});
   emOrder.forEach(em=>{if(!groups[em])return;
     const og=document.createElement('optgroup');og.label=emNames[em]||em;
     groups[em].sort((a,b)=>a.h-b.h).forEach(p=>{const o=document.createElement('option');o.value=p.id;
-      o.textContent=p.n+' ('+p.h+' trous'+(p.th>=0?', pouce':'')+')';og.appendChild(o)});
+      o.textContent=p.n+' - '+p.h+' trous';og.appendChild(o)});
     s.appendChild(og)})
 }
 
@@ -1139,7 +1144,7 @@ function selectInstrument(val){
   const p=PR.find(x=>x.id===val);if(!p)return;
   // Step 1 = config physique seulement (trous + pouce + embouchure), pas les notes
   CFG.num_fingers=p.h;CFG.embouchure=p.em||'trav';
-  while(CFG.fingers.length<p.h)CFG.fingers.push({ch:CFG.fingers.length,a:90,d:1,th:0});
+  while(CFG.fingers.length<p.h)CFG.fingers.push({ch:CFG.fingers.length,a:90,d:-1,th:0});
   CFG.fingers.forEach(f=>f.th=0);
   if(p.th>=0&&CFG.fingers[p.th])CFG.fingers[p.th].th=1;
   // Rebuild UI physique
@@ -1176,7 +1181,7 @@ function buildFingeringRows(){
     const d=document.createElement('div');d.className='fg-row fade-in fade-delay-'+(Math.min(4,(ni%4)+1));
     let dots='';for(let f=0;f<CFG.num_fingers;f++){
       const isThumb=CFG.fingers[f]&&CFG.fingers[f].th;
-      dots+='<div class="fg-dot '+(n.fp[f]?'open':'closed')+(isThumb?' thumb':'')+'" data-ni="'+ni+'" data-fi="'+f+'" onclick="toggleFP('+ni+','+f+',this)"></div>'
+      dots+='<div class="fg-dot '+fpClass(n.fp[f])+(isThumb?' thumb':'')+'" data-ni="'+ni+'" data-fi="'+f+'" onclick="toggleFP('+ni+','+f+',this)"></div>'
     }
     d.innerHTML='<input type="number" class="fg-midi" style="width:48px" value="'+n.midi+'" min="0" max="127" onchange="fpSnap();CFG.notes['+ni+'].midi=parseInt(this.value);markDirty()">'+
       '<span class="fg-note">'+mn(n.midi)+'</span>'+
@@ -1186,9 +1191,11 @@ function buildFingeringRows(){
   })
 }
 
+function fpClass(v){return v===1?'open':v===2?'half':'closed'}
+function kfClass(v){return v===1?'o':v===2?'h':'c'}
 function toggleFP(ni,fi,el){
-  fpSnap();CFG.notes[ni].fp[fi]=CFG.notes[ni].fp[fi]?0:1;
-  el.className='fg-dot '+(CFG.notes[ni].fp[fi]?'open':'closed')+(CFG.fingers[fi]&&CFG.fingers[fi].th?' thumb':'');markDirty()
+  fpSnap();const v=CFG.notes[ni].fp[fi];CFG.notes[ni].fp[fi]=v===0?1:v===1?2:0;
+  el.className='fg-dot '+fpClass(CFG.notes[ni].fp[fi])+(CFG.fingers[fi]&&CFG.fingers[fi].th?' thumb':'');markDirty()
 }
 
 function addNote(){
@@ -1247,7 +1254,7 @@ function saveStep2(){
 function buildAirflowRows(){
   const c=$('airflowRows');c.innerHTML='';if(!CFG)return;
   CFG.notes.forEach((n,ni)=>{
-    let dots='';for(let f=0;f<CFG.num_fingers;f++)dots+='<span class="kf '+(n.fp[f]?'o':'c')+'"></span>';
+    let dots='';for(let f=0;f<CFG.num_fingers;f++)dots+='<span class="kf '+kfClass(n.fp[f])+'"></span>';
     const d=document.createElement('div');d.className='air-card fade-in fade-delay-'+(Math.min(4,(ni%4)+1));
     d.innerHTML='<span class="air-note">'+mn(n.midi)+'</span>'+
       '<span class="kf-row" style="gap:2px">'+dots+'</span>'+
@@ -1378,6 +1385,7 @@ function fillSettings(){
   sp.value=CFG.sol_pin||13;
   $('cfgSolAct').value=CFG.sol_act;$('cfgSolHold').value=CFG.sol_hold;$('cfgSolTime').value=CFG.sol_time;
   $('cfgUnpower').value=CFG.time_unpower;
+  $('cfgColor').value=CFG.color||'#D4B044';
   $('cfgHideCalib').checked=!!CFG.hide_calib;
   // Appliquer visibilite onglet calibration
   applyCalibVisibility();
@@ -1398,7 +1406,7 @@ function saveSettings(){
     cc_mod:parseInt($('cfgCCMod').value),cc_breath:parseInt($('cfgCCBreath').value),cc_bright:parseInt($('cfgCCBright').value),
     sol_pin:parseInt($('cfgSolPin').value),
     sol_act:parseInt($('cfgSolAct').value),sol_hold:parseInt($('cfgSolHold').value),sol_time:parseInt($('cfgSolTime').value),
-    time_unpower:parseInt($('cfgUnpower').value),hide_calib:$('cfgHideCalib').checked};
+    time_unpower:parseInt($('cfgUnpower').value),color:$('cfgColor').value,hide_calib:$('cfgHideCalib').checked};
   fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(r=>r.json()).then(d=>{btnLoad('btnSaveSettings',false);
       if(d.ok){showToast('Parametres sauvegardes','success');markClean();loadConfig()}

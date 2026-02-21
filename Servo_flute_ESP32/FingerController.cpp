@@ -16,7 +16,7 @@ void FingerController::begin() {
   closeAllFingers();
 }
 
-void FingerController::setFingerPattern(const bool pattern[MAX_FINGER_SERVOS]) {
+void FingerController::setFingerPattern(const uint8_t pattern[MAX_FINGER_SERVOS]) {
   for (int i = 0; i < cfg.numFingers; i++) {
     uint16_t angle = calculateServoAngle(i, pattern[i]);
     setServoAngle(i, angle);
@@ -63,7 +63,7 @@ void FingerController::closeAllFingers() {
 
 void FingerController::openAllFingers() {
   for (int i = 0; i < cfg.numFingers; i++) {
-    uint16_t openAngle = calculateServoAngle(i, true);
+    uint16_t openAngle = calculateServoAngle(i, 1);
     setServoAngle(i, openAngle);
   }
 
@@ -72,13 +72,16 @@ void FingerController::openAllFingers() {
   }
 }
 
-uint16_t FingerController::calculateServoAngle(int fingerIndex, bool isOpen) {
+uint16_t FingerController::calculateServoAngle(int fingerIndex, uint8_t openState) {
   uint16_t baseAngle = cfg.fingers[fingerIndex].closedAngle;
 
-  if (!isOpen) {
+  if (openState == 0) {
     return baseAngle;
   } else {
-    int16_t angle = baseAngle + (cfg.fingerAngleOpen * cfg.fingers[fingerIndex].direction);
+    // 1=full open, 2=half open (50% of full angle)
+    int16_t travel = cfg.fingerAngleOpen * cfg.fingers[fingerIndex].direction;
+    if (openState == 2) travel /= 2;
+    int16_t angle = baseAngle + travel;
 
     if (angle < SERVO_MIN_ANGLE) angle = SERVO_MIN_ANGLE;
     if (angle > SERVO_MAX_ANGLE) angle = SERVO_MAX_ANGLE;

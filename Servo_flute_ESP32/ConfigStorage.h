@@ -32,7 +32,7 @@ struct FingerConfig {
 
 struct NoteConfig {
   uint8_t midiNote;                          // Numero MIDI
-  bool fingerPattern[MAX_FINGER_SERVOS];     // Doigtes (false=ferme, true=ouvert)
+  uint8_t fingerPattern[MAX_FINGER_SERVOS];  // Doigtes (0=ferme, 1=ouvert, 2=demi-ouvert)
   uint8_t airflowMinPercent;                 // % min servo flow (0-100)
   uint8_t airflowMaxPercent;                 // % max servo flow (0-100)
 };
@@ -105,6 +105,7 @@ struct RuntimeConfig {
   // --- UI ---
   bool hideCalibration;              // Cacher l'onglet Calibration
   uint8_t solenoidPin;               // GPIO solenoide (configurable)
+  char instrumentColor[8];           // Couleur hex instrument "#RRGGBB"
 };
 
 // Config globale accessible depuis tout le projet

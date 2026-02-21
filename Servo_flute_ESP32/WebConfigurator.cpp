@@ -353,6 +353,7 @@ void WebConfigurator::handleApiConfig(AsyncWebServerRequest* request) {
   json += ",\"time_unpower\":" + String(cfg.timeUnpower);
   json += ",\"hide_calib\":" + String(cfg.hideCalibration ? "true" : "false");
   json += ",\"sol_pin\":" + String(cfg.solenoidPin);
+  json += ",\"color\":\"" + String(cfg.instrumentColor) + "\"";
   json += ",\"air_atk_mode\":" + String(cfg.airAttackMode);
   json += ",\"air_atk_off\":" + String(cfg.airAttackOffset);
   json += ",\"air_atk_ms\":" + String(cfg.airAttackMs);
@@ -385,7 +386,7 @@ void WebConfigurator::handleApiConfig(AsyncWebServerRequest* request) {
     json += ",\"fp\":[";
     for (int f = 0; f < cfg.numFingers; f++) {
       if (f > 0) json += ",";
-      json += String(cfg.notes[i].fingerPattern[f] ? 1 : 0);
+      json += String((int)cfg.notes[i].fingerPattern[f]);
     }
     json += "]}";
   }
@@ -448,6 +449,10 @@ void WebConfigurator::handleApiConfigFinalize(AsyncWebServerRequest* request) {
     if (doc.containsKey("time_unpower")) cfg.timeUnpower = doc["time_unpower"];
     if (doc.containsKey("hide_calib")) cfg.hideCalibration = doc["hide_calib"].as<bool>();
     if (doc.containsKey("sol_pin")) cfg.solenoidPin = doc["sol_pin"];
+    if (doc.containsKey("color")) {
+      strncpy(cfg.instrumentColor, doc["color"] | "#D4B044", sizeof(cfg.instrumentColor) - 1);
+      cfg.instrumentColor[sizeof(cfg.instrumentColor) - 1] = '\0';
+    }
     if (doc.containsKey("air_atk_mode")) cfg.airAttackMode = doc["air_atk_mode"];
     if (doc.containsKey("air_atk_off")) cfg.airAttackOffset = doc["air_atk_off"];
     if (doc.containsKey("air_atk_ms")) cfg.airAttackMs = doc["air_atk_ms"];
@@ -490,7 +495,7 @@ void WebConfigurator::handleApiConfigFinalize(AsyncWebServerRequest* request) {
         if (n.containsKey("fp")) {
           JsonArray fp = n["fp"];
           for (int f = 0; f < MAX_FINGER_SERVOS; f++) {
-            cfg.notes[i].fingerPattern[f] = (f < (int)fp.size()) ? (fp[f].as<int>() != 0) : false;
+            cfg.notes[i].fingerPattern[f] = (f < (int)fp.size()) ? (uint8_t)fp[f].as<int>() : 0;
           }
         }
       }
