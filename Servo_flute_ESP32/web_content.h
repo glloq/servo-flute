@@ -582,7 +582,7 @@ max-height:120px;overflow-y:auto;color:#9aa}
 <!-- TAB: MINI BROWSER -->
 <!-- WIZARD OVERLAY (first boot) -->
 <div class="settings-overlay" id="wizardOverlay">
-<div class="settings-box" style="max-width:500px">
+<div class="settings-box" style="max-width:540px">
   <h2>Bienvenue ! Configuration initiale</h2>
   <div id="wizStep1">
     <p style="color:#9aa;font-size:.85em;margin-bottom:12px">Choisissez votre type d'instrument :</p>
@@ -592,16 +592,94 @@ max-height:120px;overflow-y:auto;color:#9aa}
     </div>
   </div>
   <div id="wizStep2" style="display:none">
-    <p style="color:#9aa;font-size:.85em;margin-bottom:12px">Systeme d'alimentation en air :</p>
-    <div style="display:flex;flex-direction:column;gap:8px">
-      <label class="wiz-card" onclick="wizSetAir(0)"><input type="radio" name="wizAir" value="0" checked>
-        <span><b>Classique</b><br><span style="font-size:.75em;color:#9aa">Solenoide GPIO (standard)</span></span></label>
-      <label class="wiz-card" onclick="wizSetAir(1)"><input type="radio" name="wizAir" value="1">
-        <span><b>Servo-valve</b><br><span style="font-size:.75em;color:#9aa">Servo PCA au lieu du solenoide</span></span></label>
-      <label class="wiz-card" onclick="wizSetAir(2)"><input type="radio" name="wizAir" value="2">
-        <span><b>Pompe directe</b><br><span style="font-size:.75em;color:#9aa">Pompe PWM + valve</span></span></label>
-      <label class="wiz-card" onclick="wizSetAir(3)"><input type="radio" name="wizAir" value="3">
-        <span><b>Pompe + reservoir</b><br><span style="font-size:.75em;color:#9aa">Pompe + ballon + capteur distance</span></span></label>
+    <h3 style="color:#e94560;margin:0 0 4px">Systeme d'air</h3>
+    <p style="color:#9aa;font-size:.8em;margin:0 0 14px">Comment l'air est-il envoye dans la flute ?</p>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <label class="wiz-card" onclick="wizSetAir(0)" style="align-items:flex-start">
+        <input type="radio" name="wizAir" value="0" checked style="margin-top:4px">
+        <span style="flex:1">
+          <b>Solenoide</b>
+          <span style="font-size:.75em;color:#9aa;display:block;margin:4px 0">La valve solenoide ouvre/ferme un flux d'air externe (compresseur, soufflerie). Branchee sur un GPIO.</span>
+          <svg viewBox="0 0 220 48" width="220" height="48" style="display:block;margin-top:4px">
+            <rect x="1" y="14" width="50" height="20" rx="4" fill="#0f3460" stroke="#4ecca3" stroke-width="1.5"/>
+            <text x="26" y="28" text-anchor="middle" fill="#4ecca3" font-size="8">Air ext.</text>
+            <line x1="51" y1="24" x2="80" y2="24" stroke="#9aa" stroke-width="1.5"/>
+            <rect x="80" y="10" width="44" height="28" rx="4" fill="#16213e" stroke="#e94560" stroke-width="1.5"/>
+            <text x="102" y="22" text-anchor="middle" fill="#e94560" font-size="7">Solenoide</text>
+            <text x="102" y="32" text-anchor="middle" fill="#666" font-size="6">GPIO</text>
+            <line x1="124" y1="24" x2="155" y2="24" stroke="#9aa" stroke-width="1.5"/>
+            <polygon points="152,20 160,24 152,28" fill="#9aa"/>
+            <rect x="160" y="8" width="56" height="32" rx="10" fill="none" stroke="#4ecca3" stroke-width="1.5"/>
+            <text x="188" y="28" text-anchor="middle" fill="#4ecca3" font-size="8">Flute</text>
+          </svg>
+        </span>
+      </label>
+      <label class="wiz-card" onclick="wizSetAir(1)" style="align-items:flex-start">
+        <input type="radio" name="wizAir" value="1" style="margin-top:4px">
+        <span style="flex:1">
+          <b>Servo-valve</b>
+          <span style="font-size:.75em;color:#9aa;display:block;margin:4px 0">Un servo sur le bus PCA9685 controle l'ouverture de la valve. Permet un controle progressif du debit d'air.</span>
+          <svg viewBox="0 0 220 48" width="220" height="48" style="display:block;margin-top:4px">
+            <rect x="1" y="14" width="50" height="20" rx="4" fill="#0f3460" stroke="#4ecca3" stroke-width="1.5"/>
+            <text x="26" y="28" text-anchor="middle" fill="#4ecca3" font-size="8">Air ext.</text>
+            <line x1="51" y1="24" x2="80" y2="24" stroke="#9aa" stroke-width="1.5"/>
+            <rect x="80" y="10" width="44" height="28" rx="4" fill="#16213e" stroke="#e94560" stroke-width="1.5"/>
+            <text x="102" y="22" text-anchor="middle" fill="#e94560" font-size="7">Servo</text>
+            <text x="102" y="32" text-anchor="middle" fill="#666" font-size="6">PCA9685</text>
+            <line x1="124" y1="24" x2="155" y2="24" stroke="#9aa" stroke-width="1.5"/>
+            <polygon points="152,20 160,24 152,28" fill="#9aa"/>
+            <rect x="160" y="8" width="56" height="32" rx="10" fill="none" stroke="#4ecca3" stroke-width="1.5"/>
+            <text x="188" y="28" text-anchor="middle" fill="#4ecca3" font-size="8">Flute</text>
+          </svg>
+        </span>
+      </label>
+      <label class="wiz-card" onclick="wizSetAir(2)" style="align-items:flex-start">
+        <input type="radio" name="wizAir" value="2" style="margin-top:4px">
+        <span style="flex:1">
+          <b>Pompe directe</b>
+          <span style="font-size:.75em;color:#9aa;display:block;margin:4px 0">Une pompe PWM souffle directement dans la flute. La valve (solenoide ou servo) coupe l'air entre les notes.</span>
+          <svg viewBox="0 0 260 48" width="260" height="48" style="display:block;margin-top:4px">
+            <circle cx="24" cy="24" r="16" fill="#16213e" stroke="#e94560" stroke-width="1.5"/>
+            <text x="24" y="21" text-anchor="middle" fill="#e94560" font-size="7">Pompe</text>
+            <text x="24" y="31" text-anchor="middle" fill="#666" font-size="6">PWM</text>
+            <line x1="40" y1="24" x2="70" y2="24" stroke="#9aa" stroke-width="1.5"/>
+            <polygon points="67,20 75,24 67,28" fill="#9aa"/>
+            <rect x="76" y="10" width="44" height="28" rx="4" fill="#16213e" stroke="#e94560" stroke-width="1.5"/>
+            <text x="98" y="22" text-anchor="middle" fill="#e94560" font-size="7">Valve</text>
+            <text x="98" y="32" text-anchor="middle" fill="#666" font-size="6">ON/OFF</text>
+            <line x1="120" y1="24" x2="150" y2="24" stroke="#9aa" stroke-width="1.5"/>
+            <polygon points="147,20 155,24 147,28" fill="#9aa"/>
+            <rect x="156" y="8" width="56" height="32" rx="10" fill="none" stroke="#4ecca3" stroke-width="1.5"/>
+            <text x="184" y="28" text-anchor="middle" fill="#4ecca3" font-size="8">Flute</text>
+          </svg>
+        </span>
+      </label>
+      <label class="wiz-card" onclick="wizSetAir(3)" style="align-items:flex-start">
+        <input type="radio" name="wizAir" value="3" style="margin-top:4px">
+        <span style="flex:1">
+          <b>Pompe + reservoir</b>
+          <span style="font-size:.75em;color:#9aa;display:block;margin:4px 0">La pompe remplit un reservoir (ballon). Un capteur de distance mesure le niveau. PID pour reguler la pression.</span>
+          <svg viewBox="0 0 320 48" width="320" height="48" style="display:block;margin-top:4px">
+            <circle cx="24" cy="24" r="16" fill="#16213e" stroke="#e94560" stroke-width="1.5"/>
+            <text x="24" y="21" text-anchor="middle" fill="#e94560" font-size="7">Pompe</text>
+            <text x="24" y="31" text-anchor="middle" fill="#666" font-size="6">PWM</text>
+            <line x1="40" y1="24" x2="62" y2="24" stroke="#9aa" stroke-width="1.5"/>
+            <polygon points="59,20 67,24 59,28" fill="#9aa"/>
+            <ellipse cx="100" cy="24" rx="28" ry="16" fill="#16213e" stroke="#4ecca3" stroke-width="1.5"/>
+            <text x="100" y="21" text-anchor="middle" fill="#4ecca3" font-size="7">Reservoir</text>
+            <text x="100" y="31" text-anchor="middle" fill="#666" font-size="6">+ capteur</text>
+            <line x1="128" y1="24" x2="155" y2="24" stroke="#9aa" stroke-width="1.5"/>
+            <polygon points="152,20 160,24 152,28" fill="#9aa"/>
+            <rect x="160" y="10" width="44" height="28" rx="4" fill="#16213e" stroke="#e94560" stroke-width="1.5"/>
+            <text x="182" y="22" text-anchor="middle" fill="#e94560" font-size="7">Valve</text>
+            <text x="182" y="32" text-anchor="middle" fill="#666" font-size="6">ON/OFF</text>
+            <line x1="204" y1="24" x2="230" y2="24" stroke="#9aa" stroke-width="1.5"/>
+            <polygon points="227,20 235,24 227,28" fill="#9aa"/>
+            <rect x="236" y="8" width="56" height="32" rx="10" fill="none" stroke="#4ecca3" stroke-width="1.5"/>
+            <text x="264" y="28" text-anchor="middle" fill="#4ecca3" font-size="8">Flute</text>
+          </svg>
+        </span>
+      </label>
     </div>
     <div class="btn-row" style="margin-top:16px">
       <button class="btn btn-s" onclick="wizNext(1)">Retour</button>
@@ -851,9 +929,9 @@ function showTab(id,btn){
 function applyAirTabVisibility(){
   const airBtn=$('btnTabAir');
   const diag=$('airDiagramBox');
-  const show=CFG&&(CFG.air_mode>=1||CFG.pump_on||CFG.res_on);
-  airBtn.style.display=show?'':'none';
-  diag.style.display=(CFG&&CFG.show_air&&show)?'':'none';
+  const hasAir=CFG&&(CFG.show_air||CFG.air_mode>=1||CFG.pump_on||CFG.res_on);
+  airBtn.style.display=hasAir?'':'none';
+  diag.style.display=(CFG&&CFG.show_air)?'':'none';
 }
 function setPumpTarget(v){$('pumpTargetVal').textContent=v+'%';wsSend({t:'pump_target',v:parseInt(v)})}
 function setAirMode(v){
@@ -1013,7 +1091,7 @@ function wizFinish(){
   radios.forEach(r=>{if(r.checked)presetIdx=parseInt(r.value)});
   // Build config body
   const body={air_mode:wizAirMode,pump_on:wizAirMode>=2,res_on:wizAirMode>=3,
-    valve_servo:wizAirMode===1,show_air:wizAirMode>=1};
+    valve_servo:wizAirMode===1,show_air:true};
   // Apply preset if selected
   if(presetIdx>=0&&presetIdx<PR.length){
     const p=PR[presetIdx];
