@@ -724,19 +724,19 @@ function fluteGrad(g,em){
 
 // Draw mouthpiece based on embouchure type
 function fluteMouth(g,em,ty,by,th,cy){
-  let m='';
+  let m='';const lip=5,ar=th-lip;
   if(em==='naf'){
-    // Amerindienne: bec (rect + arc 90deg bas-gauche R=th) + bloc oiseau + chanfrain
-    m+='<path d="M4,'+ty+' L58,'+ty+' L58,'+by+' L'+(4+th)+','+by+' A'+th+','+th+' 0 0,1 4,'+ty+' Z" fill="url(#wg_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
-    m+='<rect x="'+(4+th/2)+'" y="'+ty+'" width="'+(54-th/2)+'" height="5" rx="0" fill="#D4B044" opacity=".15"/>';
-    // Rectangle (bloc oiseau/fetiche) juste avant le chanfrain
+    // Amerindienne: bec (arc 90° centre=coin bas-gauche, lip en haut) + bloc oiseau + chanfrain
+    m+='<path d="M4,'+ty+' L58,'+ty+' L58,'+by+' L'+(4+ar)+','+by+' A'+ar+','+ar+' 0 0,1 4,'+(by-ar)+' L4,'+ty+' Z" fill="url(#wg_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
+    m+='<rect x="'+(4+ar/2)+'" y="'+ty+'" width="'+(54-ar/2)+'" height="5" rx="0" fill="#D4B044" opacity=".15"/>';
+    // Bloc oiseau/fetiche juste avant le chanfrain
     m+='<rect x="40" y="'+(ty-6)+'" width="12" height="8" rx="2" fill="url(#cr_'+g+')" stroke="#5C4A0A" stroke-width=".8"/>';
     // Chanfrain (petit rect noir en haut-droite)
     m+='<rect x="50" y="'+(ty-2)+'" width="10" height="6" rx="1" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".8"/>'
   }else if(em==='bec'||em==='end'){
-    // Bec / end-blown: rectangle + arc 90deg retire bas-gauche (R=th) + chanfrain haut-droite
-    m+='<path d="M4,'+ty+' L58,'+ty+' L58,'+by+' L'+(4+th)+','+by+' A'+th+','+th+' 0 0,1 4,'+ty+' Z" fill="url(#wg_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
-    m+='<rect x="'+(4+th/2)+'" y="'+ty+'" width="'+(54-th/2)+'" height="5" rx="0" fill="#D4B044" opacity=".15"/>';
+    // Bec / end-blown: arc 90° (centre=coin bas-gauche, lip en haut) + chanfrain haut-droite
+    m+='<path d="M4,'+ty+' L58,'+ty+' L58,'+by+' L'+(4+ar)+','+by+' A'+ar+','+ar+' 0 0,1 4,'+(by-ar)+' L4,'+ty+' Z" fill="url(#wg_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
+    m+='<rect x="'+(4+ar/2)+'" y="'+ty+'" width="'+(54-ar/2)+'" height="5" rx="0" fill="#D4B044" opacity=".15"/>';
     // Chanfrain (petit rect noir en haut-droite du bloc embouchure)
     m+='<rect x="50" y="'+(ty-2)+'" width="10" height="6" rx="1" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".8"/>'
   }else{
@@ -804,9 +804,9 @@ function buildOcarina(cfg,svgId,showNums){
   // Corps ovale (ceramique terra cotta)
   h+='<ellipse cx="'+bcx+'" cy="'+bcy+'" rx="'+rx+'" ry="'+ry+'" fill="url(#wg_'+g+')" stroke="#5C2810" stroke-width="1.8"/>';
   h+='<ellipse cx="'+(bcx-10)+'" cy="'+(bcy-12)+'" rx="'+(rx-20)+'" ry="14" fill="#D88050" opacity=".12"/>';
-  // Embouchure type bec: rectangle + arc 90deg bas-gauche (R=mth) + chanfrain haut-droite
-  const bx=bcx-rx,mw=50,mty=bcy-10,mby=bcy+10,mth=20;
-  h+='<path d="M'+(bx-mw)+','+mty+' L'+bx+','+mty+' L'+bx+','+mby+' L'+(bx-mw+mth)+','+mby+' A'+mth+','+mth+' 0 0,1 '+(bx-mw)+','+mty+' Z" fill="url(#lp_'+g+')" stroke="#5C2810" stroke-width="1.2"/>';
+  // Embouchure bec: arc 90° centre=coin bas-gauche, lip=4px en haut
+  const bx=bcx-rx,mw=50,mty=bcy-10,mby=bcy+10,mth=20,mlip=4,mar=mth-mlip;
+  h+='<path d="M'+(bx-mw)+','+mty+' L'+bx+','+mty+' L'+bx+','+mby+' L'+(bx-mw+mar)+','+mby+' A'+mar+','+mar+' 0 0,1 '+(bx-mw)+','+(mby-mar)+' L'+(bx-mw)+','+mty+' Z" fill="url(#lp_'+g+')" stroke="#5C2810" stroke-width="1.2"/>';
   // Chanfrain (petit rect noir en haut-droite du bec)
   h+='<rect x="'+(bx-8)+'" y="'+(mty-2)+'" width="10" height="5" rx="1" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".6"/>';
   // Trous alternes: impair (1,3,5,7) en haut, pair (2,4,6,8) en bas
@@ -909,7 +909,7 @@ function buildFingerCards(){
         '<select id="fd'+i+'" style="max-width:60px" onchange="CFG.fingers['+i+'].d=parseInt(this.value);markDirty()">'+
           '<option value="1"'+(f.d===1?' selected':'')+'>\u21BB</option><option value="-1"'+(f.d===-1?' selected':'')+'>\u21BA</option></select>'+
       '</div></div>';
-    if(i===0) html+='<div class="cfg-row"><label>Pouce (arriere)</label><input type="checkbox" id="fth'+i+'"'+(f.th?' checked':'')+
+    if(i===0&&CFG.embouchure!=='oca') html+='<div class="cfg-row"><label>Pouce (arriere)</label><input type="checkbox" id="fth'+i+'"'+(f.th?' checked':'')+
       ' style="width:auto;flex:0" onchange="CFG.fingers['+i+'].th=this.checked?1:0;buildFlute(CFG,\'calFluteSvg\',true);markDirty()"></div>';
     html+='<div style="margin:6px 0"><div style="display:flex;justify-content:space-between;font-size:.75em;color:#888;margin-bottom:2px">'+
       '<span>Angle ferme</span><span id="fav'+i+'">'+f.a+'&deg;</span></div>'+
