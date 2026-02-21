@@ -840,10 +840,11 @@ function fluteMouth(g,em,ty,by,th,cy){
     // Amerindienne: bec (arc 90° centre=coin bas-gauche, sweep=CCW, lip en haut) + bloc oiseau + chanfrain
     m+='<path d="M4,'+ty+' L58,'+ty+' L58,'+by+' L'+(4+ar)+','+by+' A'+ar+','+ar+' 0 0,0 4,'+(by-ar)+' L4,'+ty+' Z" fill="url(#wg_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
     m+='<rect x="'+(4+ar/2)+'" y="'+ty+'" width="'+(54-ar/2)+'" height="5" rx="0" fill="#D4B044" opacity=".15"/>';
-    // Bloc oiseau/fetiche juste avant le chanfrain
-    m+='<rect x="40" y="'+(ty-6)+'" width="12" height="8" rx="2" fill="url(#cr_'+g+')" stroke="#5C4A0A" stroke-width=".8"/>';
-    // Chanfrain (petit rect noir en haut-droite)
-    m+='<rect x="50" y="'+(ty-2)+'" width="10" height="6" rx="1" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".8"/>'
+    // Bloc oiseau/fetiche juste avant le chanfrain (plus large, dessus courbe vers le bas)
+    const bx1=36,bx2=54,byt=ty-7,byb=ty+2;
+    m+='<path d="M'+bx1+','+byb+' L'+bx1+','+byt+' Q'+((bx1+bx2)/2)+','+(byt+5)+' '+bx2+','+byt+' L'+bx2+','+byb+' Z" fill="url(#cr_'+g+')" stroke="#5C4A0A" stroke-width=".8"/>';
+    // Chanfrain (fente d'air entre bloc oiseau et embouchure)
+    m+='<rect x="50" y="'+(ty-2)+'" width="10" height="5" rx="1" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".8"/>'
   }else if(em==='bec'||em==='end'){
     // Bec / end-blown: arc 90° (centre=coin bas-gauche, sweep=CCW, lip en haut) + chanfrain haut-droite
     m+='<path d="M4,'+ty+' L58,'+ty+' L58,'+by+' L'+(4+ar)+','+by+' A'+ar+','+ar+' 0 0,0 4,'+(by-ar)+' L4,'+ty+' Z" fill="url(#wg_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
@@ -869,7 +870,7 @@ function buildFlute(cfg,svgId,showNums){
   const em=cfg.embouchure||'trav';
   // Ocarina = forme speciale
   if(em==='oca'){buildOcarina(cfg,svgId,showNums);return}
-  const sp=50,sx=80,r=14;
+  const sp=50,sx=100,r=14;
   const topHoles=[],botHoles=[];
   for(let i=0;i<nf;i++){(fingers[i]&&fingers[i].th?botHoles:topHoles).push(i)}
   const posTop=topHoles.map((_,i)=>sx+i*sp);
