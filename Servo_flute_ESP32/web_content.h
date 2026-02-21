@@ -726,17 +726,17 @@ function fluteGrad(g,em){
 function fluteMouth(g,em,ty,by,th,cy){
   let m='';
   if(em==='naf'){
-    // Amerindienne: meme bec (rect+arc bas-gauche) + rectangle (bloc oiseau) avant chanfrain
-    m+='<path d="M4,'+ty+' L58,'+ty+' L58,'+by+' L20,'+by+' A16,16 0 0,1 4,'+(by-16)+' Z" fill="url(#wg_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
-    m+='<rect x="4" y="'+ty+'" width="54" height="5" rx="0" fill="#D4B044" opacity=".15"/>';
+    // Amerindienne: bec (rect + arc 90deg bas-gauche R=th) + bloc oiseau + chanfrain
+    m+='<path d="M4,'+ty+' L58,'+ty+' L58,'+by+' L'+(4+th)+','+by+' A'+th+','+th+' 0 0,1 4,'+ty+' Z" fill="url(#wg_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
+    m+='<rect x="'+(4+th/2)+'" y="'+ty+'" width="'+(54-th/2)+'" height="5" rx="0" fill="#D4B044" opacity=".15"/>';
     // Rectangle (bloc oiseau/fetiche) juste avant le chanfrain
     m+='<rect x="40" y="'+(ty-6)+'" width="12" height="8" rx="2" fill="url(#cr_'+g+')" stroke="#5C4A0A" stroke-width=".8"/>';
     // Chanfrain (petit rect noir en haut-droite)
     m+='<rect x="50" y="'+(ty-2)+'" width="10" height="6" rx="1" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".8"/>'
   }else if(em==='bec'||em==='end'){
-    // Bec / end-blown: rectangle + arc retire bas-gauche + chanfrain noir haut-droite
-    m+='<path d="M4,'+ty+' L58,'+ty+' L58,'+by+' L20,'+by+' A16,16 0 0,1 4,'+(by-16)+' Z" fill="url(#wg_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
-    m+='<rect x="4" y="'+ty+'" width="54" height="5" rx="0" fill="#D4B044" opacity=".15"/>';
+    // Bec / end-blown: rectangle + arc 90deg retire bas-gauche (R=th) + chanfrain haut-droite
+    m+='<path d="M4,'+ty+' L58,'+ty+' L58,'+by+' L'+(4+th)+','+by+' A'+th+','+th+' 0 0,1 4,'+ty+' Z" fill="url(#wg_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
+    m+='<rect x="'+(4+th/2)+'" y="'+ty+'" width="'+(54-th/2)+'" height="5" rx="0" fill="#D4B044" opacity=".15"/>';
     // Chanfrain (petit rect noir en haut-droite du bloc embouchure)
     m+='<rect x="50" y="'+(ty-2)+'" width="10" height="6" rx="1" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".8"/>'
   }else{
@@ -804,9 +804,9 @@ function buildOcarina(cfg,svgId,showNums){
   // Corps ovale (ceramique terra cotta)
   h+='<ellipse cx="'+bcx+'" cy="'+bcy+'" rx="'+rx+'" ry="'+ry+'" fill="url(#wg_'+g+')" stroke="#5C2810" stroke-width="1.8"/>';
   h+='<ellipse cx="'+(bcx-10)+'" cy="'+(bcy-12)+'" rx="'+(rx-20)+'" ry="14" fill="#D88050" opacity=".12"/>';
-  // Embouchure type bec: rectangle + arc bas-gauche + chanfrain haut-droite
+  // Embouchure type bec: rectangle + arc 90deg bas-gauche (R=mth) + chanfrain haut-droite
   const bx=bcx-rx,mw=50,mty=bcy-10,mby=bcy+10,mth=20;
-  h+='<path d="M'+(bx-mw)+','+mty+' L'+bx+','+mty+' L'+bx+','+mby+' L'+(bx-mw+16)+','+mby+' A14,14 0 0,1 '+(bx-mw)+','+(mby-14)+' Z" fill="url(#lp_'+g+')" stroke="#5C2810" stroke-width="1.2"/>';
+  h+='<path d="M'+(bx-mw)+','+mty+' L'+bx+','+mty+' L'+bx+','+mby+' L'+(bx-mw+mth)+','+mby+' A'+mth+','+mth+' 0 0,1 '+(bx-mw)+','+mty+' Z" fill="url(#lp_'+g+')" stroke="#5C2810" stroke-width="1.2"/>';
   // Chanfrain (petit rect noir en haut-droite du bec)
   h+='<rect x="'+(bx-8)+'" y="'+(mty-2)+'" width="10" height="5" rx="1" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".6"/>';
   // Trous alternes: impair (1,3,5,7) en haut, pair (2,4,6,8) en bas
@@ -907,7 +907,7 @@ function buildFingerCards(){
         '<select id="fch'+i+'" style="max-width:70px" onchange="CFG.fingers['+i+'].ch=parseInt(this.value);checkPca();markDirty()">'+
           Array.from({length:16},(_,j)=>'<option value="'+j+'"'+(j===f.ch?' selected':'')+'>'+j+'</option>').join('')+'</select>'+
         '<select id="fd'+i+'" style="max-width:60px" onchange="CFG.fingers['+i+'].d=parseInt(this.value);markDirty()">'+
-          '<option value="1"'+(f.d===1?' selected':'')+'>+1</option><option value="-1"'+(f.d===-1?' selected':'')+'>-1</option></select>'+
+          '<option value="1"'+(f.d===1?' selected':'')+'>\u21BB</option><option value="-1"'+(f.d===-1?' selected':'')+'>\u21BA</option></select>'+
       '</div></div>';
     if(i===0) html+='<div class="cfg-row"><label>Pouce (arriere)</label><input type="checkbox" id="fth'+i+'"'+(f.th?' checked':'')+
       ' style="width:auto;flex:0" onchange="CFG.fingers['+i+'].th=this.checked?1:0;buildFlute(CFG,\'calFluteSvg\',true);markDirty()"></div>';
@@ -1030,14 +1030,6 @@ function applyPreset(val){
   if(!val||!CFG)return;
   const p=PR.find(x=>x.id===val);if(!p)return;
   CFG.embouchure=p.em||'trav';
-  // Ajuster num_fingers si different (avec avertissement)
-  if(CFG.num_fingers!==p.h){
-    CFG.num_fingers=p.h;
-    while(CFG.fingers.length<p.h)CFG.fingers.push({ch:CFG.fingers.length,a:90,d:1,th:0});
-    showToast('Nombre de doigts ajust\u00e9 \u00e0 '+p.h,'info')}
-  // Set thumb
-  CFG.fingers.forEach(f=>f.th=0);
-  if(p.th>=0&&CFG.fingers[p.th])CFG.fingers[p.th].th=1;
   // Build notes from preset data
   CFG.notes=p.d.map(n=>({midi:n[0],fp:[...n[1]],amn:n[2],amx:n[3]}));
   CFG.notes.forEach(n=>{while(n.fp.length<CFG.num_fingers)n.fp.push(0)});
@@ -1047,7 +1039,7 @@ function applyPreset(val){
 
 function saveStep2(){
   if(!CFG)return;btnLoad('btnSaveStep2',true);
-  const body={notes:CFG.notes.map(n=>({midi:n.midi,fp:n.fp.slice(0,CFG.num_fingers),amn:n.amn,amx:n.amx}))};
+  const body={num_fingers:CFG.num_fingers,notes:CFG.notes.map(n=>({midi:n.midi,fp:n.fp.slice(0,CFG.num_fingers),amn:n.amn,amx:n.amx}))};
   fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(r=>r.json()).then(d=>{btnLoad('btnSaveStep2',false);if(d.ok){showToast('Doigtes sauvegardes','success');markClean();fpHistory=[];fpFuture=[];updUndoUI();goStep(3);buildKeyboard()}else showToast('Erreur sauvegarde','error')})
     .catch(e=>{btnLoad('btnSaveStep2',false);showToast('Erreur: '+e,'error')})
