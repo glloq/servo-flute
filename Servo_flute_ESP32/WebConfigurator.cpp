@@ -592,6 +592,7 @@ void WebConfigurator::handleMidiUploadComplete(AsyncWebServerRequest* request) {
     wsMsg += ",\"file\":\"" + _player->getFileName() + "\"";
     wsMsg += ",\"events\":" + String(_player->getEventCount());
     wsMsg += ",\"duration\":" + String(_player->getDurationMs());
+    wsMsg += ",\"channels\":" + String(_player->getActiveChannels());
     wsMsg += "}";
     _ws.textAll(wsMsg);
   } else {
@@ -686,6 +687,14 @@ void WebConfigurator::processWsMessage(AsyncWebSocketClient* client, uint8_t* da
     if (_player) _player->pause();
   } else if (type == "stop") {
     if (_player) _player->stop();
+  } else if (type == "ch_filter") {
+    if (_player) {
+      int vi = msg.indexOf("\"ch\":");
+      if (vi >= 0) {
+        int ch = msg.substring(vi + 5).toInt();
+        _player->setChannelFilter(ch > 15 ? 255 : (uint8_t)ch);
+      }
+    }
   } else if (type == "panic") {
     _instrument->allSoundOff();
 
