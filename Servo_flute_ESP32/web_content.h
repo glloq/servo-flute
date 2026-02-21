@@ -194,7 +194,7 @@ max-height:120px;overflow-y:auto;color:#9aa}
 <body>
 <div class="toast-container" id="toastContainer"></div>
 <div class="hdr">
-  <h1 id="devName">ServoFlute<span class="unsaved-badge" id="unsavedBadge">modifie</span></h1>
+  <h1 id="devName">ServoFlute<span class="unsaved-badge" id="unsavedBadge">modifi&eacute;</span></h1>
   <div class="hdr-r">
     <span class="dot off" id="sDot"></span>
     <button class="gear-btn" onclick="toggleSettings()" title="Reglages" id="gearBtn">
@@ -453,6 +453,39 @@ const STATES=['IDLE','POSITIONING','PLAYING','STOPPING'];
 let ws=null,velocity=WEB_DEF_VEL,CFG=null,curNote=null;
 let calibStep=1,fileLoaded=false,playerDuration=0;
 let micDetected=false,autoCalRunning=false;
+let dirty=false,fpHistory=[],fpFuture=[];
+
+function showToast(msg,type){type=type||'info';const c=$('toastContainer');
+  const ic={success:'<svg viewBox="0 0 16 16" width="16" height="16"><path d="M3 8l3.5 4L13 4" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  error:'<svg viewBox="0 0 16 16" width="16" height="16"><path d="M5.5 5.5l5 5M10.5 5.5l-5 5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  info:'<svg viewBox="0 0 16 16" width="16" height="16"><circle cx="8" cy="8" r="6" fill="none" stroke="#fff" stroke-width="1.5"/><path d="M8 7v4M8 5v.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>'};
+  const t=document.createElement('div');t.className='toast '+type;
+  t.innerHTML=(ic[type]||ic.info)+'<span>'+msg+'</span>';c.appendChild(t);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>t.classList.add('show')));
+  setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),300)},3000)}
+function markDirty(){dirty=true;$('unsavedBadge').classList.add('show')}
+function markClean(){dirty=false;$('unsavedBadge').classList.remove('show')}
+function btnLoad(id,on){const b=$(id);if(!b)return;if(on){b.classList.add('loading');b.disabled=true}else{b.classList.remove('loading');b.disabled=false}}
+function testPulse(el){el.classList.add('test-pulse');setTimeout(()=>el.classList.remove('test-pulse'),600)}
+function fpSnap(){if(!CFG)return;fpHistory.push(JSON.stringify(CFG.notes.map(n=>({midi:n.midi,fp:[...n.fp]}))));
+  fpFuture=[];if(fpHistory.length>50)fpHistory.shift();updUndoUI()}
+function undoFp(){if(!fpHistory.length||!CFG)return;
+  fpFuture.push(JSON.stringify(CFG.notes.map(n=>({midi:n.midi,fp:[...n.fp]}))));
+  const s=JSON.parse(fpHistory.pop());s.forEach((sn,i)=>{if(CFG.notes[i]){CFG.notes[i].midi=sn.midi;CFG.notes[i].fp=sn.fp}});
+  buildFingeringRows();updUndoUI();markDirty()}
+function redoFp(){if(!fpFuture.length||!CFG)return;
+  fpHistory.push(JSON.stringify(CFG.notes.map(n=>({midi:n.midi,fp:[...n.fp]}))));
+  const s=JSON.parse(fpFuture.pop());s.forEach((sn,i)=>{if(CFG.notes[i]){CFG.notes[i].midi=sn.midi;CFG.notes[i].fp=sn.fp}});
+  buildFingeringRows();updUndoUI();markDirty()}
+function updUndoUI(){$('undoBtn').disabled=!fpHistory.length;$('redoBtn').disabled=!fpFuture.length;
+  $('undoInfo').textContent=fpHistory.length?fpHistory.length+' modif.':''}
+function checkPca(){if(!CFG)return;const used={};const airP=parseInt($('airPca').value);used[airP]='Souffle';
+  document.querySelectorAll('.cal-card').forEach((card,i)=>{const ch=CFG.fingers[i]?CFG.fingers[i].ch:i;
+    let conflict=used[ch]!==undefined;card.classList.toggle('pca-conflict',conflict);
+    const w=card.querySelector('.pca-warn');if(w)w.textContent=conflict?'Conflit PCA '+ch+' avec '+used[ch]:'';
+    used[ch]='Doigt '+(i+1)})}
+function updDualFill(ni){const f=$('drf'+ni);if(!f||!CFG)return;const a=CFG.notes[ni].amn,b=CFG.notes[ni].amx;
+  f.style.left=a+'%';f.style.width=Math.max(0,b-a)+'%'}
 
 function mn(m){return N[m%12]+(Math.floor(m/12)-1)}
 function isBlack(m){return[1,3,6,8,10].includes(m%12)}
@@ -521,23 +554,25 @@ function updateCC(n,v){if(v===undefined)return;const p=(v/MIDI_CC_MAX*100).toFix
 
 // --- Load config ---
 function loadConfig(){
+  const pk=$('pianoKeys');if(pk&&!CFG)pk.innerHTML='<div class="skeleton" style="width:100%;height:80px;margin:12px 0"></div>';
   fetch('/api/config').then(r=>r.json()).then(d=>{
     CFG=d;micDetected=d.mic||false;
-    $('devName').textContent=d.device||'ServoFlute';
-    buildKeyboard();buildFlute(CFG,'fluteSvg',false);
+    $('devName').childNodes[0].textContent=d.device||'ServoFlute';
+    buildKeyboard();buildFlute(CFG,'fluteSvg',false);markClean();
     if(micDetected){$('micSection').style.display='';wsSend({t:'mic_mon',on:1})}
     else $('micSection').style.display='none';
-  }).catch(e=>addLog('Erreur config: '+e))
+  }).catch(e=>{addLog('Erreur config: '+e);showToast('Erreur chargement config','error')})
 }
 
 // --- KEYBOARD ---
 function buildKeyboard(){
   const c=$('pianoKeys');c.innerHTML='';if(!CFG||!CFG.notes||!CFG.notes.length){c.innerHTML='<div style="color:#888;padding:16px;text-align:center">Aucune note</div>';return}
-  CFG.notes.forEach(n=>{
+  CFG.notes.forEach((n,idx)=>{
     const name=mn(n.midi);const key=document.createElement('div');
-    key.className='key'+(isBlack(n.midi)?' black':'');key.dataset.midi=n.midi;
+    key.className='key'+(isBlack(n.midi)?' black':'')+' fade-in fade-delay-'+(Math.min(4,(idx%4)+1));key.dataset.midi=n.midi;
     let dots='<span class="kf-row">';for(let f=0;f<CFG.num_fingers;f++)dots+='<span class="kf '+(n.fp[f]?'o':'c')+'"></span>';dots+='</span>';
-    key.innerHTML='<span class="note-name">'+name+'</span><span class="note-midi">'+n.midi+'</span>'+dots;
+    const sc=idx<KC.length?KC[idx].toUpperCase():'';
+    key.innerHTML='<span class="note-name">'+name+'</span><span class="note-midi">'+n.midi+'</span>'+dots+(sc?'<span class="key-shortcut">'+sc+'</span>':'');
     key.addEventListener('touchstart',e=>{e.preventDefault();noteOn(n.midi);key.classList.add('pressed')},{passive:false});
     key.addEventListener('touchend',e=>{e.preventDefault();noteOff(n.midi);key.classList.remove('pressed')},{passive:false});
     key.addEventListener('mousedown',e=>{e.preventDefault();noteOn(n.midi);key.classList.add('pressed')});
@@ -548,8 +583,11 @@ function buildKeyboard(){
   buildKeyMap()
 }
 
-function noteOn(midi){curNote=midi;updateFluteForNote(midi);wsSend({t:'non',n:midi,v:velocity})}
-function noteOff(midi){wsSend({t:'nof',n:midi});if(curNote===midi)curNote=null}
+function noteOn(midi){curNote=midi;updateFluteForNote(midi);
+  document.querySelectorAll('#fluteSvg .flute-hole.open').forEach(h=>h.classList.add('playing'));
+  wsSend({t:'non',n:midi,v:velocity})}
+function noteOff(midi){wsSend({t:'nof',n:midi});if(curNote===midi){curNote=null;
+  document.querySelectorAll('#fluteSvg .flute-hole.playing').forEach(h=>h.classList.remove('playing'))}}
 function setVelocity(v){velocity=parseInt(v);$('velVal').textContent=v;wsSend({t:'velocity',v:velocity})}
 
 // Keyboard shortcuts
@@ -560,6 +598,9 @@ document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.target.
     const el=document.querySelector('.key[data-midi="'+n+'"]');if(el)el.classList.add('pressed')}});
 document.addEventListener('keyup',e=>{const n=keyMap[e.key.toLowerCase()];if(n){keysDown.delete(e.key);noteOff(n);
     const el=document.querySelector('.key[data-midi="'+n+'"]');if(el)el.classList.remove('pressed')}});
+document.addEventListener('keydown',e=>{if(!e.ctrlKey)return;
+  if(e.key==='z'&&calibStep===2){e.preventDefault();undoFp()}
+  if(e.key==='y'&&calibStep===2){e.preventDefault();redoFp()}});
 
 // --- SVG FLUTE ---
 function buildFlute(cfg,svgId,showNums){
@@ -622,9 +663,14 @@ dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('hover');
 function uploadMidi(input){if(input.files.length)uploadMidiFile(input.files[0])}
 function uploadMidiFile(file){
   const fd=new FormData();fd.append('file',file);
-  fetch('/api/midi',{method:'POST',body:fd}).then(r=>r.json()).then(d=>{
-    if(d.ok){addLog('Upload OK: '+d.events+' evt')}else{addLog('ERR: '+(d.msg||'echec'))}
-  }).catch(e=>addLog('Upload erreur: '+e))
+  const ub=$('uploadBar'),uf=$('uploadFill');ub.style.display='block';uf.style.width='0%';
+  const xhr=new XMLHttpRequest();
+  xhr.upload.onprogress=e=>{if(e.lengthComputable)uf.style.width=(e.loaded/e.total*100)+'%'};
+  xhr.onload=()=>{uf.style.width='100%';setTimeout(()=>ub.style.display='none',1000);
+    try{const d=JSON.parse(xhr.responseText);if(d.ok){showToast('Upload OK: '+d.events+' evt','success');addLog('Upload OK')}
+    else{showToast('Erreur: '+(d.msg||'echec'),'error')}}catch(e){showToast('Erreur upload','error')}};
+  xhr.onerror=()=>{ub.style.display='none';showToast('Erreur upload reseau','error')};
+  xhr.open('POST','/api/midi');xhr.send(fd)
 }
 
 // --- CALIBRATION ---
@@ -632,9 +678,10 @@ function buildCalibUI(){if(!CFG)return;buildFlute(CFG,'calFluteSvg',true);buildF
 
 function goStep(s){
   calibStep=s;
-  ['step1','step2','step3'].forEach((id,i)=>{$(id).style.display=(i+1===s)?'':'none'});
-  document.querySelectorAll('.step-dot').forEach((d,i)=>{d.className='step-dot'+(i+1===s?' active':i+1<s?' done':'')});
-  if(s===2)buildFingeringRows();
+  ['step1','step2','step3'].forEach((id,i)=>{const el=$(id);el.style.display=(i+1===s)?'':'none';
+    if(i+1===s){el.classList.add('fade-in')}else{el.classList.remove('fade-in')}});
+  document.querySelectorAll('.step-dot').forEach((d,i)=>{d.className='step-dot'+(i+1===s?' active':i+1<s?' done':' locked')});
+  if(s===2){buildFingeringRows();fpHistory=[];fpFuture=[];updUndoUI()}
   if(s===3)buildAirflowRows()
 }
 
@@ -659,7 +706,7 @@ function buildFingerCards(){
     const f=CFG.fingers[i]||{ch:i,a:90,d:1,th:0};
     const d=document.createElement('div');d.className='cal-card';
     d.innerHTML='<h4>Doigt '+(i+1)+' <span style="color:#888;font-size:.85em">(PCA '+f.ch+')</span></h4>'+
-      '<div class="cfg-row"><label>PCA</label><select id="fch'+i+'" style="max-width:80px" onchange="CFG.fingers['+i+'].ch=parseInt(this.value)">'+
+      '<div class="cfg-row"><label>PCA</label><select id="fch'+i+'" style="max-width:80px" onchange="CFG.fingers['+i+'].ch=parseInt(this.value);checkPca();markDirty()">'+
         Array.from({length:16},(_,j)=>'<option value="'+j+'"'+(j===f.ch?' selected':'')+'>'+j+'</option>').join('')+'</select></div>'+
       '<div class="cfg-row"><label>Angle ferme</label><input type="range" min="0" max="180" value="'+f.a+'" id="fa'+i+
         '" oninput="CFG.fingers['+i+'].a=parseInt(this.value);$(\'fav'+i+'\').textContent=this.value+\'&deg;\';testFinger('+i+',parseInt(this.value))">'+
@@ -668,10 +715,12 @@ function buildFingerCards(){
         '<option value="1"'+(f.d===1?' selected':'')+'>+1</option><option value="-1"'+(f.d===-1?' selected':'')+'>-1</option></select></div>'+
       '<div class="cfg-row"><label>Trou arriere</label><input type="checkbox" id="fth'+i+'"'+(f.th?' checked':'')+
         ' style="width:auto;flex:0" onchange="CFG.fingers['+i+'].th=this.checked?1:0;buildFlute(CFG,\'calFluteSvg\',true)"></div>'+
-      '<div class="btn-row"><button class="btn btn-s" onclick="testFinger('+i+',CFG.fingers['+i+'].a)">Fermer</button>'+
-        '<button class="btn btn-s" onclick="testFinger('+i+',CFG.fingers['+i+'].a+(CFG.angle_open||30)*CFG.fingers['+i+'].d)">Ouvrir</button></div>';
+      '<div class="btn-row"><button class="btn btn-s" onclick="testPulse(this);testFinger('+i+',CFG.fingers['+i+'].a)">Fermer</button>'+
+        '<button class="btn btn-s" onclick="testPulse(this);testFinger('+i+',CFG.fingers['+i+'].a+(CFG.angle_open||30)*CFG.fingers['+i+'].d)">Ouvrir</button></div>'+
+      '<div class="pca-warn"></div>';
     c.appendChild(d)
   }
+  checkPca()
 }
 
 function testFinger(i,a){wsSend({t:'test_finger',i:i,a:parseInt(a)});
@@ -680,9 +729,8 @@ function testFinger(i,a){wsSend({t:'test_finger',i:i,a:parseInt(a)});
     el.setAttribute('class','flute-hole '+(open?'open':'closed')+(CFG.fingers[i].th?' thumb':''))}}
 
 function saveStep1(){
-  if(!CFG)return;
+  if(!CFG)return;btnLoad('btnSaveStep1',true);
   CFG.angle_open=parseInt($('angleOpen').value);CFG.air_pca=parseInt($('airPca').value);
-  // Collect finger data
   for(let i=0;i<CFG.num_fingers;i++){
     CFG.fingers[i].ch=parseInt($('fch'+i).value);
     CFG.fingers[i].a=parseInt($('fa'+i).value);
@@ -691,38 +739,40 @@ function saveStep1(){
   }
   const body={num_fingers:CFG.num_fingers,air_pca:CFG.air_pca,angle_open:CFG.angle_open,fingers:CFG.fingers.slice(0,CFG.num_fingers)};
   fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
-    .then(r=>r.json()).then(d=>{if(d.ok){addLog('Doigts sauves');goStep(2)}else addLog('Erreur sauvegarde')})
-    .catch(e=>addLog('Erreur: '+e))
+    .then(r=>r.json()).then(d=>{btnLoad('btnSaveStep1',false);if(d.ok){showToast('Doigts sauvegardes','success');markClean();goStep(2)}else showToast('Erreur sauvegarde','error')})
+    .catch(e=>{btnLoad('btnSaveStep1',false);showToast('Erreur: '+e,'error')})
 }
 
 // --- STEP 2: FINGERINGS ---
 function buildFingeringRows(){
-  const c=$('fingeringRows');c.innerHTML='';if(!CFG)return;
+  const c=$('fingeringRows');c.innerHTML='';if(!CFG)return;let lastOct=-1;
   CFG.notes.forEach((n,ni)=>{
-    const d=document.createElement('div');d.className='fg-row';
+    const oct=Math.floor(n.midi/12)-1;if(oct!==lastOct){lastOct=oct;
+      const sep=document.createElement('div');sep.className='fg-octave';sep.textContent='Octave '+oct;c.appendChild(sep)}
+    const d=document.createElement('div');d.className='fg-row fade-in fade-delay-'+(Math.min(4,(ni%4)+1));
     let dots='';for(let f=0;f<CFG.num_fingers;f++){
       const isThumb=CFG.fingers[f]&&CFG.fingers[f].th;
       dots+='<div class="fg-dot '+(n.fp[f]?'open':'closed')+(isThumb?' thumb':'')+'" data-ni="'+ni+'" data-fi="'+f+'" onclick="toggleFP('+ni+','+f+',this)"></div>'
     }
-    d.innerHTML='<input type="number" class="fg-midi" style="width:48px" value="'+n.midi+'" min="0" max="127" onchange="CFG.notes['+ni+'].midi=parseInt(this.value)">'+
+    d.innerHTML='<input type="number" class="fg-midi" style="width:48px" value="'+n.midi+'" min="0" max="127" onchange="fpSnap();CFG.notes['+ni+'].midi=parseInt(this.value);markDirty()">'+
       '<span class="fg-note">'+mn(n.midi)+'</span>'+
       '<div class="fg-dots">'+dots+'</div>'+
-      '<button class="btn btn-s" style="padding:4px 8px;font-size:.75em" onclick="wsSend({t:\'test_note\',n:'+n.midi+'})">Test</button>';
+      '<button class="btn btn-s" style="padding:4px 8px;font-size:.75em" onclick="testPulse(this);wsSend({t:\'test_note\',n:'+n.midi+'})">Test</button>';
     c.appendChild(d)
   })
 }
 
 function toggleFP(ni,fi,el){
-  CFG.notes[ni].fp[fi]=CFG.notes[ni].fp[fi]?0:1;
-  el.className='fg-dot '+(CFG.notes[ni].fp[fi]?'open':'closed')+(CFG.fingers[fi]&&CFG.fingers[fi].th?' thumb':'')
+  fpSnap();CFG.notes[ni].fp[fi]=CFG.notes[ni].fp[fi]?0:1;
+  el.className='fg-dot '+(CFG.notes[ni].fp[fi]?'open':'closed')+(CFG.fingers[fi]&&CFG.fingers[fi].th?' thumb':'');markDirty()
 }
 
 function addNote(){
-  if(!CFG)return;const last=CFG.notes.length?CFG.notes[CFG.notes.length-1]:null;
+  if(!CFG)return;fpSnap();const last=CFG.notes.length?CFG.notes[CFG.notes.length-1]:null;
   const midi=last?last.midi+2:84;const fp=new Array(CFG.num_fingers).fill(0);
-  CFG.notes.push({midi:midi,fp:fp,amn:20,amx:75});CFG.num_notes=CFG.notes.length;buildFingeringRows()
+  CFG.notes.push({midi:midi,fp:fp,amn:20,amx:75});CFG.num_notes=CFG.notes.length;buildFingeringRows();markDirty()
 }
-function removeLastNote(){if(!CFG||!CFG.notes.length)return;CFG.notes.pop();CFG.num_notes=CFG.notes.length;buildFingeringRows()}
+function removeLastNote(){if(!CFG||!CFG.notes.length)return;fpSnap();CFG.notes.pop();CFG.num_notes=CFG.notes.length;buildFingeringRows();markDirty()}
 
 function applyPreset(val){
   if(!val||!CFG)return;
@@ -745,11 +795,11 @@ function applyPreset(val){
 }
 
 function saveStep2(){
-  if(!CFG)return;
+  if(!CFG)return;btnLoad('btnSaveStep2',true);
   const body={notes:CFG.notes.map(n=>({midi:n.midi,fp:n.fp.slice(0,CFG.num_fingers),amn:n.amn,amx:n.amx}))};
   fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
-    .then(r=>r.json()).then(d=>{if(d.ok){addLog('Doigtes sauves');goStep(3);buildKeyboard()}else addLog('Erreur')})
-    .catch(e=>addLog('Erreur: '+e))
+    .then(r=>r.json()).then(d=>{btnLoad('btnSaveStep2',false);if(d.ok){showToast('Doigtes sauvegardes','success');markClean();fpHistory=[];fpFuture=[];updUndoUI();goStep(3);buildKeyboard()}else showToast('Erreur sauvegarde','error')})
+    .catch(e=>{btnLoad('btnSaveStep2',false);showToast('Erreur: '+e,'error')})
 }
 
 // --- STEP 3: AIRFLOW ---
@@ -757,16 +807,17 @@ function buildAirflowRows(){
   const c=$('airflowRows');c.innerHTML='';if(!CFG)return;
   CFG.notes.forEach((n,ni)=>{
     let dots='';for(let f=0;f<CFG.num_fingers;f++)dots+='<span class="kf '+(n.fp[f]?'o':'c')+'"></span>';
-    const d=document.createElement('div');d.className='air-card';
+    const d=document.createElement('div');d.className='air-card fade-in fade-delay-'+(Math.min(4,(ni%4)+1));
     d.innerHTML='<span class="air-note">'+mn(n.midi)+'</span>'+
       '<span class="kf-row" style="gap:2px">'+dots+'</span>'+
       '<div class="air-sliders">'+
         '<div class="air-vals"><span>Min: <b id="amn'+ni+'">'+n.amn+'</b>%</span><span>Max: <b id="amx'+ni+'">'+n.amx+'</b>%</span></div>'+
-        '<input type="range" min="0" max="100" value="'+n.amn+'" oninput="CFG.notes['+ni+'].amn=parseInt(this.value);$(\'amn'+ni+'\').textContent=this.value">'+
-        '<input type="range" min="0" max="100" value="'+n.amx+'" oninput="CFG.notes['+ni+'].amx=parseInt(this.value);$(\'amx'+ni+'\').textContent=this.value">'+
+        '<div class="dual-range"><div class="dual-range-track"></div><div class="dual-range-fill" id="drf'+ni+'"></div>'+
+        '<input type="range" min="0" max="100" value="'+n.amn+'" oninput="CFG.notes['+ni+'].amn=parseInt(this.value);$(\'amn'+ni+'\').textContent=this.value;updDualFill('+ni+');markDirty()">'+
+        '<input type="range" min="0" max="100" value="'+n.amx+'" oninput="CFG.notes['+ni+'].amx=parseInt(this.value);$(\'amx'+ni+'\').textContent=this.value;updDualFill('+ni+');markDirty()"></div>'+
       '</div>'+
-      '<button class="btn btn-s" style="padding:4px 8px;font-size:.75em" onclick="testCalNote('+n.midi+')">Test</button>';
-    c.appendChild(d)
+      '<button class="btn btn-s" style="padding:4px 8px;font-size:.75em" onclick="testPulse(this);testCalNote('+n.midi+')">Test</button>';
+    c.appendChild(d);updDualFill(ni)
   })
 }
 
@@ -779,11 +830,11 @@ function stopAutoCal(){autoCalRunning=false;$('btnAcalStart').style.display='';$
   wsSend({t:'auto_cal',mode:'stop'})}
 
 function saveStep3(){
-  if(!CFG)return;
+  if(!CFG)return;btnLoad('btnSaveStep3',true);
   const body={notes_air:CFG.notes.map(n=>({amn:n.amn,amx:n.amx}))};
   fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
-    .then(r=>r.json()).then(d=>{if(d.ok){addLog('Souffle sauve');buildKeyboard();alert('Calibration terminee !')}else addLog('Erreur')})
-    .catch(e=>addLog('Erreur: '+e))
+    .then(r=>r.json()).then(d=>{btnLoad('btnSaveStep3',false);if(d.ok){showToast('Calibration terminee !','success');markClean();buildKeyboard()}else showToast('Erreur sauvegarde','error')})
+    .catch(e=>{btnLoad('btnSaveStep3',false);showToast('Erreur: '+e,'error')})
 }
 
 // --- SETTINGS ---
@@ -796,6 +847,9 @@ function fillSettings(){
   $('cfgDelay').value=CFG.servo_delay;$('cfgValveInt').value=CFG.valve_interval;$('cfgMinNote').value=CFG.min_note_dur;
   $('cfgAirOff').value=CFG.air_off;$('cfgAirMin').value=CFG.air_min;$('cfgAirMax').value=CFG.air_max;
   $('cfgVibF').value=CFG.vib_freq;$('cfgVibA').value=CFG.vib_amp;
+  $('cfgCCVol').value=CFG.cc_vol!=null?CFG.cc_vol:127;$('cfgCCExpr').value=CFG.cc_expr!=null?CFG.cc_expr:127;
+  $('cfgCCMod').value=CFG.cc_mod!=null?CFG.cc_mod:0;$('cfgCCBreath').value=CFG.cc_breath!=null?CFG.cc_breath:127;
+  $('cfgCCBright').value=CFG.cc_bright!=null?CFG.cc_bright:64;
   $('cfgCC2On').checked=CFG.cc2_on;$('cfgCC2Thr').value=CFG.cc2_thr;$('cfgCC2Curve').value=CFG.cc2_curve;$('cfgCC2To').value=CFG.cc2_timeout;
   $('cfgSolAct').value=CFG.sol_act;$('cfgSolHold').value=CFG.sol_hold;$('cfgSolTime').value=CFG.sol_time;
   $('cfgUnpower').value=CFG.time_unpower;
@@ -807,19 +861,24 @@ function fillSettings(){
 }
 
 function saveSettings(){
+  btnLoad('btnSaveSettings',true);
   const body={device:$('cfgDevice').value,midi_ch:parseInt($('cfgMidiCh').value),
     servo_delay:parseInt($('cfgDelay').value),valve_interval:parseInt($('cfgValveInt').value),
     min_note_dur:parseInt($('cfgMinNote').value),
     air_off:parseInt($('cfgAirOff').value),air_min:parseInt($('cfgAirMin').value),air_max:parseInt($('cfgAirMax').value),
     vib_freq:parseFloat($('cfgVibF').value),vib_amp:parseFloat($('cfgVibA').value),
+    cc_vol:parseInt($('cfgCCVol').value),cc_expr:parseInt($('cfgCCExpr').value),
+    cc_mod:parseInt($('cfgCCMod').value),cc_breath:parseInt($('cfgCCBreath').value),cc_bright:parseInt($('cfgCCBright').value),
     cc2_on:$('cfgCC2On').checked,cc2_thr:parseInt($('cfgCC2Thr').value),
     cc2_curve:parseFloat($('cfgCC2Curve').value),cc2_timeout:parseInt($('cfgCC2To').value),
     sol_act:parseInt($('cfgSolAct').value),sol_hold:parseInt($('cfgSolHold').value),sol_time:parseInt($('cfgSolTime').value),
     time_unpower:parseInt($('cfgUnpower').value)};
   fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
-    .then(r=>r.json()).then(d=>{$('settingsMsg').textContent=d.ok?'Sauvegarde OK':'Erreur';
-      $('settingsMsg').style.color=d.ok?'#4ecca3':'#e94560';if(d.ok)loadConfig()})
-    .catch(e=>{$('settingsMsg').textContent='Erreur: '+e;$('settingsMsg').style.color='#e94560'})
+    .then(r=>r.json()).then(d=>{btnLoad('btnSaveSettings',false);
+      if(d.ok){showToast('Parametres sauvegardes','success');markClean();loadConfig()}
+      else showToast('Erreur sauvegarde','error');
+      $('settingsMsg').textContent=d.ok?'Sauvegarde OK':'Erreur';$('settingsMsg').style.color=d.ok?'#4ecca3':'#e94560'})
+    .catch(e=>{btnLoad('btnSaveSettings',false);showToast('Erreur: '+e,'error');$('settingsMsg').textContent='Erreur: '+e;$('settingsMsg').style.color='#e94560'})
 }
 
 function resetConfig(){if(!confirm('Remettre tous les parametres par defaut ?'))return;
