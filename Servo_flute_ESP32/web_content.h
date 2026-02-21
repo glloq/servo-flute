@@ -74,6 +74,17 @@ border-radius:6px;padding:10px 8px;text-align:center;cursor:pointer;user-select:
 min-width:60px;flex:0 0 auto;transition:all .15s}
 .key.black{background:linear-gradient(180deg,#1a1a2e,#0a0a1e);border-color:#444}
 .key.pressed,.key:active{background:#e94560;border-color:#e94560;transform:scale(.96)}
+.piano-keys{position:relative;display:flex;padding:8px 0;justify-content:center}
+.pkey{position:relative;display:flex;align-items:flex-end;justify-content:center;
+cursor:pointer;user-select:none;transition:all .12s;box-sizing:border-box}
+.pkey.white{background:linear-gradient(180deg,#f8f8f8,#ddd);border:1px solid #999;
+border-radius:0 0 5px 5px;width:44px;height:140px;z-index:1;margin:0 1px}
+.pkey.blk{background:linear-gradient(180deg,#333,#111);border:1px solid #000;
+border-radius:0 0 3px 3px;width:28px;height:90px;z-index:2;margin:0 -14px}
+.pkey.white.pressed{background:linear-gradient(180deg,#e94560,#c03050)}
+.pkey.blk.pressed{background:linear-gradient(180deg,#e94560,#a02040)}
+.pkey .pkey-label{font-size:.6em;padding-bottom:6px;text-align:center;pointer-events:none}
+.pkey.white .pkey-label{color:#555}.pkey.blk .pkey-label{color:#bbb}
 .note-name{display:block;font-weight:bold;font-size:1em;color:#fff}
 .note-midi{display:block;font-size:0.65em;color:#9aa;margin-top:2px}
 .key-shortcut{display:none;font-size:.55em;color:#777;margin-top:2px}
@@ -648,6 +659,7 @@ max-height:120px;overflow-y:auto;color:#9aa}
 
   <div class="section"><h3>Interface</h3>
     <div class="cfg-row"><label>Couleur instrument</label><input type="color" id="cfgColor" value="#D4B044" style="width:40px;height:28px;flex:0;padding:0;border:1px solid #555;border-radius:4px;cursor:pointer"></div>
+    <div class="cfg-row"><label>Mode clavier</label><select id="cfgKbdMode"><option value="0">Flute</option><option value="1">Piano</option></select></div>
     <div class="cfg-row"><label>Cacher Calibration</label><input type="checkbox" id="cfgHideCalib" style="width:auto;flex:0"></div>
     <div class="cfg-row"><label>Schema air (clavier)</label><input type="checkbox" id="cfgShowAir" style="width:auto;flex:0"></div>
   </div>
@@ -707,7 +719,8 @@ let ws=null,velocity=WEB_DEF_VEL,CFG=null,curNote=null;
 let calibStep=1,fileLoaded=false,playerDuration=0;
 let micDetected=false,autoCalRunning=false;
 let dirty=false,fpHistory=[],fpFuture=[];
-let _forceWizard=false;
+
+
 
 // Presets: {id,n:name,h:holes,th:thumbIdx(-1=none),em:embouchure(trav|bec|naf|end|oca),d:[[midi,[fp],amn,amx],...]}
 const PR=[
@@ -1094,7 +1107,7 @@ function loadConfig(){
     buildKeyboard();buildFlute(CFG,'fluteSvg',false);markClean();
     applyCalibVisibility();applyAirTabVisibility();drawSeqGrid();
     buildAirSvg('airSvg',false);buildAirSvg('airSvgFull',true);
-    if(CFG.first_boot||_forceWizard){_forceWizard=false;showWizard()}
+    if(CFG.first_boot){showWizard()}
     if(micDetected){$('micSection').style.display='';wsSend({t:'mic_mon',on:1})}
     else $('micSection').style.display='none';
   }).catch(e=>{addLog('Erreur config: '+e);showToast('Erreur chargement config','error')})
@@ -1103,31 +1116,96 @@ function loadConfig(){
 // --- KEYBOARD ---
 function buildKeyboard(){
   const c=$('pianoKeys');c.innerHTML='';if(!CFG||!CFG.notes||!CFG.notes.length){c.innerHTML='<div style="color:#888;padding:16px;text-align:center">Aucune note</div>';return}
+  if(CFG.kbd_mode===1){buildPianoKeyboard(c)}else{buildFluteKeyboard(c)}
+  buildKeyMap()
+}
+function addKeyEvents(el,midi){
+  el.addEventListener('touchstart',e=>{e.preventDefault();if(noteOn(midi))el.classList.add('pressed')},{passive:false});
+  el.addEventListener('touchend',e=>{e.preventDefault();noteOff(midi);el.classList.remove('pressed')},{passive:false});
+  el.addEventListener('mousedown',e=>{e.preventDefault();if(noteOn(midi))el.classList.add('pressed')});
+  el.addEventListener('mouseup',()=>{noteOff(midi);el.classList.remove('pressed')});
+  el.addEventListener('mouseleave',()=>{if(el.classList.contains('pressed')){noteOff(midi);el.classList.remove('pressed')}})
+}
+function buildFluteKeyboard(c){
+  c.className='keys';
   CFG.notes.forEach((n,idx)=>{
     const name=mn(n.midi);const key=document.createElement('div');
     key.className='key'+(isBlack(n.midi)?' black':'')+' fade-in fade-delay-'+(Math.min(4,(idx%4)+1));key.dataset.midi=n.midi;
     let dots='<span class="kf-row">';for(let f=0;f<CFG.num_fingers;f++)dots+='<span class="kf '+kfClass(n.fp[f])+'"></span>';dots+='</span>';
     const sc=idx<KC.length?KC[idx].toUpperCase():'';
     key.innerHTML='<span class="note-name">'+name+'</span><span class="note-midi">'+n.midi+'</span>'+dots+(sc?'<span class="key-shortcut">'+sc+'</span>':'');
-    key.addEventListener('touchstart',e=>{e.preventDefault();noteOn(n.midi);key.classList.add('pressed')},{passive:false});
-    key.addEventListener('touchend',e=>{e.preventDefault();noteOff(n.midi);key.classList.remove('pressed')},{passive:false});
-    key.addEventListener('mousedown',e=>{e.preventDefault();noteOn(n.midi);key.classList.add('pressed')});
-    key.addEventListener('mouseup',()=>{noteOff(n.midi);key.classList.remove('pressed')});
-    key.addEventListener('mouseleave',()=>{if(key.classList.contains('pressed')){noteOff(n.midi);key.classList.remove('pressed')}});
+    addKeyEvents(key,n.midi);
     c.appendChild(key)
-  });
-  buildKeyMap()
+  })
+}
+function buildPianoKeyboard(c){
+  c.className='piano-keys';
+  // Construire un piano couvrant la plage MIDI configuree
+  const midiSet=new Set(CFG.notes.map(n=>n.midi));
+  const lo=Math.min(...midiSet),hi=Math.max(...midiSet);
+  // Etendre aux limites d'octave pour un rendu naturel
+  const startMidi=lo-(lo%12);const endMidi=hi+(11-(hi%12));
+  const blacks=new Set([1,3,6,8,10]);
+  // Passe 1: creer les blanches, passe 2: inserer les noires
+  const whiteKeys=[];const blackKeys=[];
+  for(let m=startMidi;m<=endMidi;m++){
+    const nb=m%12;const inSet=midiSet.has(m);
+    const key=document.createElement('div');
+    key.dataset.midi=m;
+    const name=mn(m);
+    if(blacks.has(nb)){
+      key.className='pkey blk'+(inSet?'':' disabled');
+      key.innerHTML='<span class="pkey-label">'+name+'</span>';
+      blackKeys.push({midi:m,el:key,inSet:inSet})
+    }else{
+      key.className='pkey white'+(inSet?'':' disabled');
+      key.innerHTML='<span class="pkey-label">'+name+'</span>';
+      whiteKeys.push({midi:m,el:key,inSet:inSet});
+      c.appendChild(key)
+    }
+    if(inSet){addKeyEvents(key,m)}
+    else{key.style.opacity='0.3';key.style.pointerEvents='none'}
+  }
+  // Inserer les noires par-dessus (positionnement absolu relatif au conteneur)
+  blackKeys.forEach(bk=>{c.appendChild(bk.el)});
+  // Positionner les noires apres layout
+  requestAnimationFrame(()=>{
+    blackKeys.forEach(bk=>{
+      // Trouver la blanche precedente et suivante
+      const prevWhite=findAdjacentWhite(whiteKeys,bk.midi,-1);
+      const nextWhite=findAdjacentWhite(whiteKeys,bk.midi,1);
+      if(prevWhite&&nextWhite){
+        const pr=prevWhite.el.getBoundingClientRect();
+        const nr=nextWhite.el.getBoundingClientRect();
+        const cr=c.getBoundingClientRect();
+        bk.el.style.position='absolute';
+        bk.el.style.left=((pr.right+nr.left)/2-cr.left-14)+'px';
+        bk.el.style.top='8px'
+      }
+    })
+  })
+}
+function findAdjacentWhite(whites,midi,dir){
+  let m=midi+dir;
+  const blacks=new Set([1,3,6,8,10]);
+  while(m>=0&&m<=127){
+    if(!blacks.has(m%12))return whites.find(w=>w.midi===m)||null;
+    m+=dir
+  }
+  return null
 }
 
-function noteOn(midi){curNote=midi;updateFluteForNote(midi);
+function noteOn(midi){
+  // Monophonique: ignorer si une note est deja jouee
+  if(curNote!==null&&curNote!==midi)return false;
+  curNote=midi;updateFluteForNote(midi);
   document.querySelectorAll('#fluteSvg .flute-hole.open').forEach(h=>h.classList.add('playing'));
-  // Update airflow slider range for this note
   if(CFG){const nd=CFG.notes.find(n=>n.midi===midi);if(nd){
     const sl=$('airSlider'),av=$('airVal');
     sl.min=nd.amn;sl.max=nd.amx;
     const mid=Math.round((nd.amn+nd.amx)/2);sl.value=mid;av.textContent=mid+'%';
     wsSend({t:'air_live',v:mid})}}
-  wsSend({t:'non',n:midi,v:velocity})}
+  wsSend({t:'non',n:midi,v:velocity});return true}
 function noteOff(midi){wsSend({t:'nof',n:midi});if(curNote===midi){curNote=null;
   document.querySelectorAll('#fluteSvg .flute-hole.playing').forEach(h=>h.classList.remove('playing'))}}
 function setVelocity(v){velocity=parseInt(v);$('velVal').textContent=v;wsSend({t:'velocity',v:velocity})}
@@ -1137,9 +1215,9 @@ function setAirLive(v){$('airVal').textContent=v+'%';wsSend({t:'air_live',v:pars
 const KC='azertyuiopqsdfghjklmwxcvbn'.split('');let keyMap={},keysDown=new Set();
 function buildKeyMap(){keyMap={};if(!CFG)return;CFG.notes.forEach((n,i)=>{if(i<KC.length)keyMap[KC[i]]=n.midi})}
 document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT'||e.repeat||e.ctrlKey||e.altKey||e.metaKey)return;
-  const n=keyMap[e.key.toLowerCase()];if(n&&!keysDown.has(e.key)){keysDown.add(e.key);noteOn(n);
-    const el=document.querySelector('.key[data-midi="'+n+'"]');if(el)el.classList.add('pressed')}});
-document.addEventListener('keyup',e=>{const n=keyMap[e.key.toLowerCase()];if(n){keysDown.delete(e.key);noteOff(n);
+  const n=keyMap[e.key.toLowerCase()];if(n&&!keysDown.has(e.key)){
+    if(noteOn(n)){keysDown.add(e.key);const el=document.querySelector('.key[data-midi="'+n+'"]');if(el)el.classList.add('pressed')}}});
+document.addEventListener('keyup',e=>{const n=keyMap[e.key.toLowerCase()];if(n&&keysDown.has(e.key)){keysDown.delete(e.key);noteOff(n);
     const el=document.querySelector('.key[data-midi="'+n+'"]');if(el)el.classList.remove('pressed')}});
 document.addEventListener('keydown',e=>{if(!e.ctrlKey)return;
   if(e.key==='z'&&calibStep===2){e.preventDefault();undoFp()}
@@ -1802,6 +1880,7 @@ function fillSettings(){
   $('cfgUnpower').value=CFG.time_unpower;
   $('cfgMidiLimit').value=CFG.midi_limit||500;
   $('cfgColor').value=CFG.color||'#D4B044';
+  $('cfgKbdMode').value=CFG.kbd_mode||0;
   $('cfgHideCalib').checked=!!CFG.hide_calib;
   $('cfgShowAir').checked=!!CFG.show_air;
   // Appliquer visibilite onglets
@@ -1824,7 +1903,8 @@ function saveSettings(){
     sol_pin:parseInt($('cfgSolPin').value),
     sol_act:parseInt($('cfgSolAct').value),sol_hold:parseInt($('cfgSolHold').value),sol_time:parseInt($('cfgSolTime').value),
     time_unpower:parseInt($('cfgUnpower').value),midi_limit:parseInt($('cfgMidiLimit').value),
-    color:$('cfgColor').value,hide_calib:$('cfgHideCalib').checked,
+    color:$('cfgColor').value,kbd_mode:parseInt($('cfgKbdMode').value),
+    hide_calib:$('cfgHideCalib').checked,
     show_air:$('cfgShowAir').checked};
   fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(r=>r.json()).then(d=>{btnLoad('btnSaveSettings',false);
@@ -1840,11 +1920,10 @@ function resetConfig(){if(!confirm('Remettre tous les parametres par defaut ?'))
 
 function factoryReset(){
   if(!confirm('Reset usine : tous les parametres seront remis par defaut et l\'assistant de configuration s\'ouvrira.\n\nContinuer ?'))return;
-  fetch('/api/config/reset',{method:'POST'}).then(r=>r.json()).then(d=>{
+  fetch('/api/config/factory',{method:'POST'}).then(r=>r.json()).then(d=>{
     if(d.ok){
       addLog('Reset usine OK');
       toggleSettings();
-      _forceWizard=true;
       loadConfig();
     }
   }).catch(e=>addLog('Erreur: '+e))

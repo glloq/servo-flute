@@ -127,6 +127,7 @@ struct RuntimeConfig {
   bool hideCalibration;              // Cacher l'onglet Calibration
   uint8_t solenoidPin;               // GPIO solenoide (configurable)
   char instrumentColor[8];           // Couleur hex instrument "#RRGGBB"
+  uint8_t kbdMode;                   // 0=flute (defaut), 1=piano
 };
 
 // Config globale accessible depuis tout le projet
@@ -173,6 +174,9 @@ public:
 
   // Remet cfg aux valeurs par defaut et sauvegarde
   static void resetToDefaults();
+
+  // Reset usine: remet cfg aux defauts et supprime le fichier config
+  static void factoryReset();
 
   // Verifie si c'est le premier demarrage (pas de config sauvegardee)
   static bool isFirstBoot();
