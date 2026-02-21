@@ -250,6 +250,13 @@ max-height:120px;overflow-y:auto;color:#9aa}
       <input type="file" id="midiFile" accept=".mid,.midi" style="display:none" onchange="uploadMidi(this)">
     </div>
     <div class="upload-bar" id="uploadBar"><div class="upload-fill" id="uploadFill"></div></div>
+    <div style="margin-top:8px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <span style="font-size:.75em;color:#888" id="midiStorageText">0 / 500 KB</span>
+      </div>
+      <div class="progress-bar" style="height:6px"><div id="midiStorageFill" class="progress-fill" style="width:0%;background:#4ecca3"></div></div>
+    </div>
+    <div id="midiFileList" style="margin-top:8px"></div>
     <div class="file-info" id="fileInfo" style="margin-top:8px">
       <span id="fName"></span> &bull; <span id="fEvents"></span> evt &bull; <span id="fDuration"></span>
     </div>
@@ -647,6 +654,10 @@ max-height:120px;overflow-y:auto;color:#9aa}
 
   <div class="section"><h3>Power off servo</h3>
     <div class="cfg-row"><label>Timeout (ms)</label><input type="number" id="cfgUnpower" min="0" max="60000"></div>
+  </div>
+
+  <div class="section"><h3>Stockage MIDI</h3>
+    <div class="cfg-row"><label>Limite (KB)</label><input type="number" id="cfgMidiLimit" min="50" max="2000" step="50"></div>
   </div>
 
   <div class="section"><h3>Interface</h3>
@@ -1306,7 +1317,7 @@ function updateFluteForNote(midi){
   $('fluteNote').textContent=nd?mn(nd.midi):'-';$('fluteInfo').textContent=nd?'MIDI '+nd.midi:''
 }
 
-// --- MIDI UPLOAD ---
+// --- MIDI FILE MANAGEMENT ---
 const dz=$('dropZone');
 dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('hover')});
 dz.addEventListener('dragleave',()=>dz.classList.remove('hover'));
@@ -1319,12 +1330,53 @@ function uploadMidiFile(file){
   const xhr=new XMLHttpRequest();
   xhr.upload.onprogress=e=>{if(e.lengthComputable)uf.style.width=(e.loaded/e.total*100)+'%'};
   xhr.onload=()=>{uf.style.width='100%';setTimeout(()=>ub.style.display='none',1000);
-    try{const d=JSON.parse(xhr.responseText);if(d.ok){showToast('Upload OK: '+d.events+' evt','success');addLog('Upload OK')}
+    try{const d=JSON.parse(xhr.responseText);if(d.ok){showToast('Upload OK: '+d.events+' evt','success');addLog('Upload OK');loadMidiList()}
     else{showToast('Erreur: '+(d.msg||'echec'),'error')}}catch(e){showToast('Erreur upload','error')}};
   xhr.onerror=()=>{ub.style.display='none';showToast('Erreur upload reseau','error')};
   xhr.open('POST','/api/midi');xhr.send(fd)
 }
 function setMidiCh(v){wsSend({t:'ch_filter',ch:parseInt(v)})}
+
+function loadMidiList(){
+  fetch('/api/midi/list').then(r=>r.json()).then(d=>{
+    updateMidiStorage(d.used,d.limit);
+    const list=$('midiFileList');list.innerHTML='';
+    if(!d.files||!d.files.length){list.innerHTML='<div style="font-size:.78em;color:#666">Aucun fichier</div>';return}
+    d.files.forEach(f=>{
+      const row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid #333';
+      const isLoaded=d.loaded&&d.loaded===f.name;
+      const name=document.createElement('span');
+      name.textContent=f.name;name.style.cssText='flex:1;font-size:.82em;cursor:pointer;'+(isLoaded?'color:#4ecca3;font-weight:bold':'color:#ccc');
+      name.onclick=()=>loadMidiFile(f.name);
+      const size=document.createElement('span');
+      size.textContent=(f.size/1024).toFixed(1)+'KB';size.style.cssText='font-size:.72em;color:#888';
+      const del=document.createElement('button');
+      del.textContent='\u2715';del.style.cssText='background:none;border:1px solid #555;color:#e94560;border-radius:4px;padding:1px 6px;cursor:pointer;font-size:.72em';
+      del.onclick=()=>deleteMidiFile(f.name);
+      row.appendChild(name);row.appendChild(size);row.appendChild(del);list.appendChild(row)
+    })
+  }).catch(()=>{})
+}
+function updateMidiStorage(used,limit){
+  const pct=limit>0?Math.min(100,used/limit*100):0;
+  $('midiStorageFill').style.width=pct+'%';
+  $('midiStorageFill').style.background=pct>90?'#e94560':pct>70?'#e9a645':'#4ecca3';
+  $('midiStorageText').textContent=(used/1024|0)+' / '+(limit/1024|0)+' KB'
+}
+function deleteMidiFile(name){
+  if(!confirm('Supprimer '+name+' ?'))return;
+  fetch('/api/midi/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({file:name})})
+    .then(r=>r.json()).then(d=>{if(d.ok){showToast('Supprime','success');loadMidiList()}else showToast(d.msg||'Erreur','error')})
+    .catch(()=>showToast('Erreur reseau','error'))
+}
+function loadMidiFile(name){
+  fetch('/api/midi/load',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({file:name})})
+    .then(r=>r.json()).then(d=>{
+      if(d.ok){showToast('Charge: '+d.events+' evt','success');loadMidiList()}
+      else showToast(d.msg||'Erreur','error')
+    }).catch(()=>showToast('Erreur reseau','error'))
+}
 
 // --- STEP SEQUENCER ---
 let seqNotes=[];// [{step,noteIdx}]
@@ -1747,6 +1799,7 @@ function fillSettings(){
   sp.value=CFG.sol_pin||13;
   $('cfgSolAct').value=CFG.sol_act;$('cfgSolHold').value=CFG.sol_hold;$('cfgSolTime').value=CFG.sol_time;
   $('cfgUnpower').value=CFG.time_unpower;
+  $('cfgMidiLimit').value=CFG.midi_limit||500;
   $('cfgColor').value=CFG.color||'#D4B044';
   $('cfgHideCalib').checked=!!CFG.hide_calib;
   $('cfgShowAir').checked=!!CFG.show_air;
@@ -1769,7 +1822,8 @@ function saveSettings(){
     cc_mod:parseInt($('cfgCCMod').value),cc_breath:parseInt($('cfgCCBreath').value),cc_bright:parseInt($('cfgCCBright').value),
     sol_pin:parseInt($('cfgSolPin').value),
     sol_act:parseInt($('cfgSolAct').value),sol_hold:parseInt($('cfgSolHold').value),sol_time:parseInt($('cfgSolTime').value),
-    time_unpower:parseInt($('cfgUnpower').value),color:$('cfgColor').value,hide_calib:$('cfgHideCalib').checked,
+    time_unpower:parseInt($('cfgUnpower').value),midi_limit:parseInt($('cfgMidiLimit').value),
+    color:$('cfgColor').value,hide_calib:$('cfgHideCalib').checked,
     show_air:$('cfgShowAir').checked};
   fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(r=>r.json()).then(d=>{btnLoad('btnSaveSettings',false);
@@ -1808,7 +1862,7 @@ function connectWifi(){const ssid=$('wifiSsid').value,pass=$('wifiPass').value;
     .catch(e=>{$('wifiMsg').textContent='Erreur: '+e})}
 
 // --- INIT ---
-window.addEventListener('load',()=>{$('velVal').textContent=WEB_DEF_VEL;$('velSlider').value=WEB_DEF_VEL;wsConnect();loadConfig()});
+window.addEventListener('load',()=>{$('velVal').textContent=WEB_DEF_VEL;$('velSlider').value=WEB_DEF_VEL;wsConnect();loadConfig();loadMidiList()});
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
 </script>
 </body>

@@ -120,6 +120,9 @@ struct RuntimeConfig {
   uint8_t pidKi;                     // Gain integral PID (x10)
   bool showAirSystem;                // Afficher schema pneumatique dans l'UI
 
+  // --- MIDI Storage ---
+  uint16_t midiStorageLimitKb;       // Limite stockage total MIDI en Ko (defaut 500)
+
   // --- UI ---
   bool hideCalibration;              // Cacher l'onglet Calibration
   uint8_t solenoidPin;               // GPIO solenoide (configurable)

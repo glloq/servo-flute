@@ -106,6 +106,9 @@ void ConfigStorage::initDefaults() {
   cfg.pidKi = DEFAULT_PID_KI;
   cfg.showAirSystem = DEFAULT_SHOW_AIR_SYSTEM;
 
+  // --- MIDI Storage ---
+  cfg.midiStorageLimitKb = DEFAULT_MIDI_STORAGE_LIMIT_KB;
+
   // --- UI ---
   cfg.hideCalibration = false;
   cfg.solenoidPin = SOLENOID_PIN;
@@ -233,6 +236,9 @@ bool ConfigStorage::load() {
   cfg.pidKi = doc["pid_ki"] | cfg.pidKi;
   cfg.showAirSystem = doc["show_air"] | (cfg.showAirSystem ? 1 : 0);
 
+  // --- MIDI Storage ---
+  cfg.midiStorageLimitKb = doc["midi_limit"] | cfg.midiStorageLimitKb;
+
   const char* ssid = doc["wifi_ssid"];
   if (ssid) { strncpy(cfg.wifiSsid, ssid, sizeof(cfg.wifiSsid) - 1); cfg.wifiSsid[sizeof(cfg.wifiSsid) - 1] = '\0'; }
 
@@ -337,6 +343,7 @@ bool ConfigStorage::save() {
   doc["pid_kp"] = cfg.pidKp;
   doc["pid_ki"] = cfg.pidKi;
   doc["show_air"] = cfg.showAirSystem ? 1 : 0;
+  doc["midi_limit"] = cfg.midiStorageLimitKb;
   doc["wifi_ssid"] = cfg.wifiSsid;
   doc["wifi_pass"] = cfg.wifiPassword;
   doc["device"] = cfg.deviceName;

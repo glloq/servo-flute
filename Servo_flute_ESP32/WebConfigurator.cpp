@@ -33,6 +33,11 @@ void WebConfigurator::begin(InstrumentManager* instrument, MidiFilePlayer* playe
   });
   _server.addHandler(&_ws);
 
+  // Creer le repertoire MIDI s'il n'existe pas
+  if (!LittleFS.exists(MIDI_DIR)) {
+    LittleFS.mkdir(MIDI_DIR);
+  }
+
   // Configurer les routes HTTP
   setupRoutes();
 
@@ -274,6 +279,37 @@ void WebConfigurator::setupRoutes() {
     }
   );
 
+  // MIDI file list
+  _server.on("/api/midi/list", HTTP_GET, [this](AsyncWebServerRequest* request) {
+    handleMidiList(request);
+  });
+
+  // MIDI file delete
+  _server.on("/api/midi/delete", HTTP_POST,
+    [this](AsyncWebServerRequest* request) {
+      handleMidiDelete(request);
+    },
+    NULL,
+    [this](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
+      if (index == 0) { _configBody = ""; _configBody.reserve(total + 1); }
+      char* buf = (char*)malloc(len + 1);
+      if (buf) { memcpy(buf, data, len); buf[len] = '\0'; _configBody += buf; free(buf); }
+    }
+  );
+
+  // MIDI file load (select for playback)
+  _server.on("/api/midi/load", HTTP_POST,
+    [this](AsyncWebServerRequest* request) {
+      handleMidiLoad(request);
+    },
+    NULL,
+    [this](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
+      if (index == 0) { _configBody = ""; _configBody.reserve(total + 1); }
+      char* buf = (char*)malloc(len + 1);
+      if (buf) { memcpy(buf, data, len); buf[len] = '\0'; _configBody += buf; free(buf); }
+    }
+  );
+
   // 404
   _server.onNotFound([](AsyncWebServerRequest* request) {
     request->send(404, "text/plain", "Not found");
@@ -376,6 +412,7 @@ void WebConfigurator::handleApiConfig(AsyncWebServerRequest* request) {
   json += ",\"pid_kp\":" + String(cfg.pidKp);
   json += ",\"pid_ki\":" + String(cfg.pidKi);
   json += ",\"show_air\":" + String(cfg.showAirSystem ? "true" : "false");
+  json += ",\"midi_limit\":" + String(cfg.midiStorageLimitKb);
 
 #if MIC_ENABLED
   json += ",\"mic\":" + String((_audio && _audio->isMicDetected()) ? "true" : "false");
@@ -496,6 +533,10 @@ void WebConfigurator::handleApiConfigFinalize(AsyncWebServerRequest* request) {
     if (doc.containsKey("pid_kp")) cfg.pidKp = doc["pid_kp"];
     if (doc.containsKey("pid_ki")) cfg.pidKi = doc["pid_ki"];
     if (doc.containsKey("show_air")) cfg.showAirSystem = doc["show_air"].as<bool>();
+    if (doc.containsKey("midi_limit")) {
+      uint16_t ml = doc["midi_limit"];
+      if (ml >= 50 && ml <= 2000) cfg.midiStorageLimitKb = ml;
+    }
 
     if (doc.containsKey("device")) {
       strncpy(cfg.deviceName, doc["device"] | cfg.deviceName, sizeof(cfg.deviceName) - 1);
@@ -580,6 +621,9 @@ void WebConfigurator::handleMidiUpload(AsyncWebServerRequest* request, const Str
       Serial.println(filename);
     }
     _uploadSize = 0;
+    // Stocker le nom original (nettoye)
+    _uploadFileName = filename;
+    // Ecrire d'abord dans un fichier temp pour validation
     _uploadFile = LittleFS.open(MIDI_FILE_PATH, "w");
     if (!_uploadFile) {
       if (DEBUG) {
@@ -624,11 +668,150 @@ void WebConfigurator::handleMidiUploadComplete(AsyncWebServerRequest* request) {
     return;
   }
 
+  // Verifier la limite de stockage total
+  size_t currentUsed = getMidiStorageUsed();
+  size_t limitBytes = (size_t)cfg.midiStorageLimitKb * 1024;
+  // Le fichier destination peut deja exister (ecrasement) - soustraire sa taille
+  String destPath = String(MIDI_DIR) + "/" + _uploadFileName;
+  size_t existingSize = 0;
+  if (LittleFS.exists(destPath)) {
+    File ef = LittleFS.open(destPath, "r");
+    if (ef) { existingSize = ef.size(); ef.close(); }
+  }
+  if (currentUsed - existingSize + _uploadSize > limitBytes) {
+    LittleFS.remove(MIDI_FILE_PATH);
+    String resp = "{\"ok\":false,\"msg\":\"Stockage MIDI plein (" + String(currentUsed / 1024) + "/" + String(cfg.midiStorageLimitKb) + " KB)\"}";
+    request->send(400, "application/json", resp);
+    _ws.textAll("{\"t\":\"midi_error\",\"msg\":\"Stockage MIDI plein\"}");
+    return;
+  }
+
+  // Valider le fichier MIDI en le chargeant depuis le temp
   if (_player && _player->loadFile(MIDI_FILE_PATH)) {
+    // Copier le fichier temp vers /midi/<filename>
+    if (!LittleFS.exists(MIDI_DIR)) {
+      LittleFS.mkdir(MIDI_DIR);
+    }
+    // Renommer (LittleFS.rename) le fichier temp vers sa destination finale
+    if (LittleFS.exists(destPath)) {
+      LittleFS.remove(destPath);
+    }
+    LittleFS.rename(MIDI_FILE_PATH, destPath);
+
+    String resp = "{\"ok\":true";
+    resp += ",\"events\":" + String(_player->getEventCount());
+    resp += ",\"duration\":" + String(_player->getDurationMs());
+    resp += ",\"file\":\"" + _uploadFileName + "\"";
+    resp += ",\"storage_used\":" + String(getMidiStorageUsed());
+    resp += ",\"storage_limit\":" + String(limitBytes);
+    resp += "}";
+    request->send(200, "application/json", resp);
+
+    String wsMsg = "{\"t\":\"midi_loaded\"";
+    wsMsg += ",\"file\":\"" + _uploadFileName + "\"";
+    wsMsg += ",\"events\":" + String(_player->getEventCount());
+    wsMsg += ",\"duration\":" + String(_player->getDurationMs());
+    wsMsg += ",\"channels\":" + String(_player->getActiveChannels());
+    wsMsg += "}";
+    _ws.textAll(wsMsg);
+  } else {
+    LittleFS.remove(MIDI_FILE_PATH);
+    String resp = "{\"ok\":false,\"msg\":\"Format MIDI invalide\"}";
+    request->send(400, "application/json", resp);
+    _ws.textAll("{\"t\":\"midi_error\",\"msg\":\"Format MIDI invalide\"}");
+  }
+}
+
+size_t WebConfigurator::getMidiStorageUsed() {
+  size_t total = 0;
+  File dir = LittleFS.open(MIDI_DIR);
+  if (!dir || !dir.isDirectory()) return 0;
+  File f = dir.openNextFile();
+  while (f) {
+    if (!f.isDirectory()) {
+      total += f.size();
+    }
+    f = dir.openNextFile();
+  }
+  return total;
+}
+
+void WebConfigurator::handleMidiList(AsyncWebServerRequest* request) {
+  String json = "{\"files\":[";
+  File dir = LittleFS.open(MIDI_DIR);
+  bool first = true;
+  if (dir && dir.isDirectory()) {
+    File f = dir.openNextFile();
+    while (f) {
+      if (!f.isDirectory()) {
+        if (!first) json += ",";
+        json += "{\"name\":\"" + String(f.name()) + "\",\"size\":" + String(f.size()) + "}";
+        first = false;
+      }
+      f = dir.openNextFile();
+    }
+  }
+  json += "],\"used\":" + String(getMidiStorageUsed());
+  json += ",\"limit\":" + String((size_t)cfg.midiStorageLimitKb * 1024);
+  // Fichier actuellement charge
+  if (_player && _player->isFileLoaded()) {
+    json += ",\"loaded\":\"" + _player->getFileName() + "\"";
+  }
+  json += "}";
+  request->send(200, "application/json", json);
+}
+
+void WebConfigurator::handleMidiDelete(AsyncWebServerRequest* request) {
+  if (_configBody.length() == 0) {
+    request->send(400, "application/json", "{\"ok\":false,\"msg\":\"Body vide\"}");
+    return;
+  }
+  JsonDocument doc;
+  DeserializationError err = deserializeJson(doc, _configBody);
+  _configBody = "";
+  if (err || !doc.containsKey("file")) {
+    request->send(400, "application/json", "{\"ok\":false,\"msg\":\"JSON invalide\"}");
+    return;
+  }
+  String filename = doc["file"].as<String>();
+  String path = String(MIDI_DIR) + "/" + filename;
+  if (!LittleFS.exists(path)) {
+    request->send(404, "application/json", "{\"ok\":false,\"msg\":\"Fichier introuvable\"}");
+    return;
+  }
+  LittleFS.remove(path);
+  if (DEBUG) {
+    Serial.print("DEBUG: WebConfigurator - MIDI supprime: ");
+    Serial.println(filename);
+  }
+  String resp = "{\"ok\":true,\"used\":" + String(getMidiStorageUsed()) + ",\"limit\":" + String((size_t)cfg.midiStorageLimitKb * 1024) + "}";
+  request->send(200, "application/json", resp);
+}
+
+void WebConfigurator::handleMidiLoad(AsyncWebServerRequest* request) {
+  if (_configBody.length() == 0) {
+    request->send(400, "application/json", "{\"ok\":false,\"msg\":\"Body vide\"}");
+    return;
+  }
+  JsonDocument doc;
+  DeserializationError err = deserializeJson(doc, _configBody);
+  _configBody = "";
+  if (err || !doc.containsKey("file")) {
+    request->send(400, "application/json", "{\"ok\":false,\"msg\":\"JSON invalide\"}");
+    return;
+  }
+  String filename = doc["file"].as<String>();
+  String path = String(MIDI_DIR) + "/" + filename;
+  if (!LittleFS.exists(path)) {
+    request->send(404, "application/json", "{\"ok\":false,\"msg\":\"Fichier introuvable\"}");
+    return;
+  }
+  if (_player && _player->loadFile(path.c_str())) {
     String resp = "{\"ok\":true";
     resp += ",\"events\":" + String(_player->getEventCount());
     resp += ",\"duration\":" + String(_player->getDurationMs());
     resp += ",\"file\":\"" + _player->getFileName() + "\"";
+    resp += ",\"channels\":" + String(_player->getActiveChannels());
     resp += "}";
     request->send(200, "application/json", resp);
 
@@ -640,10 +823,7 @@ void WebConfigurator::handleMidiUploadComplete(AsyncWebServerRequest* request) {
     wsMsg += "}";
     _ws.textAll(wsMsg);
   } else {
-    LittleFS.remove(MIDI_FILE_PATH);
-    String resp = "{\"ok\":false,\"msg\":\"Format MIDI invalide\"}";
-    request->send(400, "application/json", resp);
-    _ws.textAll("{\"t\":\"midi_error\",\"msg\":\"Format MIDI invalide\"}");
+    request->send(400, "application/json", "{\"ok\":false,\"msg\":\"Echec chargement MIDI\"}");
   }
 }
 
