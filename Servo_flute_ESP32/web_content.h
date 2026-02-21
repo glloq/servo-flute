@@ -194,7 +194,7 @@ max-height:120px;overflow-y:auto;color:#9aa}
 <div class="toast-container" id="toastContainer"></div>
 <div class="hdr">
   <h1 id="devName">ServoFlute<span class="unsaved-badge" id="unsavedBadge">modifi&eacute;</span></h1>
-  <div class="hdr-c"><span style="color:#e94560">B</span><svg viewBox="0 0 28 28" width="22" height="22"><circle cx="14" cy="14" r="12" fill="none" stroke="#8aa" stroke-width="1.5"/><path d="M6,14 C6,9 10,6 14,10 C18,6 22,9 22,14 C22,19 18,22 14,18 C10,22 6,19 6,14 Z" fill="none" stroke="#e94560" stroke-width="1.6" stroke-linecap="round"/></svg><span style="color:#e94560">P</span></div>
+  <div class="hdr-c"><span style="color:#e94560">B</span><svg viewBox="0 0 28 28" width="22" height="22"><circle cx="14" cy="14" r="12" fill="none" stroke="#8aa" stroke-width="1.5"/><text x="14" y="19" text-anchor="middle" fill="#e94560" font-size="18" font-weight="bold">&#8734;</text></svg><span style="color:#e94560">P</span></div>
   <div class="hdr-r">
     <span class="dot off" id="sDot"></span>
     <button class="gear-btn" onclick="toggleSettings()" title="Reglages" id="gearBtn">
@@ -725,40 +725,28 @@ function fluteGrad(g,em){
 // Draw mouthpiece based on embouchure type
 function fluteMouth(g,em,ty,by,th,cy){
   let m='';
-  if(em==='bec'){
-    // Bec: rectangle + arc de cercle retire en bas-gauche + chanfrain noir en haut-droite
+  if(em==='naf'){
+    // Amerindienne: meme bec (rect+arc bas-gauche) + rectangle (bloc oiseau) avant chanfrain
     m+='<path d="M4,'+ty+' L58,'+ty+' L58,'+by+' L20,'+by+' A16,16 0 0,1 4,'+(by-16)+' Z" fill="url(#wg_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
-    // Reflet haut du bloc
+    m+='<rect x="4" y="'+ty+'" width="54" height="5" rx="0" fill="#D4B044" opacity=".15"/>';
+    // Rectangle (bloc oiseau/fetiche) juste avant le chanfrain
+    m+='<rect x="40" y="'+(ty-6)+'" width="12" height="8" rx="2" fill="url(#cr_'+g+')" stroke="#5C4A0A" stroke-width=".8"/>';
+    // Chanfrain (petit rect noir en haut-droite)
+    m+='<rect x="50" y="'+(ty-2)+'" width="10" height="6" rx="1" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".8"/>'
+  }else if(em==='bec'||em==='end'){
+    // Bec / end-blown: rectangle + arc retire bas-gauche + chanfrain noir haut-droite
+    m+='<path d="M4,'+ty+' L58,'+ty+' L58,'+by+' L20,'+by+' A16,16 0 0,1 4,'+(by-16)+' Z" fill="url(#wg_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
     m+='<rect x="4" y="'+ty+'" width="54" height="5" rx="0" fill="#D4B044" opacity=".15"/>';
     // Chanfrain (petit rect noir en haut-droite du bloc embouchure)
     m+='<rect x="50" y="'+(ty-2)+'" width="10" height="6" rx="1" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".8"/>'
-  }else if(em==='naf'){
-    // Flute amerindienne - slow air chamber + bird/fetish block + flue
-    m+='<rect x="4" y="'+ty+'" width="24" height="'+th+'" rx="2" fill="url(#wg_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
-    m+='<rect x="4" y="'+ty+'" width="24" height="5" rx="1" fill="#D4B044" opacity=".15"/>';
-    m+='<rect x="2" y="'+(ty-1)+'" width="4" height="'+(th+2)+'" rx="1" fill="url(#cr_'+g+')" stroke="#5C4A0A" stroke-width=".8"/>';
-    m+='<rect x="24" y="'+(ty-14)+'" width="20" height="12" rx="3" fill="url(#cr_'+g+')" stroke="#5C4A0A" stroke-width="1"/>';
-    m+='<circle cx="30" cy="'+(ty-10)+'" r="1.5" fill="#1A1008"/>';
-    m+='<path d="M24,'+(ty-8)+' L20,'+(ty-9)+' L24,'+(ty-10)+'" fill="#5C4A0A" stroke="none"/>';
-    m+='<rect x="28" y="'+(ty-2)+'" width="12" height="3" rx="1" fill="#1A1008" opacity=".8"/>';
-    m+='<rect x="42" y="'+(ty-3)+'" width="8" height="5" rx="1.5" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".6"/>';
-    m+='<line x1="28" y1="'+ty+'" x2="28" y2="'+by+'" stroke="#5C4A0A" stroke-width="1" opacity=".4"/>'
-  }else if(em==='end'){
-    // End-blown - tube ouvert avec encoche utaguchi
-    m+='<path d="M18,'+ty+' L10,'+(ty-8)+' L16,'+(ty-12)+' L22,'+(ty-6)+' L18,'+ty+'" fill="url(#lp_'+g+')" stroke="#5C4A0A" stroke-width="1"/>';
-    m+='<path d="M12,'+(ty-6)+' L16,'+(ty-16)+' L20,'+(ty-6)+'" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".8"/>';
-    m+='<line x1="16" y1="'+(ty-15)+'" x2="20" y2="'+(ty-7)+'" stroke="#D4B044" stroke-width=".8" opacity=".5"/>';
-    m+='<ellipse cx="16" cy="'+cy+'" rx="4" ry="'+(th/2-2)+'" fill="url(#eh_'+g+')" stroke="#5C4A0A" stroke-width="1" opacity=".6"/>'
   }else{
     // Traversiere: rectangle embouchure + trou rond centre partie haute
     m+='<rect x="4" y="'+(ty-2)+'" width="56" height="'+(th+4)+'" rx="2" fill="url(#wg_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
-    // Reflet haut
     m+='<rect x="4" y="'+(ty-2)+'" width="56" height="5" rx="1" fill="#D4B044" opacity=".15"/>';
     // Bague de jonction tete/corps
     m+='<rect x="58" y="'+(ty-3)+'" width="5" height="'+(th+6)+'" rx="1" fill="#A8862A" stroke="#5C4A0A" stroke-width=".6" opacity=".7"/>';
     // Trou rond d\'embouchure centre dans la partie haute
     m+='<circle cx="32" cy="'+(ty+4)+'" r="6" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width="1"/>';
-    // Reflet du trou
     m+='<circle cx="31" cy="'+(ty+3)+'" r="3" fill="none" stroke="#EDD580" stroke-width=".4" opacity=".3"/>'
   }
   return m
@@ -808,8 +796,8 @@ function buildOcarina(cfg,svgId,showNums){
   const svg=$(svgId);if(!svg||!cfg)return;
   const nf=cfg.num_fingers||4,fingers=cfg.fingers||[];
   const g=svgId;
-  // Dimensions: embouchure bec (60px) + corps ovale
-  const bcx=160,bcy=50,rx=Math.max(80,nf*18+20),ry=38;
+  // Dimensions: embouchure bec (60px) + corps ovale (cap a 120 pour >6 trous)
+  const bcx=140,bcy=50,rx=Math.min(120,Math.max(70,nf*16+10)),ry=Math.min(36,28+nf);
   const tw=bcx+rx+30;
   svg.setAttribute('viewBox','0 0 '+tw+' 100');
   let h=fluteGrad(g,'oca');
