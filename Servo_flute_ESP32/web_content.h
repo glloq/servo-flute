@@ -1309,8 +1309,22 @@ const dz=$('dropZone');
 dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('hover')});
 dz.addEventListener('dragleave',()=>dz.classList.remove('hover'));
 dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('hover');
-  if(e.dataTransfer.files.length)uploadMidiFile(e.dataTransfer.files[0])});
-function uploadMidi(input){if(input.files.length)uploadMidiFile(input.files[0])}
+  if(e.dataTransfer.files.length)validateAndUpload(e.dataTransfer.files[0])});
+function uploadMidi(input){if(input.files.length)validateAndUpload(input.files[0])}
+function validateAndUpload(file){
+  // Verifier extension
+  const name=file.name.toLowerCase();
+  if(!name.endsWith('.mid')&&!name.endsWith('.midi')){
+    showToast('Fichier invalide : extension .mid ou .midi requise','error');return}
+  // Verifier magic bytes MThd
+  const reader=new FileReader();
+  reader.onload=()=>{
+    const arr=new Uint8Array(reader.result);
+    if(arr.length<4||arr[0]!==0x4D||arr[1]!==0x54||arr[2]!==0x68||arr[3]!==0x64){
+      showToast('Fichier invalide : pas un fichier MIDI (MThd absent)','error');return}
+    uploadMidiFile(file)};
+  reader.readAsArrayBuffer(file.slice(0,4))
+}
 function uploadMidiFile(file){
   const fd=new FormData();fd.append('file',file);
   const ub=$('uploadBar'),uf=$('uploadFill');ub.style.display='block';uf.style.width='0%';
