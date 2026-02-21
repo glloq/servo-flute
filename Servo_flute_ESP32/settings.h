@@ -1,6 +1,7 @@
 /***********************************************************************************************
 ----------------------------         SETTINGS ESP32            --------------------------------
-Configuration centralisee pour FLUTE IRLANDAISE (Irish Flute en D)
+Configuration modulaire pour instruments a vent robotises.
+Supporte 1 a 15 servos doigts + 1 servo airflow sur PCA9685.
 Version ESP32-WROOM avec BLE-MIDI / WiFi-MIDI / Hotspot
 Architecture avec servo debit + solenoide valve + mode binaire (ouvert/ferme)
 ************************************************************************************************/
@@ -11,18 +12,18 @@ Architecture avec servo debit + solenoide valve + mode binaire (ouvert/ferme)
 #define DEBUG 1
 
 /*******************************************************************************
--------------------------   CONFIGURATION INSTRUMENT  ------------------------
-FLUTE IRLANDAISE EN C (Irish Flute / Tin Whistle)
-- 6 trous
-- Tonalite: C majeur (Do majeur)
-- Gamme: A#5 (La#5) a C7 (Do7)
+-------------------------   LIMITES INSTRUMENT (compile)  --------------------
+Dimensionnement memoire maximal. Les valeurs effectives sont dans RuntimeConfig.
 ******************************************************************************/
 
-// Nombre de servos pour les doigts
-#define NUMBER_SERVOS_FINGER 6
+// Maximums (dimensionnement arrays)
+#define MAX_FINGER_SERVOS 15   // PCA9685 = 16 canaux, 1 reserve pour airflow
+#define MAX_NOTES 32           // Notes jouables maximum
 
-// Nombre de notes jouables
-#define NUMBER_NOTES 14
+// Valeurs par defaut (utilisees par initDefaults / preset "Flute irlandaise C")
+#define DEFAULT_NUM_FINGERS 6
+#define DEFAULT_NUM_NOTES 14
+#define DEFAULT_AIRFLOW_PCA_CHANNEL 10
 
 /*******************************************************************************
 -----------------------   CONFIGURATION GPIO ESP32    ------------------------
@@ -112,7 +113,6 @@ Set MIC_ENABLED to false if no mic is connected.
 /*******************************************************************************
 ---------------------------   AIR FLOW SERVO          ------------------------
 ******************************************************************************/
-#define NUM_SERVO_AIRFLOW 10      // Canal PCA9685 pour servo debit air
 #define SERVO_AIRFLOW_OFF 20      // Angle repos (pas de note)
 #define SERVO_AIRFLOW_MIN 60      // Angle minimum absolu
 #define SERVO_AIRFLOW_MAX 100     // Angle maximum absolu
@@ -123,96 +123,73 @@ Set MIC_ENABLED to false if no mic is connected.
 #define TIMEUNPOWER 200
 
 /*******************************************************************************
-------------------   CONFIGURATION SERVOS DOIGTS       ----------------------
-Structure : {PCA_channel, angle_ferme, sens_ouverture}
+------------------   CONFIGURATION SERVOS DOIGTS (defauts)  ------------------
+Valeurs par defaut pour preset "Flute irlandaise C" (6 trous).
+Chargees au premier boot, puis surchargees par /config.json.
 
-PCA_channel     : Canal PCA9685 (0-15)
-angle_ferme     : Angle servo en position fermee (0-180 deg)
-sens_ouverture  : 1 = horaire, -1 = anti-horaire
+Structure : {PCA_channel, angle_ferme, sens_ouverture, trou_arriere}
 
 ORDRE DES TROUS (Irish Flute standard) :
-  0 = Trou 1 (haut, main gauche - index)
+  0 = Trou 1 (main gauche - index)
   1 = Trou 2 (main gauche - majeur)
   2 = Trou 3 (main gauche - annulaire)
   3 = Trou 4 (main droite - index)
   4 = Trou 5 (main droite - majeur)
-  5 = Trou 6 (bas, main droite - annulaire)
+  5 = Trou 6 (main droite - annulaire)
 ******************************************************************************/
-#define ANGLE_OPEN 30  // Angle d'ouverture du trou (degres)
+#define ANGLE_OPEN 30  // Angle d'ouverture du trou (degres) par defaut
 
-struct FingerConfig {
-  byte pcaChannel;      // Canal PCA9685
-  uint16_t closedAngle; // Angle position fermee
-  int8_t direction;     // 1=horaire, -1=anti-horaire
+struct DefaultFingerConfig {
+  uint8_t pcaChannel;
+  uint16_t closedAngle;
+  int8_t direction;
+  bool isThumbHole;
 };
 
-const FingerConfig FINGERS[NUMBER_SERVOS_FINGER] = {
-  // PCA  Ferme  Sens
-  {  0,   90,   -1  },  // Trou 1 (haut)
-  {  1,   95,    1  },  // Trou 2
-  {  2,   90,    1  },  // Trou 3
-  {  3,   100,   1  },  // Trou 4
-  {  4,   95,   -1  },  // Trou 5
-  {  5,   90,    1  }   // Trou 6 (bas)
+const DefaultFingerConfig DEFAULT_FINGERS[DEFAULT_NUM_FINGERS] = {
+  // PCA  Ferme  Sens  Pouce
+  {  0,   90,   -1,   false },  // Trou 1
+  {  1,   95,    1,   false },  // Trou 2
+  {  2,   90,    1,   false },  // Trou 3
+  {  3,   100,   1,   false },  // Trou 4
+  {  4,   95,   -1,   false },  // Trou 5
+  {  5,   90,    1,   false }   // Trou 6
 };
 
 /*******************************************************************************
------------------   CONFIGURATION DES NOTES JOUABLES   ----------------------
-Structure : {MIDI, {doigtes}, flow_min%, flow_max%}
+-----------------   NOTES JOUABLES PAR DEFAUT (preset)   --------------------
+Preset "Flute irlandaise en C" - 14 notes de A#5 a G7
+Structure : {MIDI, {doigtes[6]}, flow_min%, flow_max%}
 ******************************************************************************/
 
-struct NoteDefinition {
-  byte midiNote;                            // Numero MIDI
-  bool fingerPattern[NUMBER_SERVOS_FINGER]; // Doigtes (0=ferme, 1=ouvert)
-  byte airflowMinPercent;                   // % min servo flow (0-100)
-  byte airflowMaxPercent;                   // % max servo flow (0-100)
+struct DefaultNoteConfig {
+  uint8_t midiNote;
+  bool fingerPattern[DEFAULT_NUM_FINGERS];
+  uint8_t airflowMinPercent;
+  uint8_t airflowMaxPercent;
 };
 
-// TABLE DES NOTES - Flute irlandaise en C (a partir de A#5)
-const NoteDefinition NOTES[NUMBER_NOTES] = {
-  // OCTAVE BASSE - Notes graves (A#5 a B5)
-  {  82,  {0,1,1,1,1,1},  10,  60  },  // A#5 (La#5)
-  {  83,  {1,1,1,1,1,1},  0,   50  },  // B5  (Si5)
+const DefaultNoteConfig DEFAULT_NOTES[DEFAULT_NUM_NOTES] = {
+  // OCTAVE BASSE
+  {  82,  {0,1,1,1,1,1},  10,  60  },  // A#5
+  {  83,  {1,1,1,1,1,1},  0,   50  },  // B5
 
-  // OCTAVE 1 - MEDIUM (C6 a B6)
-  {  84,  {0,0,0,0,0,0},  20,  75  },  // C6  (Do6)
-  {  86,  {0,0,0,0,0,1},  15,  70  },  // D6  (Re6)
-  {  88,  {0,0,0,0,1,1},  10,  65  },  // E6  (Mi6)
-  {  89,  {0,0,0,1,1,1},  10,  60  },  // F6  (Fa6)
-  {  91,  {0,0,1,1,1,1},  5,   55  },  // G6  (Sol6)
-  {  93,  {0,1,1,1,1,1},  5,   50  },  // A6  (La6)
-  {  95,  {1,1,1,1,1,1},  0,   45  },  // B6  (Si6)
+  // OCTAVE 1 - MEDIUM
+  {  84,  {0,0,0,0,0,0},  20,  75  },  // C6
+  {  86,  {0,0,0,0,0,1},  15,  70  },  // D6
+  {  88,  {0,0,0,0,1,1},  10,  65  },  // E6
+  {  89,  {0,0,0,1,1,1},  10,  60  },  // F6
+  {  91,  {0,0,1,1,1,1},  5,   55  },  // G6
+  {  93,  {0,1,1,1,1,1},  5,   50  },  // A6
+  {  95,  {1,1,1,1,1,1},  0,   45  },  // B6
 
-  // OCTAVE 2 - AIGU (C7 a G7)
-  {  96,  {0,0,0,0,0,0},  50,  100 },  // C7  (Do7)
-  {  98,  {0,0,0,0,0,1},  45,  95  },  // D7  (Re7)
-  {  100, {0,0,0,0,1,1},  40,  90  },  // E7  (Mi7)
-  {  101, {0,0,0,1,1,1},  35,  85  },  // F7  (Fa7)
-  {  103, {0,0,1,1,1,1},  30,  80  }   // G7  (Sol7)
+  // OCTAVE 2 - AIGU
+  {  96,  {0,0,0,0,0,0},  50,  100 },  // C7
+  {  98,  {0,0,0,0,0,1},  45,  95  },  // D7
+  {  100, {0,0,0,0,1,1},  40,  90  },  // E7
+  {  101, {0,0,0,1,1,1},  35,  85  },  // F7
+  {  103, {0,0,1,1,1,1},  30,  80  }   // G7
 };
-
-// Note MIDI la plus basse (calculee automatiquement)
-#define FIRST_MIDI_NOTE (NOTES[0].midiNote)
-
-// Fonction utilitaire pour obtenir une note par MIDI
-inline const NoteDefinition* getNoteByMidi(byte midiNote) {
-  for (int i = 0; i < NUMBER_NOTES; i++) {
-    if (NOTES[i].midiNote == midiNote) {
-      return &NOTES[i];
-    }
-  }
-  return nullptr;
-}
-
-// Fonction utilitaire pour obtenir l'index d'une note
-inline int getNoteIndex(byte midiNote) {
-  for (int i = 0; i < NUMBER_NOTES; i++) {
-    if (NOTES[i].midiNote == midiNote) {
-      return i;
-    }
-  }
-  return -1;
-}
 
 /*******************************************************************************
 -----------------------    SERVO PWM PARAMETERS       ------------------------

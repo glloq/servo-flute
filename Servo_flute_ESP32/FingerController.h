@@ -12,7 +12,8 @@ public:
   void begin();
 
   // Applique un pattern de doigtes binaire (false=ferme, true=ouvert)
-  void setFingerPattern(const bool pattern[NUMBER_SERVOS_FINGER]);
+  // Taille du pattern = cfg.numFingers
+  void setFingerPattern(const bool pattern[MAX_FINGER_SERVOS]);
 
   // Applique un pattern pour une note MIDI specifique
   void setFingerPatternForNote(byte midiNote);

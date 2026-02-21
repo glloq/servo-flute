@@ -103,10 +103,10 @@ void WebConfigurator::update() {
     if (_autoCal && _autoCal->isRunning()) {
       _autoCal->update();
 
-      // Broadcast progress (separate timer from audio monitoring)
+      // Broadcast progress
       if (_ws.count() > 0 && now - _lastAcalBroadcast >= AUTOCAL_AUDIO_INTERVAL_MS) {
         int ni = _autoCal->getCurrentNoteIndex();
-        byte midi = (ni >= 0 && ni < NUMBER_NOTES) ? NOTES[ni].midiNote : 0;
+        byte midi = (ni >= 0 && ni < cfg.numNotes) ? cfg.notes[ni].midiNote : 0;
         String noteName = "";
         if (midi > 0) {
           const char* names[] = {"C","C#","D","D#","E","F","F#","G","G#","A","A#","B"};
@@ -115,7 +115,7 @@ void WebConfigurator::update() {
         String pj = "{\"t\":\"acal_prog\"";
         pj += ",\"idx\":" + String(ni);
         pj += ",\"note\":\"" + noteName + "\"";
-        pj += ",\"total\":" + String(NUMBER_NOTES);
+        pj += ",\"total\":" + String(cfg.numNotes);
         pj += ",\"angle\":" + String(_autoCal->getCurrentAngle());
         pj += ",\"st\":" + String((int)_autoCal->getState());
         pj += "}";
@@ -123,14 +123,14 @@ void WebConfigurator::update() {
         _lastAcalBroadcast = now;
       }
     }
-    // Check completion (separate check - runs once when state transitions to COMPLETE)
+    // Check completion
     if (_autoCal && _autoCal->isComplete()) {
       _autoCal->applyResults();
       const char* names[] = {"C","C#","D","D#","E","F","F#","G","G#","A","A#","B"};
       String dj = "{\"t\":\"acal_done\",\"ok\":true,\"results\":[";
-      for (int i = 0; i < NUMBER_NOTES; i++) {
+      for (int i = 0; i < cfg.numNotes; i++) {
         if (i > 0) dj += ",";
-        byte midi = NOTES[i].midiNote;
+        byte midi = cfg.notes[i].midiNote;
         String nn = String(names[midi % 12]) + String((int)(midi / 12) - 1);
         AutoCalNoteResult r = _autoCal->getResult(i);
         dj += "{\"name\":\"" + nn + "\",\"ok\":" + String(r.valid ? "true" : "false");
@@ -138,7 +138,7 @@ void WebConfigurator::update() {
       }
       dj += "]}";
       _ws.textAll(dj);
-      _autoCal->stop();  // Reset to IDLE to avoid re-sending
+      _autoCal->stop();
     }
   }
 #endif
@@ -167,13 +167,11 @@ void WebConfigurator::setupRoutes() {
   // API Config POST (body handler pour JSON)
   _server.on("/api/config", HTTP_POST,
     [this](AsyncWebServerRequest* request) {
-      // Reponse envoyee dans le body handler a la fin
-      // Si on arrive ici sans body, renvoyer erreur
       if (_configBody.length() == 0) {
         request->send(400, "application/json", "{\"ok\":false,\"msg\":\"Body vide\"}");
       }
     },
-    NULL,  // pas d'upload handler
+    NULL,
     [this](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
       handleApiConfigPost(request, data, len, index, total);
     }
@@ -308,9 +306,16 @@ void WebConfigurator::handleApiStatus(AsyncWebServerRequest* request) {
 }
 
 void WebConfigurator::handleApiConfig(AsyncWebServerRequest* request) {
-  // Lire depuis cfg (RuntimeConfig) au lieu des #defines
   String json = "{";
-  json += "\"midi_ch\":" + String(cfg.midiChannel);
+
+  // Instrument info
+  json += "\"num_fingers\":" + String(cfg.numFingers);
+  json += ",\"num_notes\":" + String(cfg.numNotes);
+  json += ",\"air_pca\":" + String(cfg.airflowPcaChannel);
+  json += ",\"angle_open\":" + String(cfg.fingerAngleOpen);
+
+  // Scalaires
+  json += ",\"midi_ch\":" + String(cfg.midiChannel);
   json += ",\"servo_delay\":" + String(cfg.servoToSolenoidDelayMs);
   json += ",\"valve_interval\":" + String(cfg.minNoteIntervalForValveCloseMs);
   json += ",\"min_note_dur\":" + String(cfg.minNoteDurationMs);
@@ -331,12 +336,9 @@ void WebConfigurator::handleApiConfig(AsyncWebServerRequest* request) {
   json += ",\"sol_act\":" + String(cfg.solenoidPwmActivation);
   json += ",\"sol_hold\":" + String(cfg.solenoidPwmHolding);
   json += ",\"sol_time\":" + String(cfg.solenoidActivationTimeMs);
-  json += ",\"angle_open\":" + String(cfg.fingerAngleOpen);
   json += ",\"device\":\"" + String(cfg.deviceName) + "\"";
   json += ",\"wifi_ssid\":\"" + String(cfg.wifiSsid) + "\"";
   json += ",\"time_unpower\":" + String(cfg.timeUnpower);
-  json += ",\"num_notes\":" + String(NUMBER_NOTES);
-  json += ",\"num_fingers\":" + String(NUMBER_SERVOS_FINGER);
 
 #if MIC_ENABLED
   json += ",\"mic\":" + String((_audio && _audio->isMicDetected()) ? "true" : "false");
@@ -344,27 +346,28 @@ void WebConfigurator::handleApiConfig(AsyncWebServerRequest* request) {
   json += ",\"mic\":false";
 #endif
 
-  // Doigts
+  // Doigts (depuis RuntimeConfig)
   json += ",\"fingers\":[";
-  for (int i = 0; i < NUMBER_SERVOS_FINGER; i++) {
+  for (int i = 0; i < cfg.numFingers; i++) {
     if (i > 0) json += ",";
-    json += "{\"ch\":" + String(FINGERS[i].pcaChannel);
-    json += ",\"a\":" + String(cfg.fingerClosedAngle[i]);
-    json += ",\"d\":" + String(cfg.fingerDirection[i]) + "}";
+    json += "{\"ch\":" + String(cfg.fingers[i].pcaChannel);
+    json += ",\"a\":" + String(cfg.fingers[i].closedAngle);
+    json += ",\"d\":" + String(cfg.fingers[i].direction);
+    json += ",\"th\":" + String(cfg.fingers[i].isThumbHole ? 1 : 0) + "}";
   }
   json += "]";
 
-  // Notes jouables avec airflow configurable
+  // Notes jouables (complete: MIDI + doigtes + airflow)
   json += ",\"notes\":[";
-  for (int i = 0; i < NUMBER_NOTES; i++) {
+  for (int i = 0; i < cfg.numNotes; i++) {
     if (i > 0) json += ",";
-    json += "{\"midi\":" + String(NOTES[i].midiNote);
-    json += ",\"air_min\":" + String(cfg.noteAirflowMin[i]);
-    json += ",\"air_max\":" + String(cfg.noteAirflowMax[i]);
-    json += ",\"fingers\":[";
-    for (int f = 0; f < NUMBER_SERVOS_FINGER; f++) {
+    json += "{\"midi\":" + String(cfg.notes[i].midiNote);
+    json += ",\"amn\":" + String(cfg.notes[i].airflowMinPercent);
+    json += ",\"amx\":" + String(cfg.notes[i].airflowMaxPercent);
+    json += ",\"fp\":[";
+    for (int f = 0; f < cfg.numFingers; f++) {
       if (f > 0) json += ",";
-      json += String(NOTES[i].fingerPattern[f] ? 1 : 0);
+      json += String(cfg.notes[i].fingerPattern[f] ? 1 : 0);
     }
     json += "]}";
   }
@@ -393,7 +396,15 @@ void WebConfigurator::handleApiConfigPost(AsyncWebServerRequest* request, uint8_
       return;
     }
 
-    // Appliquer les valeurs (chaque champ est optionnel)
+    // --- Instrument modulaire ---
+    if (doc.containsKey("num_fingers")) {
+      uint8_t nf = doc["num_fingers"];
+      if (nf >= 1 && nf <= MAX_FINGER_SERVOS) cfg.numFingers = nf;
+    }
+    if (doc.containsKey("air_pca")) cfg.airflowPcaChannel = doc["air_pca"];
+    if (doc.containsKey("angle_open")) cfg.fingerAngleOpen = doc["angle_open"];
+
+    // --- Scalaires ---
     if (doc.containsKey("midi_ch")) cfg.midiChannel = doc["midi_ch"];
     if (doc.containsKey("servo_delay")) cfg.servoToSolenoidDelayMs = doc["servo_delay"];
     if (doc.containsKey("valve_interval")) cfg.minNoteIntervalForValveCloseMs = doc["valve_interval"];
@@ -415,7 +426,6 @@ void WebConfigurator::handleApiConfigPost(AsyncWebServerRequest* request, uint8_
     if (doc.containsKey("sol_act")) cfg.solenoidPwmActivation = doc["sol_act"];
     if (doc.containsKey("sol_hold")) cfg.solenoidPwmHolding = doc["sol_hold"];
     if (doc.containsKey("sol_time")) cfg.solenoidActivationTimeMs = doc["sol_time"];
-    if (doc.containsKey("angle_open")) cfg.fingerAngleOpen = doc["angle_open"];
     if (doc.containsKey("time_unpower")) cfg.timeUnpower = doc["time_unpower"];
 
     if (doc.containsKey("device")) {
@@ -431,21 +441,42 @@ void WebConfigurator::handleApiConfigPost(AsyncWebServerRequest* request, uint8_
       cfg.wifiPassword[sizeof(cfg.wifiPassword) - 1] = '\0';
     }
 
-    // Doigts
+    // --- Doigts (partiel) ---
     if (doc.containsKey("fingers")) {
       JsonArray fingers = doc["fingers"];
-      for (int i = 0; i < NUMBER_SERVOS_FINGER && i < (int)fingers.size(); i++) {
-        if (fingers[i].containsKey("a")) cfg.fingerClosedAngle[i] = fingers[i]["a"];
-        if (fingers[i].containsKey("d")) cfg.fingerDirection[i] = fingers[i]["d"];
+      for (int i = 0; i < cfg.numFingers && i < (int)fingers.size(); i++) {
+        if (fingers[i].containsKey("ch")) cfg.fingers[i].pcaChannel = fingers[i]["ch"];
+        if (fingers[i].containsKey("a")) cfg.fingers[i].closedAngle = fingers[i]["a"];
+        if (fingers[i].containsKey("d")) cfg.fingers[i].direction = fingers[i]["d"];
+        if (fingers[i].containsKey("th")) cfg.fingers[i].isThumbHole = (fingers[i]["th"].as<int>() != 0);
       }
     }
 
-    // Notes airflow
+    // --- Notes (complete: remplace tout si present) ---
+    if (doc.containsKey("notes")) {
+      JsonArray notes = doc["notes"];
+      int count = min((int)notes.size(), (int)MAX_NOTES);
+      cfg.numNotes = count;
+      for (int i = 0; i < count; i++) {
+        JsonObject n = notes[i];
+        cfg.notes[i].midiNote = n["midi"] | cfg.notes[i].midiNote;
+        cfg.notes[i].airflowMinPercent = n["amn"] | cfg.notes[i].airflowMinPercent;
+        cfg.notes[i].airflowMaxPercent = n["amx"] | cfg.notes[i].airflowMaxPercent;
+        if (n.containsKey("fp")) {
+          JsonArray fp = n["fp"];
+          for (int f = 0; f < MAX_FINGER_SERVOS; f++) {
+            cfg.notes[i].fingerPattern[f] = (f < (int)fp.size()) ? (fp[f].as<int>() != 0) : false;
+          }
+        }
+      }
+    }
+
+    // --- Notes airflow only (backward compat / step 3 save) ---
     if (doc.containsKey("notes_air")) {
       JsonArray notes = doc["notes_air"];
-      for (int i = 0; i < NUMBER_NOTES && i < (int)notes.size(); i++) {
-        if (notes[i].containsKey("mn")) cfg.noteAirflowMin[i] = notes[i]["mn"];
-        if (notes[i].containsKey("mx")) cfg.noteAirflowMax[i] = notes[i]["mx"];
+      for (int i = 0; i < cfg.numNotes && i < (int)notes.size(); i++) {
+        if (notes[i].containsKey("amn")) cfg.notes[i].airflowMinPercent = notes[i]["amn"];
+        if (notes[i].containsKey("amx")) cfg.notes[i].airflowMaxPercent = notes[i]["amx"];
       }
     }
 
@@ -475,7 +506,6 @@ void WebConfigurator::handleApiConfigReset(AsyncWebServerRequest* request) {
 void WebConfigurator::handleMidiUpload(AsyncWebServerRequest* request, const String& filename,
                                         size_t index, uint8_t* data, size_t len, bool final) {
   if (index == 0) {
-    // Debut de l'upload
     if (DEBUG) {
       Serial.print("DEBUG: WebConfigurator - Upload MIDI: ");
       Serial.println(filename);
@@ -515,8 +545,6 @@ void WebConfigurator::handleMidiUploadComplete(AsyncWebServerRequest* request) {
     LittleFS.remove(MIDI_FILE_PATH);
     String resp = "{\"ok\":false,\"msg\":\"Fichier trop volumineux (max 100KB)\"}";
     request->send(400, "application/json", resp);
-
-    // Notifier les clients WS
     _ws.textAll("{\"t\":\"midi_error\",\"msg\":\"Fichier trop volumineux\"}");
     return;
   }
@@ -527,7 +555,6 @@ void WebConfigurator::handleMidiUploadComplete(AsyncWebServerRequest* request) {
     return;
   }
 
-  // Parser le fichier
   if (_player && _player->loadFile(MIDI_FILE_PATH)) {
     String resp = "{\"ok\":true";
     resp += ",\"events\":" + String(_player->getEventCount());
@@ -536,7 +563,6 @@ void WebConfigurator::handleMidiUploadComplete(AsyncWebServerRequest* request) {
     resp += "}";
     request->send(200, "application/json", resp);
 
-    // Notifier les clients WS
     String wsMsg = "{\"t\":\"midi_loaded\"";
     wsMsg += ",\"file\":\"" + _player->getFileName() + "\"";
     wsMsg += ",\"events\":" + String(_player->getEventCount());
@@ -584,8 +610,6 @@ void WebConfigurator::onWsEvent(AsyncWebSocket* server, AsyncWebSocketClient* cl
 }
 
 void WebConfigurator::processWsMessage(AsyncWebSocketClient* client, uint8_t* data, size_t len) {
-  // Parse JSON simple (sans ArduinoJson pour economiser la memoire)
-  // Format attendu : {"t":"xxx",...}
   String msg = String((char*)data).substring(0, len);
 
   if (_instrument == nullptr) return;
@@ -599,11 +623,9 @@ void WebConfigurator::processWsMessage(AsyncWebSocketClient* client, uint8_t* da
   String type = msg.substring(tIdx, tEnd);
 
   if (type == "non") {
-    // Note On : {"t":"non","n":82,"v":100}
     int nIdx = msg.indexOf("\"n\":");
     int vIdx = msg.indexOf("\"v\":");
     if (nIdx < 0) return;
-
     uint8_t note = (uint8_t)msg.substring(nIdx + 4).toInt();
     uint8_t vel = _webVelocity;
     if (vIdx >= 0) {
@@ -612,14 +634,12 @@ void WebConfigurator::processWsMessage(AsyncWebSocketClient* client, uint8_t* da
     _instrument->noteOn(note, vel);
 
   } else if (type == "nof") {
-    // Note Off : {"t":"nof","n":82}
     int nIdx = msg.indexOf("\"n\":");
     if (nIdx < 0) return;
     uint8_t note = (uint8_t)msg.substring(nIdx + 4).toInt();
     _instrument->noteOff(note);
 
   } else if (type == "cc") {
-    // Control Change : {"t":"cc","c":7,"v":100}
     int cIdx = msg.indexOf("\"c\":");
     int vIdx = msg.indexOf("\"v\":");
     if (cIdx < 0 || vIdx < 0) return;
@@ -628,7 +648,6 @@ void WebConfigurator::processWsMessage(AsyncWebSocketClient* client, uint8_t* da
     _instrument->handleControlChange(ccNum, ccVal);
 
   } else if (type == "velocity") {
-    // Changer velocity par defaut : {"t":"velocity","v":100}
     int vIdx = msg.indexOf("\"v\":");
     if (vIdx >= 0) {
       _webVelocity = (uint8_t)msg.substring(vIdx + 4).toInt();
@@ -646,7 +665,6 @@ void WebConfigurator::processWsMessage(AsyncWebSocketClient* client, uint8_t* da
     _instrument->allSoundOff();
 
   } else if (type == "test_finger") {
-    // {"t":"test_finger","i":0,"a":90}
     int iIdx = msg.indexOf("\"i\":");
     int aIdx = msg.indexOf("\"a\":");
     if (iIdx >= 0 && aIdx >= 0) {
@@ -656,7 +674,6 @@ void WebConfigurator::processWsMessage(AsyncWebSocketClient* client, uint8_t* da
     }
 
   } else if (type == "test_air") {
-    // {"t":"test_air","a":60}
     int aIdx = msg.indexOf("\"a\":");
     if (aIdx >= 0) {
       int angle = msg.substring(aIdx + 4).toInt();
@@ -664,7 +681,6 @@ void WebConfigurator::processWsMessage(AsyncWebSocketClient* client, uint8_t* da
     }
 
   } else if (type == "test_sol") {
-    // {"t":"test_sol","o":1}
     int oIdx = msg.indexOf("\"o\":");
     if (oIdx >= 0) {
       int val = msg.substring(oIdx + 4).toInt();
@@ -672,7 +688,6 @@ void WebConfigurator::processWsMessage(AsyncWebSocketClient* client, uint8_t* da
     }
 
   } else if (type == "test_note") {
-    // {"t":"test_note","n":84} - joue le pattern de doigts + airflow pour une note
     int nIdx = msg.indexOf("\"n\":");
     if (nIdx >= 0) {
       uint8_t note = (uint8_t)msg.substring(nIdx + 4).toInt();
@@ -682,7 +697,6 @@ void WebConfigurator::processWsMessage(AsyncWebSocketClient* client, uint8_t* da
 
 #if MIC_ENABLED
   } else if (type == "mic_mon") {
-    // {"t":"mic_mon","on":1} - Enable/disable mic monitoring
     int oIdx = msg.indexOf("\"on\":");
     if (oIdx >= 0) {
       int val = msg.substring(oIdx + 5).toInt();
@@ -691,7 +705,6 @@ void WebConfigurator::processWsMessage(AsyncWebSocketClient* client, uint8_t* da
     }
 
   } else if (type == "auto_cal") {
-    // {"t":"auto_cal","mode":"air"} or {"t":"auto_cal","mode":"stop"}
     int mIdx = msg.indexOf("\"mode\":\"");
     if (mIdx >= 0) {
       mIdx += 8;
@@ -700,7 +713,7 @@ void WebConfigurator::processWsMessage(AsyncWebSocketClient* client, uint8_t* da
 
       if (mode == "air" && _autoCal && _audio && _audio->isMicDetected()) {
         _audio->setActive(true);
-        _micMonitorEnabled = true;  // Auto-enable monitoring during cal
+        _micMonitorEnabled = true;
         _autoCal->start(ACAL_MODE_AIRFLOW);
       } else if (mode == "stop") {
         if (_autoCal) _autoCal->stop();

@@ -51,8 +51,8 @@ void AutoCalibrator::update() {
 
   switch (_state) {
     case ACAL_PREPARE: {
-      // Position fingers for current note
-      byte midi = NOTES[_currentNote].midiNote;
+      // Position fingers for current note (from runtime config)
+      byte midi = cfg.notes[_currentNote].midiNote;
       _fingers.setFingerPatternForNote(midi);
 
       // Set airflow to off position (start of sweep)
@@ -110,11 +110,11 @@ void AutoCalibrator::update() {
       // Analyze audio
       bool soundNow = _audio.isSoundDetected();
       int detectedMidi = _audio.getPitchMidi();
-      byte expectedMidi = NOTES[_currentNote].midiNote;
+      byte expectedMidi = cfg.notes[_currentNote].midiNote;
 
       // Check if pitch is close to expected (within tolerance)
       bool pitchOk = (detectedMidi > 0) &&
-                     (abs(detectedMidi - expectedMidi) <= 3);  // ±3 semitones
+                     (abs(detectedMidi - expectedMidi) <= 3);  // +/-3 semitones
 
       if (!_foundMin) {
         // Looking for sound onset
@@ -202,7 +202,7 @@ int AutoCalibrator::angleToPct(int angle) {
 
 void AutoCalibrator::advanceToNextNote() {
   _currentNote++;
-  if (_currentNote >= NUMBER_NOTES) {
+  if (_currentNote >= cfg.numNotes) {
     _state = ACAL_COMPLETE;
     _airflow.testSolenoid(false);
     _airflow.setAirflowToRest();
@@ -218,10 +218,10 @@ void AutoCalibrator::advanceToNextNote() {
 }
 
 void AutoCalibrator::applyResults() {
-  for (int i = 0; i < NUMBER_NOTES; i++) {
+  for (int i = 0; i < cfg.numNotes; i++) {
     if (_results[i].valid) {
-      cfg.noteAirflowMin[i] = _results[i].airMin;
-      cfg.noteAirflowMax[i] = _results[i].airMax;
+      cfg.notes[i].airflowMinPercent = _results[i].airMin;
+      cfg.notes[i].airflowMaxPercent = _results[i].airMax;
     }
   }
   ConfigStorage::save();

@@ -71,7 +71,7 @@ private:
 
   AutoCalState _state;
   AutoCalMode _mode;
-  int _currentNote;         // Index in NOTES[]
+  int _currentNote;         // Index in cfg.notes[]
   int _currentAngle;        // Current servo angle
   unsigned long _stateTimer;
 
@@ -80,7 +80,7 @@ private:
   int _airMaxPct;
   int _silenceCounter;      // Consecutive silent readings after sound found
 
-  AutoCalNoteResult _results[NUMBER_NOTES];
+  AutoCalNoteResult _results[MAX_NOTES];
 
   int angleToPct(int angle);
   void advanceToNextNote();

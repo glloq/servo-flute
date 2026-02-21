@@ -85,7 +85,7 @@ void AirflowController::setAirflowVelocity(byte velocity) {
 }
 
 void AirflowController::setAirflowForNote(byte midiNote, byte velocity) {
-  const NoteDefinition* note = getNoteByMidi(midiNote);
+  const NoteConfig* note = getNoteByMidi(midiNote);
 
   uint16_t minAngle, maxAngle;
   uint16_t baseAngle;
@@ -96,9 +96,8 @@ void AirflowController::setAirflowForNote(byte midiNote, byte velocity) {
   }
 
   if (note != nullptr) {
-    int noteIdx = getNoteIndex(midiNote);
-    uint8_t airMin = (noteIdx >= 0) ? cfg.noteAirflowMin[noteIdx] : note->airflowMinPercent;
-    uint8_t airMax = (noteIdx >= 0) ? cfg.noteAirflowMax[noteIdx] : note->airflowMaxPercent;
+    uint8_t airMin = note->airflowMinPercent;
+    uint8_t airMax = note->airflowMaxPercent;
     minAngle = cfg.servoAirflowMin + ((cfg.servoAirflowMax - cfg.servoAirflowMin) * airMin / 100);
     maxAngle = cfg.servoAirflowMin + ((cfg.servoAirflowMax - cfg.servoAirflowMin) * airMax / 100);
   } else {
@@ -284,7 +283,7 @@ void AirflowController::testSolenoid(bool open) {
 
 void AirflowController::setAirflowServoAngle(uint16_t angle) {
   uint16_t pwmValue = angleToPWM(angle);
-  _pwm.setPWM(NUM_SERVO_AIRFLOW, 0, pwmValue);
+  _pwm.setPWM(cfg.airflowPcaChannel, 0, pwmValue);
 }
 
 uint16_t AirflowController::angleToPWM(uint16_t angle) {

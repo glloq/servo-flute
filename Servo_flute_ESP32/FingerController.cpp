@@ -9,22 +9,22 @@ void FingerController::begin() {
   if (DEBUG) {
     Serial.println("DEBUG: FingerController - Initialisation");
     Serial.print("DEBUG:   - Nombre de doigts: ");
-    Serial.println(NUMBER_SERVOS_FINGER);
+    Serial.println(cfg.numFingers);
     Serial.print("DEBUG:   - Nombre de notes: ");
-    Serial.println(NUMBER_NOTES);
+    Serial.println(cfg.numNotes);
   }
   closeAllFingers();
 }
 
-void FingerController::setFingerPattern(const bool pattern[NUMBER_SERVOS_FINGER]) {
-  for (int i = 0; i < NUMBER_SERVOS_FINGER; i++) {
+void FingerController::setFingerPattern(const bool pattern[MAX_FINGER_SERVOS]) {
+  for (int i = 0; i < cfg.numFingers; i++) {
     uint16_t angle = calculateServoAngle(i, pattern[i]);
     setServoAngle(i, angle);
   }
 
   if (DEBUG) {
     Serial.print("DEBUG: FingerController - Pattern applique: ");
-    for (int i = 0; i < NUMBER_SERVOS_FINGER; i++) {
+    for (int i = 0; i < cfg.numFingers; i++) {
       Serial.print(pattern[i]);
       Serial.print(" ");
     }
@@ -33,7 +33,7 @@ void FingerController::setFingerPattern(const bool pattern[NUMBER_SERVOS_FINGER]
 }
 
 void FingerController::setFingerPatternForNote(byte midiNote) {
-  const NoteDefinition* note = getNoteByMidi(midiNote);
+  const NoteConfig* note = getNoteByMidi(midiNote);
 
   if (note == nullptr) {
     if (DEBUG) {
@@ -52,8 +52,8 @@ void FingerController::setFingerPatternForNote(byte midiNote) {
 }
 
 void FingerController::closeAllFingers() {
-  for (int i = 0; i < NUMBER_SERVOS_FINGER; i++) {
-    setServoAngle(i, cfg.fingerClosedAngle[i]);
+  for (int i = 0; i < cfg.numFingers; i++) {
+    setServoAngle(i, cfg.fingers[i].closedAngle);
   }
 
   if (DEBUG) {
@@ -62,7 +62,7 @@ void FingerController::closeAllFingers() {
 }
 
 void FingerController::openAllFingers() {
-  for (int i = 0; i < NUMBER_SERVOS_FINGER; i++) {
+  for (int i = 0; i < cfg.numFingers; i++) {
     uint16_t openAngle = calculateServoAngle(i, true);
     setServoAngle(i, openAngle);
   }
@@ -73,12 +73,12 @@ void FingerController::openAllFingers() {
 }
 
 uint16_t FingerController::calculateServoAngle(int fingerIndex, bool isOpen) {
-  uint16_t baseAngle = cfg.fingerClosedAngle[fingerIndex];
+  uint16_t baseAngle = cfg.fingers[fingerIndex].closedAngle;
 
   if (!isOpen) {
     return baseAngle;
   } else {
-    int16_t angle = baseAngle + (cfg.fingerAngleOpen * cfg.fingerDirection[fingerIndex]);
+    int16_t angle = baseAngle + (cfg.fingerAngleOpen * cfg.fingers[fingerIndex].direction);
 
     if (angle < 0) angle = 0;
     if (angle > 180) angle = 180;
@@ -88,13 +88,13 @@ uint16_t FingerController::calculateServoAngle(int fingerIndex, bool isOpen) {
 }
 
 void FingerController::setServoAngle(int fingerIndex, uint16_t angle) {
-  int pcaChannel = FINGERS[fingerIndex].pcaChannel;
+  int pcaChannel = cfg.fingers[fingerIndex].pcaChannel;
   uint16_t pwmValue = angleToPWM(angle);
   _pwm.setPWM(pcaChannel, 0, pwmValue);
 }
 
 void FingerController::testFingerAngle(int fingerIndex, uint16_t angle) {
-  if (fingerIndex < 0 || fingerIndex >= NUMBER_SERVOS_FINGER) return;
+  if (fingerIndex < 0 || fingerIndex >= cfg.numFingers) return;
   if (angle > 180) angle = 180;
   setServoAngle(fingerIndex, angle);
 
