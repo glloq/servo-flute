@@ -11,6 +11,7 @@ void ConfigStorage::initDefaults() {
   cfg.numNotes = DEFAULT_NUM_NOTES;
   cfg.airflowPcaChannel = DEFAULT_AIRFLOW_PCA_CHANNEL;
   cfg.fingerAngleOpen = ANGLE_OPEN;
+  cfg.halfHolePercent = 50;
   strncpy(cfg.embouchure, "trav", sizeof(cfg.embouchure));
 
   // Zero-fill all arrays first
@@ -129,6 +130,7 @@ bool ConfigStorage::load() {
 
   cfg.airflowPcaChannel = doc["air_pca"] | cfg.airflowPcaChannel;
   cfg.fingerAngleOpen = doc["angle_open"] | cfg.fingerAngleOpen;
+  cfg.halfHolePercent = doc["half_hole_pct"] | cfg.halfHolePercent;
   if (doc.containsKey("embouchure")) {
     strncpy(cfg.embouchure, doc["embouchure"] | "trav", sizeof(cfg.embouchure) - 1);
     cfg.embouchure[sizeof(cfg.embouchure) - 1] = '\0';
@@ -227,6 +229,7 @@ bool ConfigStorage::save() {
   doc["num_notes"] = cfg.numNotes;
   doc["air_pca"] = cfg.airflowPcaChannel;
   doc["angle_open"] = cfg.fingerAngleOpen;
+  doc["half_hole_pct"] = cfg.halfHolePercent;
   doc["embouchure"] = cfg.embouchure;
 
   // --- Fingers ---

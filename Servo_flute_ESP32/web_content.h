@@ -110,11 +110,15 @@ background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px;min-
 .fade-delay-1{animation-delay:.05s;opacity:0}.fade-delay-2{animation-delay:.1s;opacity:0}
 .fade-delay-3{animation-delay:.15s;opacity:0}.fade-delay-4{animation-delay:.2s;opacity:0}
 .steps{display:flex;align-items:center;justify-content:center;gap:0;padding:12px 0}
-.step-dot{width:12px;height:12px;border-radius:50%;background:#444;cursor:pointer;transition:.2s}
-.step-dot.active{background:#e94560;box-shadow:0 0 8px #e94560}.step-dot.done{background:#4ecca3}
+.step-dot{width:24px;height:24px;border-radius:50%;background:#444;cursor:pointer;transition:.2s;border:2px solid transparent;
+display:flex;align-items:center;justify-content:center;font-size:.65em;font-weight:bold;color:rgba(255,255,255,.6)}
+.step-dot.active{background:#e94560;box-shadow:0 0 10px #e94560;border-color:#e94560}
+.step-dot.active.modified{background:#e9a645;box-shadow:0 0 10px #e9a645;border-color:#e9a645}
+.step-dot.done{background:#4ecca3;border-color:#4ecca3}
+.step-dot.modified{background:#e9a645;border-color:#e9a645;box-shadow:0 0 6px rgba(233,166,69,.5)}
 .step-dot.locked{opacity:.4;cursor:not-allowed}
 .step-line{width:40px;height:2px;background:#444}
-.step-labels{display:flex;justify-content:center;gap:34px;font-size:0.75em;color:#9aa;margin-bottom:8px}
+.step-labels{display:flex;justify-content:center;gap:22px;font-size:0.75em;color:#9aa;margin-bottom:8px}
 .cal-card{background:linear-gradient(135deg,#0d1b3e 0%,#101f45 100%);border:1px solid #1a4080;
 border-radius:8px;padding:10px;margin-bottom:8px}
 .cal-card h4{font-size:0.85em;color:#e94560;margin-bottom:6px}
@@ -275,13 +279,13 @@ max-height:120px;overflow-y:auto;color:#9aa}
 <!-- TAB: CALIBRATION -->
 <div class="tab" id="tab-calib">
   <div class="steps">
-    <div class="step-dot active" onclick="goStep(1)"></div>
+    <div class="step-dot active" onclick="goStep(1)">1</div>
     <div class="step-line"></div>
-    <div class="step-dot" onclick="goStep(2)"></div>
+    <div class="step-dot" onclick="goStep(2)">2</div>
     <div class="step-line"></div>
-    <div class="step-dot" onclick="goStep(3)"></div>
+    <div class="step-dot" onclick="goStep(3)">3</div>
     <div class="step-line"></div>
-    <div class="step-dot" onclick="goStep(4)"></div>
+    <div class="step-dot" onclick="goStep(4)">4</div>
   </div>
   <div class="step-labels">
     <span>Doigts</span><span>Doigtes</span><span>Souffle</span><span>Expression</span>
@@ -311,6 +315,10 @@ max-height:120px;overflow-y:auto;color:#9aa}
       <div class="cfg-row"><label>Amplitude ouverture</label>
         <input type="range" min="10" max="90" value="30" id="angleOpen" oninput="$('aoVal').textContent=this.value+'&deg;'">
         <span id="aoVal" style="min-width:36px">30&deg;</span>
+      </div>
+      <div class="cfg-row"><label>Demi-ouverture</label>
+        <input type="range" min="10" max="90" value="50" id="halfHolePct" oninput="$('hhVal').textContent=this.value+'%'">
+        <span id="hhVal" style="min-width:36px">50%</span>
       </div>
     </div>
     <div class="flute-box">
@@ -569,8 +577,8 @@ const PR=[
 [62,[0,0,0,0,0],5,40],[65,[0,0,0,1,0],5,45],[67,[0,0,1,1,1],5,50],[69,[0,1,1,1,1],10,50],[72,[1,1,1,1,0],10,55],
 [74,[0,0,0,0,0],40,80],[77,[0,0,0,1,0],40,80],[79,[0,0,1,1,1],40,85],[81,[0,1,1,1,1],45,85],[84,[1,1,1,1,0],45,90],[86,[0,0,0,0,0],60,100]]},
 {id:'naf5_fs',n:'Fl\u00fbte am\u00e9rindienne 5 (Fa#)',h:5,th:-1,em:'naf',d:[
-[66,[0,0,0,0,0],5,45],[69,[0,0,0,0,1],5,45],[71,[0,0,0,1,1],5,50],[73,[0,0,1,1,1],5,50],[76,[0,1,1,1,1],5,55],[78,[1,1,1,1,1],5,55],
-[78,[0,0,0,0,0],35,75],[81,[0,0,0,0,1],35,75],[83,[0,0,0,1,1],35,80],[85,[0,0,1,1,1],40,80],[88,[0,1,1,1,1],40,85]]},
+[66,[0,0,0,0,0],5,45],[69,[0,0,0,0,1],5,45],[71,[0,0,0,1,1],5,50],[73,[0,0,1,1,1],5,50],[76,[0,1,1,1,1],5,55],[78,[1,1,1,1,1],5,60],
+[81,[0,0,0,0,1],35,75],[83,[0,0,0,1,1],35,80],[85,[0,0,1,1,1],40,80],[88,[0,1,1,1,1],40,85]]},
 {id:'whistle_d',n:'Tin Whistle (R\u00e9)',h:6,th:-1,em:'bec',d:[
 [74,[0,0,0,0,0,0],5,50],[76,[0,0,0,0,0,1],5,50],[78,[0,0,0,0,1,1],5,50],[79,[0,0,0,1,1,1],5,55],
 [81,[0,0,1,1,1,1],5,55],[83,[0,1,1,1,1,1],5,60],[85,[1,1,1,1,1,1],5,60],
@@ -600,8 +608,8 @@ const PR=[
 {id:'quena_g',n:'Quena (Sol)',h:7,th:0,em:'end',d:[
 [67,[0,0,0,0,0,0,0],5,45],[69,[0,0,0,0,0,0,1],5,45],[71,[0,0,0,0,0,1,1],5,50],[72,[0,0,0,0,1,1,1],5,50],
 [74,[0,0,0,1,1,1,1],5,55],[76,[0,0,1,1,1,1,1],5,55],[78,[0,1,1,1,1,1,1],5,60],
-[79,[1,0,0,0,0,0,0],25,70],[81,[1,0,0,0,0,0,1],25,70],[83,[1,0,0,0,0,1,1],25,75],[84,[1,0,0,0,1,1,1],30,75],
-[86,[1,0,0,1,1,1,1],30,80],[88,[1,0,1,1,1,1,1],30,80],[90,[1,1,1,1,1,1,1],35,85]]},
+[79,[2,0,0,0,0,0,0],25,70],[81,[2,0,0,0,0,0,1],25,70],[83,[2,0,0,0,0,1,1],25,75],[84,[2,0,0,0,1,1,1],30,75],
+[86,[2,0,0,1,1,1,1],30,80],[88,[2,0,1,1,1,1,1],30,80],[90,[2,1,1,1,1,1,1],35,85]]},
 {id:'ney_a',n:'Ney turc (La)',h:7,th:0,em:'end',d:[
 [57,[0,0,0,0,0,0,0],0,30],[59,[0,0,0,0,0,0,1],0,30],[60,[0,0,0,0,0,1,1],0,35],
 [62,[0,0,0,0,1,1,1],0,35],[64,[0,0,0,1,1,1,1],0,40],[65,[0,0,1,1,1,1,1],0,40],[67,[0,1,1,1,1,1,1],0,45],
@@ -610,22 +618,22 @@ const PR=[
 {id:'recorder_c',n:'Fl\u00fbte \u00e0 bec (Do)',h:7,th:0,em:'bec',d:[
 [72,[0,0,0,0,0,0,0],5,40],[74,[0,0,0,0,0,0,1],5,40],[76,[0,0,0,0,0,1,1],5,45],[77,[0,0,0,0,1,1,1],5,45],
 [79,[0,0,0,1,1,1,1],5,50],[81,[0,0,1,1,1,1,1],5,50],[83,[0,1,1,1,1,1,1],5,55],
-[84,[1,0,0,0,0,0,0],20,65],[86,[1,0,0,0,0,0,1],20,65],[88,[1,0,0,0,0,1,1],25,70],[89,[1,0,0,0,1,1,1],25,70],
-[91,[1,0,0,1,1,1,1],25,75],[93,[1,0,1,1,1,1,1],30,75],[95,[1,1,0,1,1,1,1],30,80],[96,[1,0,1,0,1,1,1],35,85]]},
+[84,[2,0,0,0,0,0,0],20,65],[86,[2,0,0,0,0,0,1],20,65],[88,[2,0,0,0,0,1,1],25,70],[89,[2,0,0,0,1,1,1],25,70],
+[91,[2,0,0,1,1,1,1],25,75],[93,[2,0,1,1,1,1,1],30,75],[95,[2,1,0,1,1,1,1],30,80],[96,[2,0,1,0,1,1,1],35,85]]},
 {id:'recorder_b8',n:'Fl\u00fbte \u00e0 bec baroque (Do)',h:8,th:0,em:'bec',d:[
 [72,[0,0,0,0,0,0,0,0],5,40],[74,[0,0,0,0,0,0,1,1],5,40],[76,[0,0,0,0,0,1,1,1],5,45],
 [77,[0,0,0,0,1,0,0,1],5,45],[79,[0,0,0,1,1,1,1,1],5,50],[81,[0,0,1,1,1,1,1,1],10,55],
 [83,[0,1,0,1,1,1,1,1],10,55],
-[84,[1,0,0,1,1,1,1,1],15,60],[86,[1,0,0,0,0,0,1,1],25,70],[88,[1,0,0,0,0,1,1,1],25,70],
-[89,[1,0,0,0,1,0,0,1],30,75],[91,[1,0,0,1,1,1,1,1],30,80],[93,[1,0,1,0,1,1,1,1],35,80],
-[95,[1,1,0,1,0,1,1,1],35,85],[96,[1,0,1,0,1,0,1,1],40,90]]},
+[84,[2,0,0,1,1,1,1,1],15,60],[86,[2,0,0,0,0,0,1,1],25,70],[88,[2,0,0,0,0,1,1,1],25,70],
+[89,[2,0,0,0,1,0,0,1],30,75],[91,[2,0,0,1,1,1,1,1],30,80],[93,[2,0,1,0,1,1,1,1],35,80],
+[95,[2,1,0,1,0,1,1,1],35,85],[96,[2,0,1,0,1,0,1,1],40,90]]},
 {id:'kaval_d',n:'Kaval (R\u00e9)',h:8,th:0,em:'end',d:[
 [62,[0,0,0,0,0,0,0,0],0,30],[64,[0,0,0,0,0,0,0,1],0,30],[65,[0,0,0,0,0,0,1,1],0,35],
 [67,[0,0,0,0,0,1,1,1],0,35],[69,[0,0,0,0,1,1,1,1],0,40],[71,[0,0,0,1,1,1,1,1],5,40],
 [72,[0,0,1,1,1,1,1,1],5,45],[74,[0,1,1,1,1,1,1,1],5,45],
-[76,[0,0,0,0,0,0,0,1],25,65],[77,[0,0,0,0,0,0,1,1],25,70],
-[79,[0,0,0,0,0,1,1,1],25,70],[81,[0,0,0,0,1,1,1,1],30,75],[83,[0,0,0,1,1,1,1,1],30,75],
-[84,[0,0,1,1,1,1,1,1],30,80],[86,[0,1,1,1,1,1,1,1],35,80]]}
+[76,[2,0,0,0,0,0,0,1],25,65],[77,[2,0,0,0,0,0,1,1],25,70],
+[79,[2,0,0,0,0,1,1,1],25,70],[81,[2,0,0,0,1,1,1,1],30,75],[83,[2,0,0,1,1,1,1,1],30,75],
+[84,[2,0,1,1,1,1,1,1],30,80],[86,[2,1,1,1,1,1,1,1],35,80]]}
 ];
 
 function showToast(msg,type){type=type||'info';const c=$('toastContainer');
@@ -636,8 +644,8 @@ function showToast(msg,type){type=type||'info';const c=$('toastContainer');
   t.innerHTML=(ic[type]||ic.info)+'<span>'+esc(msg)+'</span>';c.appendChild(t);
   requestAnimationFrame(()=>requestAnimationFrame(()=>t.classList.add('show')));
   setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),300)},3000)}
-function markDirty(){dirty=true;$('unsavedBadge').classList.add('show')}
-function markClean(){dirty=false;$('unsavedBadge').classList.remove('show')}
+function markDirty(){dirty=true;$('unsavedBadge').classList.add('show');updStepDots()}
+function markClean(){dirty=false;$('unsavedBadge').classList.remove('show');updStepDots()}
 function btnLoad(id,on){const b=$(id);if(!b)return;if(on){b.classList.add('loading');b.disabled=true}else{b.classList.remove('loading');b.disabled=false}}
 function testPulse(el){el.classList.add('test-pulse');setTimeout(()=>el.classList.remove('test-pulse'),600)}
 function fpSnap(){if(!CFG)return;fpHistory.push(JSON.stringify(CFG.notes.map(n=>({midi:n.midi,fp:[...n.fp]}))));
@@ -1069,11 +1077,19 @@ function u32(v){return[(v>>24)&0xFF,(v>>16)&0xFF,(v>>8)&0xFF,v&0xFF]}
 // --- CALIBRATION ---
 function buildCalibUI(){if(!CFG)return;buildFlute(CFG,'calFluteSvg',true);buildFingerCards();goStep(calibStep)}
 
+function stepStatus(){
+  if(!CFG)return[0,0,0,0];
+  const s1=CFG.num_fingers>0&&CFG.fingers.length>=CFG.num_fingers;
+  const s2=CFG.notes&&CFG.notes.length>0;
+  const s3=s2&&CFG.notes.some(n=>n.amn>0||n.amx>0);
+  const s4=CFG.air_atk_mode!=null;
+  return[s1?1:0,s2?1:0,s3?1:0,s4?1:0]
+}
 function goStep(s){
   calibStep=s;
   ['step1','step2','step3','step4'].forEach((id,i)=>{const el=$(id);el.style.display=(i+1===s)?'':'none';
     if(i+1===s){el.classList.add('fade-in')}else{el.classList.remove('fade-in')}});
-  document.querySelectorAll('.step-dot').forEach((d,i)=>{d.className='step-dot'+(i+1===s?' active':i+1<s?' done':' locked')});
+  updStepDots();
   if(s===2){buildPresetSelect();
     const iv=$('instrumentSelect');if(iv&&iv.value){$('presetSelect').value=iv.value;
       // Auto-apply si les notes ne sont pas encore remplies ou viennent d'un autre preset
@@ -1082,12 +1098,20 @@ function goStep(s){
   if(s===3)buildAirflowRows();
   if(s===4)buildExprUI()
 }
+function updStepDots(){
+  const st=stepStatus();
+  document.querySelectorAll('.step-dot').forEach((d,i)=>{
+    if(i+1===calibStep)d.className='step-dot active'+(dirty?' modified':'');
+    else if(st[i])d.className='step-dot done';
+    else d.className='step-dot locked'
+  })
+}
 
 function changeFingers(delta){
   if(!CFG)return;let nf=CFG.num_fingers+delta;
   if(nf<1)nf=1;if(nf>MAX_FINGERS)nf=MAX_FINGERS;CFG.num_fingers=nf;
   // Add defaults for new fingers
-  while(CFG.fingers.length<nf)CFG.fingers.push({ch:CFG.fingers.length,a:90,d:1,th:0});
+  while(CFG.fingers.length<nf)CFG.fingers.push({ch:CFG.fingers.length,a:90,d:-1,th:0});
   $('numFingersDisp').textContent=nf;buildFingerCards();buildFlute(CFG,'calFluteSvg',true);markDirty()
 }
 
@@ -1095,6 +1119,7 @@ function buildFingerCards(){
   const c=$('fingerCards');c.innerHTML='';if(!CFG)return;
   $('numFingersDisp').textContent=CFG.num_fingers;
   $('angleOpen').value=CFG.angle_open||30;$('aoVal').textContent=(CFG.angle_open||30)+'deg';
+  $('halfHolePct').value=CFG.half_hole_pct||50;$('hhVal').textContent=(CFG.half_hole_pct||50)+'%';
   // PCA dropdown
   const sel=$('airPca');sel.innerHTML='';
   for(let i=0;i<16;i++){const o=document.createElement('option');o.value=i;o.textContent='PCA '+i;sel.appendChild(o)}
@@ -1159,14 +1184,14 @@ function testFinger(i,a){wsSend({t:'test_finger',i:i,a:parseInt(a)});
 
 function saveStep1(){
   if(!CFG)return;btnLoad('btnSaveStep1',true);
-  CFG.angle_open=parseInt($('angleOpen').value);CFG.air_pca=parseInt($('airPca').value);
+  CFG.angle_open=parseInt($('angleOpen').value);CFG.half_hole_pct=parseInt($('halfHolePct').value);CFG.air_pca=parseInt($('airPca').value);
   for(let i=0;i<CFG.num_fingers;i++){
     CFG.fingers[i].ch=parseInt($('fch'+i).value);
     CFG.fingers[i].a=parseInt($('fa'+i).value);
     CFG.fingers[i].d=parseInt($('fd'+i).value);
     const thEl=$('fth'+i);CFG.fingers[i].th=thEl?thEl.checked?1:0:0
   }
-  const body={num_fingers:CFG.num_fingers,air_pca:CFG.air_pca,angle_open:CFG.angle_open,embouchure:CFG.embouchure||'trav',fingers:CFG.fingers.slice(0,CFG.num_fingers)};
+  const body={num_fingers:CFG.num_fingers,air_pca:CFG.air_pca,angle_open:CFG.angle_open,half_hole_pct:CFG.half_hole_pct,embouchure:CFG.embouchure||'trav',fingers:CFG.fingers.slice(0,CFG.num_fingers)};
   fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(r=>r.json()).then(d=>{btnLoad('btnSaveStep1',false);if(d.ok){showToast('Doigts sauvegardes','success');markClean();buildFlute(CFG,'fluteSvg',false);goStep(2)}else showToast('Erreur sauvegarde','error')})
     .catch(e=>{btnLoad('btnSaveStep1',false);showToast('Erreur: '+e,'error')})
