@@ -86,6 +86,12 @@ struct RuntimeConfig {
   uint8_t solenoidPwmHolding;
   uint16_t solenoidActivationTimeMs;
 
+  // --- Expression airflow (comportement noteOn) ---
+  uint8_t airAttackMode;                     // 0=stable, 1=accent (fort→cible), 2=crescendo (faible→cible)
+  uint8_t airAttackOffset;                   // 0-50 : ecart % par rapport a la cible
+  uint16_t airAttackMs;                      // 10-1000 : duree transition attaque (ms)
+  uint8_t airVelocityResponse;               // 0-100 : influence de la velocite sur le souffle
+
   // --- WiFi STA ---
   char wifiSsid[33];
   char wifiPassword[65];

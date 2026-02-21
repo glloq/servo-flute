@@ -71,6 +71,12 @@ void ConfigStorage::initDefaults() {
   cfg.solenoidPwmHolding = SOLENOID_PWM_HOLDING;
   cfg.solenoidActivationTimeMs = SOLENOID_ACTIVATION_TIME_MS;
 
+  // --- Expression airflow ---
+  cfg.airAttackMode = 0;           // stable par defaut
+  cfg.airAttackOffset = 20;        // 20% d'ecart
+  cfg.airAttackMs = 150;           // 150ms transition
+  cfg.airVelocityResponse = 50;    // 50% d'influence velocite
+
   // --- WiFi ---
   memset(cfg.wifiSsid, 0, sizeof(cfg.wifiSsid));
   memset(cfg.wifiPassword, 0, sizeof(cfg.wifiPassword));
@@ -177,6 +183,10 @@ bool ConfigStorage::load() {
   cfg.solenoidPwmHolding = doc["sol_hold"] | cfg.solenoidPwmHolding;
   cfg.solenoidActivationTimeMs = doc["sol_time"] | cfg.solenoidActivationTimeMs;
   cfg.timeUnpower = doc["time_unpower"] | cfg.timeUnpower;
+  cfg.airAttackMode = doc["air_atk_mode"] | cfg.airAttackMode;
+  cfg.airAttackOffset = doc["air_atk_off"] | cfg.airAttackOffset;
+  cfg.airAttackMs = doc["air_atk_ms"] | cfg.airAttackMs;
+  cfg.airVelocityResponse = doc["air_vel_resp"] | cfg.airVelocityResponse;
 
   const char* ssid = doc["wifi_ssid"];
   if (ssid) { strncpy(cfg.wifiSsid, ssid, sizeof(cfg.wifiSsid) - 1); cfg.wifiSsid[sizeof(cfg.wifiSsid) - 1] = '\0'; }
@@ -258,6 +268,10 @@ bool ConfigStorage::save() {
   doc["sol_hold"] = cfg.solenoidPwmHolding;
   doc["sol_time"] = cfg.solenoidActivationTimeMs;
   doc["time_unpower"] = cfg.timeUnpower;
+  doc["air_atk_mode"] = cfg.airAttackMode;
+  doc["air_atk_off"] = cfg.airAttackOffset;
+  doc["air_atk_ms"] = cfg.airAttackMs;
+  doc["air_vel_resp"] = cfg.airVelocityResponse;
   doc["wifi_ssid"] = cfg.wifiSsid;
   doc["wifi_pass"] = cfg.wifiPassword;
   doc["device"] = cfg.deviceName;

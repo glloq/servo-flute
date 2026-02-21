@@ -344,6 +344,10 @@ void WebConfigurator::handleApiConfig(AsyncWebServerRequest* request) {
   json += ",\"device\":\"" + String(cfg.deviceName) + "\"";
   json += ",\"wifi_ssid\":\"" + String(cfg.wifiSsid) + "\"";
   json += ",\"time_unpower\":" + String(cfg.timeUnpower);
+  json += ",\"air_atk_mode\":" + String(cfg.airAttackMode);
+  json += ",\"air_atk_off\":" + String(cfg.airAttackOffset);
+  json += ",\"air_atk_ms\":" + String(cfg.airAttackMs);
+  json += ",\"air_vel_resp\":" + String(cfg.airVelocityResponse);
 
 #if MIC_ENABLED
   json += ",\"mic\":" + String((_audio && _audio->isMicDetected()) ? "true" : "false");
@@ -433,6 +437,10 @@ void WebConfigurator::handleApiConfigFinalize(AsyncWebServerRequest* request) {
     if (doc.containsKey("sol_hold")) cfg.solenoidPwmHolding = doc["sol_hold"];
     if (doc.containsKey("sol_time")) cfg.solenoidActivationTimeMs = doc["sol_time"];
     if (doc.containsKey("time_unpower")) cfg.timeUnpower = doc["time_unpower"];
+    if (doc.containsKey("air_atk_mode")) cfg.airAttackMode = doc["air_atk_mode"];
+    if (doc.containsKey("air_atk_off")) cfg.airAttackOffset = doc["air_atk_off"];
+    if (doc.containsKey("air_atk_ms")) cfg.airAttackMs = doc["air_atk_ms"];
+    if (doc.containsKey("air_vel_resp")) cfg.airVelocityResponse = doc["air_vel_resp"];
 
     if (doc.containsKey("device")) {
       strncpy(cfg.deviceName, doc["device"] | cfg.deviceName, sizeof(cfg.deviceName) - 1);
