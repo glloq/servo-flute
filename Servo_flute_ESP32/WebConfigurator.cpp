@@ -621,8 +621,12 @@ void WebConfigurator::handleMidiUpload(AsyncWebServerRequest* request, const Str
       Serial.println(filename);
     }
     _uploadSize = 0;
-    // Stocker le nom original (nettoye)
+    // Stocker le nom original (nettoye, sans chemin)
     _uploadFileName = filename;
+    int ls = _uploadFileName.lastIndexOf('/');
+    if (ls >= 0) _uploadFileName = _uploadFileName.substring(ls + 1);
+    int bs = _uploadFileName.lastIndexOf('\\');
+    if (bs >= 0) _uploadFileName = _uploadFileName.substring(bs + 1);
     // Ecrire d'abord dans un fichier temp pour validation
     _uploadFile = LittleFS.open(MIDI_FILE_PATH, "w");
     if (!_uploadFile) {
@@ -745,7 +749,11 @@ void WebConfigurator::handleMidiList(AsyncWebServerRequest* request) {
     while (f) {
       if (!f.isDirectory()) {
         if (!first) json += ",";
-        json += "{\"name\":\"" + String(f.name()) + "\",\"size\":" + String(f.size()) + "}";
+        // f.name() retourne le chemin complet sur ESP32 - extraire le nom seul
+        String fname = String(f.name());
+        int lastSlash = fname.lastIndexOf('/');
+        if (lastSlash >= 0) fname = fname.substring(lastSlash + 1);
+        json += "{\"name\":\"" + fname + "\",\"size\":" + String(f.size()) + "}";
         first = false;
       }
       f = dir.openNextFile();
@@ -774,6 +782,13 @@ void WebConfigurator::handleMidiDelete(AsyncWebServerRequest* request) {
     return;
   }
   String filename = doc["file"].as<String>();
+  // Securite: extraire le nom seul (pas de path traversal)
+  int lastSlash = filename.lastIndexOf('/');
+  if (lastSlash >= 0) filename = filename.substring(lastSlash + 1);
+  if (filename.length() == 0 || filename.indexOf("..") >= 0) {
+    request->send(400, "application/json", "{\"ok\":false,\"msg\":\"Nom invalide\"}");
+    return;
+  }
   String path = String(MIDI_DIR) + "/" + filename;
   if (!LittleFS.exists(path)) {
     request->send(404, "application/json", "{\"ok\":false,\"msg\":\"Fichier introuvable\"}");
@@ -801,6 +816,8 @@ void WebConfigurator::handleMidiLoad(AsyncWebServerRequest* request) {
     return;
   }
   String filename = doc["file"].as<String>();
+  int ls = filename.lastIndexOf('/');
+  if (ls >= 0) filename = filename.substring(ls + 1);
   String path = String(MIDI_DIR) + "/" + filename;
   if (!LittleFS.exists(path)) {
     request->send(404, "application/json", "{\"ok\":false,\"msg\":\"Fichier introuvable\"}");
