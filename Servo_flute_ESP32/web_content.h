@@ -216,7 +216,6 @@ max-height:120px;overflow-y:auto;color:#9aa}
   <button onclick="showTab('midi',this)"><svg viewBox="0 0 14 16" width="12" height="14"><path d="M12 1v10.5a2.5 2.5 0 11-2-2.45V3.5L5 5v8a2.5 2.5 0 11-2-2.45V1l9-2z" fill="currentColor" opacity=".85"/></svg>MIDI</button>
   <button id="btnTabAir" onclick="showTab('air',this)" style="display:none"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 1C4.5 1 2 4 2 7c0 2 1 3.5 2.5 4.5L4 15h8l-.5-3.5C13 10.5 14 9 14 7c0-3-2.5-6-6-6z" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M6 7.5c0-1.5 1-2.5 2-2.5s2 1 2 2.5" fill="none" stroke="currentColor" stroke-width="1"/></svg>Air</button>
   <button id="btnTabCalib" onclick="showTab('calib',this)"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M6.5 1L7 4H5L2 8h3l-.5 7 6-9H7.5l2-5z" fill="currentColor" opacity=".85"/></svg>Calibration</button>
-  <button onclick="showTab('browser',this)"><svg viewBox="0 0 16 16" width="14" height="14"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.2"/><ellipse cx="8" cy="8" rx="3" ry="6.5" fill="none" stroke="currentColor" stroke-width="1"/><line x1="1.5" y1="8" x2="14.5" y2="8" stroke="currentColor" stroke-width="1"/></svg>Web</button>
 </div>
 
 <!-- TAB: KEYBOARD -->
@@ -570,19 +569,6 @@ max-height:120px;overflow-y:auto;color:#9aa}
 </div>
 
 <!-- TAB: MINI BROWSER -->
-<div class="tab" id="tab-browser">
-  <div class="card" style="padding:8px">
-    <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
-      <button class="btn btn-s" onclick="browserBack()" title="Retour"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <button class="btn btn-s" onclick="browserFwd()" title="Suivant"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <button class="btn btn-s" onclick="browserReload()" title="Recharger"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M13 8a5 5 0 11-1.5-3.5M13 2v3h-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <input type="text" id="browserUrl" class="cfg-input" style="flex:1;font-size:0.8em;padding:6px 8px" placeholder="https://..." value="https://music.youtube.com" onkeydown="if(event.key==='Enter')browserGo()">
-      <button class="btn btn-p" onclick="browserGo()" style="padding:6px 12px">Go</button>
-    </div>
-    <iframe id="browserFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" style="width:100%;height:calc(100vh - 180px);border:1px solid #0f3460;border-radius:6px;background:#fff" src="about:blank"></iframe>
-  </div>
-</div>
-
 <!-- WIZARD OVERLAY (first boot) -->
 <div class="settings-overlay" id="wizardOverlay">
 <div class="settings-box" style="max-width:500px">
@@ -695,6 +681,13 @@ max-height:120px;overflow-y:auto;color:#9aa}
     <button class="btn btn-s" onclick="resetConfig()">Reset defauts</button>
   </div>
   <div style="font-size:.75em;color:#9aa;text-align:center;margin-top:8px" id="settingsMsg"></div>
+
+  <div style="border-top:1px solid #333;margin-top:20px;padding-top:16px">
+    <div class="btn-row" style="justify-content:center">
+      <button class="btn btn-p" onclick="factoryReset()">Reset usine (changer instrument)</button>
+    </div>
+    <div style="font-size:.7em;color:#666;text-align:center;margin-top:6px">Remet tous les parametres par defaut et relance l'assistant de configuration</div>
+  </div>
 </div>
 </div>
 
@@ -839,7 +832,6 @@ function showTab(id,btn){
   $('tab-'+id).classList.add('active');if(btn)btn.classList.add('active');
   if(id==='calib'&&CFG)buildCalibUI();
   if(id==='air'&&CFG)buildAirUI();
-  if(id==='browser'){const f=$('browserFrame');if(f.src==='about:blank')browserGo()}
 }
 // --- Air System ---
 function applyAirTabVisibility(){
@@ -1024,12 +1016,6 @@ function wizFinish(){
       if(d.ok){showToast('Configuration sauvegardee','success');loadConfig()}
     }).catch(()=>{$('wizardOverlay').classList.remove('open')});
 }
-// --- Mini Browser ---
-function browserGo(){const u=$('browserUrl').value.trim();if(!u)return;
-  const url=u.match(/^https?:\/\//)?u:'https://'+u;$('browserUrl').value=url;$('browserFrame').src=url}
-function browserBack(){try{$('browserFrame').contentWindow.history.back()}catch(e){}}
-function browserFwd(){try{$('browserFrame').contentWindow.history.forward()}catch(e){}}
-function browserReload(){try{$('browserFrame').contentWindow.location.reload()}catch(e){$('browserFrame').src=$('browserFrame').src}}
 function toggleSettings(){$('settingsOverlay').classList.toggle('open');if($('settingsOverlay').classList.contains('open')&&CFG)fillSettings()}
 function applyCalibVisibility(){
   const calibBtn=$('btnTabCalib');
@@ -1836,6 +1822,18 @@ function saveSettings(){
 function resetConfig(){if(!confirm('Remettre tous les parametres par defaut ?'))return;
   fetch('/api/config/reset',{method:'POST'}).then(r=>r.json()).then(d=>{if(d.ok){addLog('Reset OK');loadConfig();fillSettings()}})
     .catch(e=>addLog('Erreur: '+e))}
+
+function factoryReset(){
+  if(!confirm('Reset usine : tous les parametres seront remis par defaut et l\'assistant de configuration s\'ouvrira.\n\nContinuer ?'))return;
+  fetch('/api/config/reset',{method:'POST'}).then(r=>r.json()).then(d=>{
+    if(d.ok){
+      addLog('Reset usine OK');
+      toggleSettings();
+      loadConfig();
+      setTimeout(()=>showWizard(),300);
+    }
+  }).catch(e=>addLog('Erreur: '+e))
+}
 
 // --- WIFI ---
 let _scanRetries=0;
