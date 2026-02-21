@@ -241,6 +241,9 @@ max-height:120px;overflow-y:auto;color:#9aa}
     <div class="file-info" id="fileInfo" style="margin-top:8px">
       <span id="fName"></span> &bull; <span id="fEvents"></span> evt &bull; <span id="fDuration"></span>
     </div>
+    <div id="chSelect" style="display:none;margin-top:8px">
+      <div class="cfg-row"><label>Canal</label><select id="midiCh" onchange="setMidiCh(this.value)"><option value="255">Tous</option></select></div>
+    </div>
   </div>
   <div class="section">
     <div class="transport">
@@ -250,6 +253,22 @@ max-height:120px;overflow-y:auto;color:#9aa}
     </div>
     <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
     <div class="file-info" id="progressText">--:-- / --:--</div>
+  </div>
+
+  <div class="section">
+    <h3>Editeur</h3>
+    <p style="font-size:.78em;color:#888;margin:0 0 8px">Creer une sequence simple. Cliquer sur la grille pour placer/retirer des notes.</p>
+    <div class="cfg-row">
+      <label>BPM</label><input type="number" id="seqBpm" value="120" min="40" max="300" style="width:60px" onchange="drawSeqGrid()">
+      <label style="margin-left:12px">Mesures</label><input type="number" id="seqBars" value="4" min="1" max="16" style="width:50px" onchange="drawSeqGrid()">
+    </div>
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin:8px 0">
+      <svg id="seqSvg" style="min-width:100%;height:auto;background:rgba(0,0,0,.2);border-radius:6px;cursor:crosshair"></svg>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-g" onclick="uploadSeqMidi()"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 2l10 6-10 6z" fill="currentColor"/></svg>Jouer</button>
+      <button class="btn btn-s" onclick="clearSeq()">Effacer</button>
+    </div>
   </div>
 </div>
 
@@ -692,7 +711,13 @@ function handleWs(d){
   }else if(d.t==='midi_loaded'){
     fileLoaded=true;playerDuration=d.duration||0;
     $('fName').textContent=d.file;$('fEvents').textContent=d.events;$('fDuration').textContent=fmt(d.duration);
-    $('btnPlay').disabled=false;$('btnStop').disabled=false;addLog('MIDI: '+d.file)
+    $('btnPlay').disabled=false;$('btnStop').disabled=false;addLog('MIDI: '+d.file);
+    // Canaux presents
+    if(d.channels!==undefined){
+      const sel=$('midiCh');sel.innerHTML='<option value="255">Tous</option>';
+      for(let c=0;c<16;c++){if(d.channels&(1<<c)){
+        const o=document.createElement('option');o.value=c;o.textContent='Canal '+(c+1);sel.appendChild(o)}}
+      $('chSelect').style.display=sel.options.length>2?'':'none'}
   }else if(d.t==='midi_error'){addLog('ERR: '+d.msg)}
   else if(d.t==='audio'){
     const rms=Math.min(100,Math.round((d.rms||0)*VU_SCALE));
@@ -726,7 +751,7 @@ function loadConfig(){
     CFG=d;micDetected=d.mic||false;
     $('devName').childNodes[0].textContent=d.device||'ServoFlute';
     buildKeyboard();buildFlute(CFG,'fluteSvg',false);markClean();
-    applyCalibVisibility();
+    applyCalibVisibility();drawSeqGrid();
     if(micDetected){$('micSection').style.display='';wsSend({t:'mic_mon',on:1})}
     else $('micSection').style.display='none';
   }).catch(e=>{addLog('Erreur config: '+e);showToast('Erreur chargement config','error')})
@@ -870,44 +895,56 @@ function buildOcarina(cfg,svgId,showNums){
   const svg=$(svgId);if(!svg||!cfg)return;
   const nf=cfg.num_fingers||4,fingers=cfg.fingers||[];
   const g=svgId;
-  // Dimensions: embouchure bec (60px) + corps ovale (cap a 120 pour >6 trous)
-  const bcx=140,bcy=50,rx=Math.min(120,Math.max(70,nf*16+10)),ry=Math.min(36,28+nf);
-  const tw=bcx+rx+30;
+  // Vue de dessus: forme oeuf/larme + embouchure courte avec chanfrein centre
+  const bw=Math.min(160,Math.max(100,nf*22+20));// largeur corps
+  const bh=Math.min(80,Math.max(55,nf*5+40));   // hauteur corps
+  const cx=bw/2+40,cy=50;  // centre du corps
+  const mw=28;              // longueur embouchure (courte)
+  const tw=cx+bw/2+20;
   svg.setAttribute('viewBox','0 0 '+tw+' 100');
   let h=fluteGrad(g,'oca');
-  // Corps ovale (ceramique terra cotta)
-  h+='<ellipse cx="'+bcx+'" cy="'+bcy+'" rx="'+rx+'" ry="'+ry+'" fill="url(#wg_'+g+')" stroke="#5C2810" stroke-width="1.8"/>';
-  h+='<ellipse cx="'+(bcx-10)+'" cy="'+(bcy-12)+'" rx="'+(rx-20)+'" ry="14" fill="#D88050" opacity=".12"/>';
-  // Embouchure bec: arc 90° centre=coin bas-gauche, lip=4px en haut
-  const bx=bcx-rx,mw=50,mty=bcy-10,mby=bcy+10,mth=20,mlip=8,mar=mth-mlip;
-  h+='<path d="M'+(bx-mw)+','+mty+' L'+bx+','+mty+' L'+bx+','+mby+' L'+(bx-mw+mar)+','+mby+' A'+mar+','+mar+' 0 0,0 '+(bx-mw)+','+(mby-mar)+' L'+(bx-mw)+','+mty+' Z" fill="url(#lp_'+g+')" stroke="#5C2810" stroke-width="1.2"/>';
-  // Chanfrain (petit rect noir en haut-droite du bec)
-  h+='<rect x="'+(bx-8)+'" y="'+(mty-2)+'" width="10" height="5" rx="1" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".6"/>';
-  // Trous alternes: impair (1,3,5,7) en haut, pair (2,4,6,8) en bas
+  // Corps: forme oeuf (plus large a droite, pointu a gauche vers embouchure)
+  const rx1=bw/2,ry1=bh/2;
+  // Path oeuf: demi-cercle droite large, gauche plus pointu
+  const lx=cx-rx1,rxp=cx+rx1;
+  h+='<path d="M'+cx+','+(cy-ry1)+' C'+(rxp+10)+','+(cy-ry1)+' '+(rxp+10)+','+(cy+ry1)+' '+cx+','+(cy+ry1)+
+    ' C'+(lx+15)+','+(cy+ry1)+' '+(lx-5)+','+(cy+8)+' '+(lx-5)+','+cy+
+    ' C'+(lx-5)+','+(cy-8)+' '+(lx+15)+','+(cy-ry1)+' '+cx+','+(cy-ry1)+
+    ' Z" fill="url(#wg_'+g+')" stroke="#5C2810" stroke-width="1.8"/>';
+  // Reflet ceramique
+  h+='<ellipse cx="'+(cx+15)+'" cy="'+(cy-ry1*0.35)+'" rx="'+(rx1*0.5)+'" ry="'+(ry1*0.3)+'" fill="#D88050" opacity=".1"/>';
+  // Embouchure: petit bec centre qui sort a gauche du corps
+  const mx=lx-5,my=cy;// point de sortie
+  h+='<path d="M'+mx+','+(my-6)+' L'+(mx-mw)+','+(my-4)+' Q'+(mx-mw-4)+','+my+' '+(mx-mw)+','+(my+4)+
+    ' L'+mx+','+(my+6)+' Z" fill="url(#lp_'+g+')" stroke="#5C2810" stroke-width="1"/>';
+  // Chanfrein au centre de l'embouchure (fente d'air)
+  const chx=mx-mw/2;
+  h+='<ellipse cx="'+chx+'" cy="'+my+'" rx="5" ry="2" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".6"/>';
+  // Trous: repartis sur le corps vu de dessus
+  // Impair=rangee haute, pair=rangee basse, pouces en bas
   const topRow=[],botRow=[];
   for(let i=0;i<nf;i++){
-    if(fingers[i]&&fingers[i].th){botRow.push(i)} // Pouce toujours en bas
-    else if(i%2===0){topRow.push(i)} // Impair (1-based) = index pair → haut
-    else{botRow.push(i)} // Pair (1-based) = index impair → bas
+    if(fingers[i]&&fingers[i].th){botRow.push(i)}
+    else if(i%2===0){topRow.push(i)}
+    else{botRow.push(i)}
   }
-  const hsp=Math.min(30,rx*1.1/Math.max(Math.max(topRow.length,botRow.length),1));
-  // Top row (impair: doigts 1,3,5,7)
+  const hsp=Math.min(28,bw*0.7/Math.max(Math.max(topRow.length,botRow.length),1));
+  // Rangee haute (index, majeur, etc.)
   if(topRow.length){
-    const tsx=bcx-(topRow.length-1)*hsp/2;
+    const tsx=cx-(topRow.length-1)*hsp/2;
     topRow.forEach((fi,i)=>{
-      const cx=tsx+i*hsp;
-      h+='<circle id="fh_'+svgId+'_'+fi+'" cx="'+cx+'" cy="'+(bcy-12)+'" r="9" class="flute-hole closed"/>';
-      if(showNums)h+='<text x="'+cx+'" y="'+(bcy-9)+'" text-anchor="middle" class="flute-num">'+(fi+1)+'</text>'
+      const px=tsx+i*hsp;
+      h+='<circle id="fh_'+svgId+'_'+fi+'" cx="'+px+'" cy="'+(cy-ry1*0.32)+'" r="8" class="flute-hole closed"/>';
+      if(showNums)h+='<text x="'+px+'" y="'+(cy-ry1*0.32+3)+'" text-anchor="middle" class="flute-num">'+(fi+1)+'</text>'
     })}
-  // Bottom row (pair: doigts 2,4,6,8 + pouces)
+  // Rangee basse (annulaire, auriculaire, pouces)
   if(botRow.length){
-    const bsx=bcx-(botRow.length-1)*hsp/2;
+    const bsx=cx-(botRow.length-1)*hsp/2;
     botRow.forEach((fi,i)=>{
-      const cx=bsx+i*hsp;const isThumb=fingers[fi]&&fingers[fi].th;
-      h+='<circle id="fh_'+svgId+'_'+fi+'" cx="'+cx+'" cy="'+(bcy+12)+'" r="'+(isThumb?7:9)+'" class="flute-hole closed'+(isThumb?' thumb':'')+'"/>';
-      if(showNums)h+='<text x="'+cx+'" y="'+(bcy+15)+'" text-anchor="middle" class="flute-num">'+(fi+1)+'</text>'
+      const px=bsx+i*hsp;const isThumb=fingers[fi]&&fingers[fi].th;
+      h+='<circle id="fh_'+svgId+'_'+fi+'" cx="'+px+'" cy="'+(cy+ry1*0.32)+'" r="'+(isThumb?6:8)+'" class="flute-hole closed'+(isThumb?' thumb':'')+'"/>';
+      if(showNums)h+='<text x="'+px+'" y="'+(cy+ry1*0.32+3)+'" text-anchor="middle" class="flute-num">'+(fi+1)+'</text>'
     })}
-  // Label
   h+='<text x="'+(tw-10)+'" y="94" text-anchor="end" style="font-size:9px;fill:#667;font-style:italic">Ocarina</text>';
   svg.innerHTML=h
 }
@@ -937,6 +974,92 @@ function uploadMidiFile(file){
   xhr.onerror=()=>{ub.style.display='none';showToast('Erreur upload reseau','error')};
   xhr.open('POST','/api/midi');xhr.send(fd)
 }
+function setMidiCh(v){wsSend({t:'ch_filter',ch:parseInt(v)})}
+
+// --- STEP SEQUENCER ---
+let seqNotes=[];// [{step,noteIdx}]
+const SEQ_NOTE_RANGE=()=>{if(!CFG||!CFG.notes||!CFG.notes.length)return{notes:[60],labels:['C4']};
+  const nn=CFG.notes.map(n=>n.midi).sort((a,b)=>a-b);
+  return{notes:nn,labels:nn.map(m=>N[m%12]+(Math.floor(m/12)-1))}};
+
+function drawSeqGrid(){
+  const svg=$('seqSvg');if(!svg)return;
+  const nr=SEQ_NOTE_RANGE(),notes=nr.notes,labels=nr.labels;
+  const bars=parseInt($('seqBars').value)||4,steps=bars*8;// 8 steps/bar (croches)
+  const cw=22,ch=16,lw=36,pw=lw+steps*cw,ph=notes.length*ch+4;
+  svg.setAttribute('viewBox','0 0 '+pw+' '+ph);svg.setAttribute('width',pw);
+  let s='';
+  // Lignes notes (de l'aigu en haut au grave en bas)
+  for(let r=0;r<notes.length;r++){
+    const y=r*ch,ni=notes.length-1-r;
+    s+='<rect x="0" y="'+y+'" width="'+lw+'" height="'+ch+'" fill="'+(r%2?'#1a1a2e':'#16213e')+'" stroke="#333" stroke-width=".5"/>';
+    s+='<text x="'+(lw-3)+'" y="'+(y+ch-4)+'" text-anchor="end" style="font-size:8px;fill:#888">'+labels[ni]+'</text>';
+    for(let c=0;c<steps;c++){
+      const x=lw+c*cw,isBeat=c%8===0,isHalf=c%4===0;
+      const bg=isBeat?'#1a2240':isHalf?'#181e38':(r%2?'#131528':'#11132a');
+      const on=seqNotes.some(n=>n.step===c&&n.noteIdx===ni);
+      s+='<rect x="'+x+'" y="'+y+'" width="'+cw+'" height="'+ch+'" fill="'+(on?'#4ecdc4':bg)+'" stroke="#333" stroke-width=".3" data-s="'+c+'" data-n="'+ni+'" onclick="toggleSeqNote('+c+','+ni+')"/>';
+      if(on)s+='<rect x="'+(x+3)+'" y="'+(y+3)+'" width="'+(cw-6)+'" height="'+(ch-6)+'" rx="2" fill="#3dbdb5" opacity=".6" pointer-events="none"/>'
+    }
+  }
+  // Barres de mesure
+  for(let b=0;b<=bars;b++){const x=lw+b*8*cw;
+    s+='<line x1="'+x+'" y1="0" x2="'+x+'" y2="'+ph+'" stroke="#666" stroke-width="'+(b===0||b===bars?1.5:.8)+'"/>';
+    if(b<bars)s+='<text x="'+(x+4)+'" y="'+(ph-1)+'" style="font-size:7px;fill:#555">'+(b+1)+'</text>'}
+  svg.innerHTML=s
+}
+
+function toggleSeqNote(step,noteIdx){
+  const idx=seqNotes.findIndex(n=>n.step===step&&n.noteIdx===noteIdx);
+  if(idx>=0)seqNotes.splice(idx,1);else seqNotes.push({step,noteIdx});
+  drawSeqGrid()
+}
+function clearSeq(){seqNotes=[];drawSeqGrid()}
+
+function uploadSeqMidi(){
+  if(!seqNotes.length){showToast('Sequence vide','error');return}
+  const nr=SEQ_NOTE_RANGE(),notes=nr.notes;
+  const bpm=parseInt($('seqBpm').value)||120;
+  const ticksPerBeat=480,ticksPerStep=ticksPerBeat/2;// croche = 1/2 beat
+  // Generer MIDI binaire (format 0, 1 piste)
+  const trk=[];
+  // Tempo meta event
+  const usPerBeat=Math.round(60000000/bpm);
+  trk.push({t:0,d:[0xFF,0x51,0x03,(usPerBeat>>16)&0xFF,(usPerBeat>>8)&0xFF,usPerBeat&0xFF]});
+  // Notes triees par temps
+  const evts=[];
+  seqNotes.forEach(n=>{
+    const tick=n.step*ticksPerStep,midi=notes[n.noteIdx];
+    evts.push({tick,on:true,midi,vel:100});
+    evts.push({tick:tick+ticksPerStep-10,on:false,midi,vel:0})});
+  evts.sort((a,b)=>a.tick-b.tick||a.on-b.on);
+  let lastTick=0;
+  evts.forEach(e=>{
+    const dt=e.tick-lastTick;lastTick=e.tick;
+    const vlq=encVLQ(dt);
+    trk.push({t:e.tick,d:[...vlq,e.on?0x90:0x80,e.midi,e.vel]})});
+  // End of track
+  trk.push({t:lastTick+ticksPerStep,d:[...encVLQ(ticksPerStep),0xFF,0x2F,0x00]});
+  // Assembler les bytes de piste
+  let trkBytes=[];trk.forEach(e=>trkBytes.push(...e.d));
+  // Header MIDI
+  const hdr=[0x4D,0x54,0x68,0x64,0,0,0,6,0,0,0,1,...u16(ticksPerBeat)];
+  const trkHdr=[0x4D,0x54,0x72,0x6B,...u32(trkBytes.length)];
+  const midi=new Uint8Array([...hdr,...trkHdr,...trkBytes]);
+  // Upload comme fichier
+  const blob=new Blob([midi],{type:'audio/midi'});
+  const fd=new FormData();fd.append('file',blob,'sequence.mid');
+  const xhr=new XMLHttpRequest();
+  xhr.onload=()=>{try{const d=JSON.parse(xhr.responseText);
+    if(d.ok){showToast('Sequence chargee','success');wsSend({t:'play'})}
+    else showToast('Erreur: '+(d.msg||''),'error')}catch(e){showToast('Erreur','error')}};
+  xhr.onerror=()=>showToast('Erreur reseau','error');
+  xhr.open('POST','/api/midi');xhr.send(fd)
+}
+function encVLQ(v){if(v<128)return[v];const b=[];b.unshift(v&0x7F);v>>=7;
+  while(v>0){b.unshift((v&0x7F)|0x80);v>>=7}return b}
+function u16(v){return[(v>>8)&0xFF,v&0xFF]}
+function u32(v){return[(v>>24)&0xFF,(v>>16)&0xFF,(v>>8)&0xFF,v&0xFF]}
 
 // --- CALIBRATION ---
 function buildCalibUI(){if(!CFG)return;buildFlute(CFG,'calFluteSvg',true);buildFingerCards();goStep(calibStep)}

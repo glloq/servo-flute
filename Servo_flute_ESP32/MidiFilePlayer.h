@@ -68,6 +68,12 @@ public:
   String getFileName() const;
   bool isFileLoaded() const;
 
+  // Filtre canal: 0-15 = canal specifique, 255 = tous (defaut)
+  void setChannelFilter(uint8_t channel);
+  uint8_t getChannelFilter() const;
+  // Bitmask des canaux presents dans le fichier (bit 0 = ch 0, etc.)
+  uint16_t getActiveChannels() const;
+
 private:
   InstrumentManager* _instrument;
   PlayerState _state;
@@ -85,6 +91,8 @@ private:
   // Metadonnees
   String _fileName;
   bool _fileLoaded;
+  uint8_t _channelFilter;     // 255 = tous canaux
+  uint16_t _activeChannels;   // bitmask canaux presents
 
   // Parsing MIDI
   bool parseFile(File& file);

@@ -5,7 +5,7 @@ MidiFilePlayer::MidiFilePlayer()
   : _instrument(nullptr), _state(PLAYER_STOPPED),
     _events(nullptr), _eventCount(0), _currentEvent(0),
     _durationMs(0), _playbackStartMs(0), _pausePositionMs(0),
-    _fileLoaded(false) {
+    _fileLoaded(false), _channelFilter(255), _activeChannels(0) {
 }
 
 MidiFilePlayer::~MidiFilePlayer() {
@@ -62,6 +62,11 @@ bool MidiFilePlayer::loadFile(const char* path) {
     sortEvents();
     _durationMs = _events[_eventCount - 1].absoluteTimeMs;
     _fileLoaded = true;
+    // Scanner les canaux presents
+    _activeChannels = 0;
+    for (uint16_t i = 0; i < _eventCount; i++) {
+      _activeChannels |= (1 << _events[i].channel);
+    }
 
     if (DEBUG) {
       Serial.print("DEBUG: MidiFilePlayer - Parse OK: ");
@@ -144,6 +149,12 @@ void MidiFilePlayer::update() {
       break;  // Pas encore le moment
     }
 
+    // Filtre canal (255 = tous)
+    if (_channelFilter != 255 && evt.channel != _channelFilter) {
+      _currentEvent++;
+      continue;
+    }
+
     // Dispatcher l'evenement
     uint8_t msgType = evt.type & 0xF0;
     switch (msgType) {
@@ -180,6 +191,10 @@ uint16_t MidiFilePlayer::getEventCount() const { return _eventCount; }
 uint32_t MidiFilePlayer::getDurationMs() const { return _durationMs; }
 String MidiFilePlayer::getFileName() const { return _fileName; }
 bool MidiFilePlayer::isFileLoaded() const { return _fileLoaded; }
+
+void MidiFilePlayer::setChannelFilter(uint8_t channel) { _channelFilter = channel; }
+uint8_t MidiFilePlayer::getChannelFilter() const { return _channelFilter; }
+uint16_t MidiFilePlayer::getActiveChannels() const { return _activeChannels; }
 
 uint32_t MidiFilePlayer::getPositionMs() const {
   if (_state == PLAYER_PLAYING) {
