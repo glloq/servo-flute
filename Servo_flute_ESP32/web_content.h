@@ -299,9 +299,10 @@ max-height:120px;overflow-y:auto;color:#9aa}
   <!-- STEP 2: FINGERINGS -->
   <div id="step2" class="step-panel" style="display:none">
     <div class="section">
-      <h3>Doigtes par note</h3>
-      <div class="cfg-row"><label>Preset</label>
-        <select id="presetSelect" onchange="applyPreset(this.value)"></select>
+      <h3>Notes &amp; doigtes</h3>
+      <p style="font-size:.8em;color:#888;margin:0 0 8px">Choisissez un jeu de doigtes pour definir quelles notes l'instrument peut jouer et comment les jouer.</p>
+      <div class="cfg-row"><label>Doigtes</label>
+        <select id="presetSelect" style="flex:1;max-width:320px" onchange="applyPreset(this.value);updPresetInfo()"></select>
       </div>
     </div>
     <div class="section" id="fingeringSection">
@@ -794,7 +795,11 @@ function goStep(s){
   ['step1','step2','step3'].forEach((id,i)=>{const el=$(id);el.style.display=(i+1===s)?'':'none';
     if(i+1===s){el.classList.add('fade-in')}else{el.classList.remove('fade-in')}});
   document.querySelectorAll('.step-dot').forEach((d,i)=>{d.className='step-dot'+(i+1===s?' active':i+1<s?' done':' locked')});
-  if(s===2){buildPresetSelect();const iv=$('instrumentSelect');if(iv&&iv.value){$('presetSelect').value=iv.value}buildFingeringRows();fpHistory=[];fpFuture=[];updUndoUI()}
+  if(s===2){buildPresetSelect();
+    const iv=$('instrumentSelect');if(iv&&iv.value){$('presetSelect').value=iv.value;
+      // Auto-apply si les notes ne sont pas encore remplies ou viennent d'un autre preset
+      if(!CFG.notes.length||CFG._lastInst!==iv.value){applyPreset(iv.value);CFG._lastInst=iv.value}}
+    buildFingeringRows();fpHistory=[];fpFuture=[];updUndoUI()}
   if(s===3)buildAirflowRows()
 }
 
@@ -855,19 +860,14 @@ function buildInstrumentSelect(){
 function selectInstrument(val){
   if(!val||!CFG)return;
   const p=PR.find(x=>x.id===val);if(!p)return;
-  // Adjust num_fingers
+  // Step 1 = config physique seulement (trous + pouce), pas les notes
   CFG.num_fingers=p.h;
   while(CFG.fingers.length<p.h)CFG.fingers.push({ch:CFG.fingers.length,a:90,d:1,th:0});
-  // Set thumb
   CFG.fingers.forEach(f=>f.th=0);
   if(p.th>=0&&CFG.fingers[p.th])CFG.fingers[p.th].th=1;
-  // Pre-fill notes from preset
-  CFG.notes=p.d.map(n=>({midi:n[0],fp:[...n[1]],amn:n[2],amx:n[3]}));
-  CFG.notes.forEach(n=>{while(n.fp.length<CFG.num_fingers)n.fp.push(0)});
-  CFG.num_notes=CFG.notes.length;
-  // Rebuild UI
+  // Rebuild UI physique
   buildFingerCards();buildFlute(CFG,'calFluteSvg',true);markDirty();
-  showToast(p.n+' - '+p.h+' trous, '+CFG.num_notes+' notes','success')
+  showToast(p.n+' - '+p.h+' trous'+(p.th>=0?' (pouce)':''),'success')
 }
 
 function testFinger(i,a){wsSend({t:'test_finger',i:i,a:parseInt(a)});
@@ -922,22 +922,46 @@ function addNote(){
 function removeLastNote(){if(!CFG||!CFG.notes.length)return;fpSnap();CFG.notes.pop();CFG.num_notes=CFG.notes.length;buildFingeringRows();markDirty()}
 
 function buildPresetSelect(){
-  const s=$('presetSelect');s.innerHTML='<option value="">-- Personnalis\u00e9 --</option>';
-  const groups={};PR.forEach(p=>{(groups[p.h]=groups[p.h]||[]).push(p)});
-  Object.keys(groups).sort((a,b)=>a-b).forEach(h=>{
-    const og=document.createElement('optgroup');og.label=h+' trous'+(groups[h].some(p=>p.th>=0)?' (pouce)':'');
-    groups[h].forEach(p=>{const o=document.createElement('option');o.value=p.id;
-      o.textContent=p.n+(p.th>=0?' \u25C0':'');og.appendChild(o)});
-    s.appendChild(og)})}
+  const s=$('presetSelect');if(!s||!CFG)return;
+  s.innerHTML='<option value="">-- Personnalis\u00e9 --</option>';
+  const nf=CFG.num_fingers;
+  // Presets compatibles (meme nombre de trous)
+  const compat=PR.filter(p=>p.h===nf);
+  // Presets autres (nb trous different)
+  const other=PR.filter(p=>p.h!==nf);
+  if(compat.length){
+    const og=document.createElement('optgroup');og.label='Compatible ('+nf+' trous)';
+    compat.forEach(p=>{const o=document.createElement('option');o.value=p.id;
+      o.textContent=p.n+' - '+p.d.length+' notes ('+mn(p.d[0][0])+'\u2192'+mn(p.d[p.d.length-1][0])+')';og.appendChild(o)});
+    s.appendChild(og)}
+  if(other.length){
+    const og2=document.createElement('optgroup');og2.label='Autres instruments';
+    other.forEach(p=>{const o=document.createElement('option');o.value=p.id;
+      o.textContent=p.n+' ('+p.h+' trous, '+p.d.length+' notes)';o.style.opacity='.6';og2.appendChild(o)});
+    s.appendChild(og2)}
+  updPresetInfo()
+}
+
+function updPresetInfo(){
+  let el=$('presetInfo');
+  if(!el){const p=$('presetSelect');if(!p)return;el=document.createElement('div');el.id='presetInfo';
+    el.style.cssText='font-size:.8em;color:#aaa;margin-top:4px;padding:6px 10px;background:rgba(255,255,255,.04);border-radius:6px';
+    p.parentNode.appendChild(el)}
+  const val=$('presetSelect').value;
+  if(!val){el.innerHTML=CFG&&CFG.notes.length?'<b>Personnalis\u00e9</b> - '+CFG.notes.length+' notes ('+mn(CFG.notes[0].midi)+'\u2192'+mn(CFG.notes[CFG.notes.length-1].midi)+')':'Selectionnez un preset ou ajoutez des notes manuellement';return}
+  const p=PR.find(x=>x.id===val);if(!p){el.innerHTML='';return}
+  const lo=mn(p.d[0][0]),hi=mn(p.d[p.d.length-1][0]);
+  const warn=p.h!==CFG.num_fingers?' <span style="color:#e94560">Attention: '+p.h+' trous \u2260 '+CFG.num_fingers+' configures</span>':'';
+  el.innerHTML='<b>'+esc(p.n)+'</b> - '+p.d.length+' notes, de '+lo+' a '+hi+(p.th>=0?' (pouce doigt '+(p.th+1)+')':'')+warn
+}
 
 function applyPreset(val){
   if(!val||!CFG)return;
   const p=PR.find(x=>x.id===val);if(!p)return;
-  // Adjust num_fingers if needed
+  // Ajuster num_fingers si different (avec avertissement)
   if(CFG.num_fingers!==p.h){
     CFG.num_fingers=p.h;
     while(CFG.fingers.length<p.h)CFG.fingers.push({ch:CFG.fingers.length,a:90,d:1,th:0});
-    $('numFingersDisp').textContent=p.h;
     showToast('Nombre de doigts ajust\u00e9 \u00e0 '+p.h,'info')}
   // Set thumb
   CFG.fingers.forEach(f=>f.th=0);
@@ -946,7 +970,7 @@ function applyPreset(val){
   CFG.notes=p.d.map(n=>({midi:n[0],fp:[...n[1]],amn:n[2],amx:n[3]}));
   CFG.notes.forEach(n=>{while(n.fp.length<CFG.num_fingers)n.fp.push(0)});
   CFG.num_notes=CFG.notes.length;
-  fpSnap();buildFingeringRows();buildFlute(CFG,'calFluteSvg',true);markDirty()
+  fpSnap();buildFingeringRows();buildFlute(CFG,'calFluteSvg',true);updPresetInfo();markDirty()
 }
 
 function saveStep2(){
