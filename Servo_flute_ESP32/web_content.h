@@ -719,7 +719,8 @@ let ws=null,velocity=WEB_DEF_VEL,CFG=null,curNote=null;
 let calibStep=1,fileLoaded=false,playerDuration=0;
 let micDetected=false,autoCalRunning=false;
 let dirty=false,fpHistory=[],fpFuture=[];
-let _forceWizard=false;
+
+
 
 // Presets: {id,n:name,h:holes,th:thumbIdx(-1=none),em:embouchure(trav|bec|naf|end|oca),d:[[midi,[fp],amn,amx],...]}
 const PR=[
@@ -1106,7 +1107,7 @@ function loadConfig(){
     buildKeyboard();buildFlute(CFG,'fluteSvg',false);markClean();
     applyCalibVisibility();applyAirTabVisibility();drawSeqGrid();
     buildAirSvg('airSvg',false);buildAirSvg('airSvgFull',true);
-    if(CFG.first_boot||_forceWizard){_forceWizard=false;showWizard()}
+    if(CFG.first_boot){showWizard()}
     if(micDetected){$('micSection').style.display='';wsSend({t:'mic_mon',on:1})}
     else $('micSection').style.display='none';
   }).catch(e=>{addLog('Erreur config: '+e);showToast('Erreur chargement config','error')})
@@ -1919,11 +1920,10 @@ function resetConfig(){if(!confirm('Remettre tous les parametres par defaut ?'))
 
 function factoryReset(){
   if(!confirm('Reset usine : tous les parametres seront remis par defaut et l\'assistant de configuration s\'ouvrira.\n\nContinuer ?'))return;
-  fetch('/api/config/reset',{method:'POST'}).then(r=>r.json()).then(d=>{
+  fetch('/api/config/factory',{method:'POST'}).then(r=>r.json()).then(d=>{
     if(d.ok){
       addLog('Reset usine OK');
       toggleSettings();
-      _forceWizard=true;
       loadConfig();
     }
   }).catch(e=>addLog('Erreur: '+e))

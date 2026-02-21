@@ -379,6 +379,16 @@ void ConfigStorage::resetToDefaults() {
   }
 }
 
+void ConfigStorage::factoryReset() {
+  initDefaults();
+  // Supprimer le fichier config pour que isFirstBoot() retourne true
+  // Le wizard le recreera via save() apres configuration
+  LittleFS.remove(CONFIG_FILE_PATH);
+  if (DEBUG) {
+    Serial.println("DEBUG: ConfigStorage - Reset usine (fichier supprime)");
+  }
+}
+
 bool ConfigStorage::isFirstBoot() {
   return !LittleFS.exists(CONFIG_FILE_PATH);
 }

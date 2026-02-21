@@ -196,6 +196,11 @@ void WebConfigurator::setupRoutes() {
     handleApiConfigReset(request);
   });
 
+  // API Factory Reset (supprime le fichier config pour relancer le wizard)
+  _server.on("/api/config/factory", HTTP_POST, [this](AsyncWebServerRequest* request) {
+    handleApiFactoryReset(request);
+  });
+
   // API WiFi Scan (lance le scan)
   _server.on("/api/wifi/scan", HTTP_GET, [this](AsyncWebServerRequest* request) {
     if (_wirelessManager) {
@@ -610,6 +615,16 @@ void WebConfigurator::handleApiConfigReset(AsyncWebServerRequest* request) {
 
   if (DEBUG) {
     Serial.println("DEBUG: WebConfigurator - Config reset aux defauts");
+  }
+
+  request->send(200, "application/json", "{\"ok\":true}");
+}
+
+void WebConfigurator::handleApiFactoryReset(AsyncWebServerRequest* request) {
+  ConfigStorage::factoryReset();
+
+  if (DEBUG) {
+    Serial.println("DEBUG: WebConfigurator - Reset usine");
   }
 
   request->send(200, "application/json", "{\"ok\":true}");
