@@ -6,8 +6,8 @@
 #include <BLEMIDI_Transport.h>
 #include <hardware/BLEMIDI_ESP32_NimBLE.h>
 
-// Instance MIDI BLE globale
-BLEMIDI_CREATE_INSTANCE(DEVICE_NAME, MIDI);
+// Instance MIDI BLE globale (nommee BMIDI pour eviter conflit avec MIDI de rtpMIDI)
+BLEMIDI_CREATE_INSTANCE(DEVICE_NAME, BMIDI);
 
 // Instance statique pour les callbacks
 BleMidiHandler* BleMidiHandler::_instance = nullptr;
@@ -27,16 +27,16 @@ void BleMidiHandler::begin(InstrumentManager* instrument) {
   }
 
   // Configurer les callbacks MIDI
-  MIDI.setHandleNoteOn(onNoteOn);
-  MIDI.setHandleNoteOff(onNoteOff);
-  MIDI.setHandleControlChange(onControlChange);
+  BMIDI.setHandleNoteOn(onNoteOn);
+  BMIDI.setHandleNoteOff(onNoteOff);
+  BMIDI.setHandleControlChange(onControlChange);
 
   // Configurer les callbacks de connexion BLE
-  BLEMIDI.setHandleConnected(onConnected);
-  BLEMIDI.setHandleDisconnected(onDisconnected);
+  BLEBMIDI.setHandleConnected(onConnected);
+  BLEBMIDI.setHandleDisconnected(onDisconnected);
 
   // Demarrer MIDI (ecoute tous les canaux, filtrage fait dans les callbacks)
-  MIDI.begin(MIDI_CHANNEL_OMNI);
+  BMIDI.begin(MIDI_CHANNEL_OMNI);
 
   _advertising = true;
 
@@ -47,7 +47,7 @@ void BleMidiHandler::begin(InstrumentManager* instrument) {
 
 void BleMidiHandler::update() {
   // Lire les messages MIDI BLE entrants (non-bloquant)
-  MIDI.read();
+  BMIDI.read();
 }
 
 void BleMidiHandler::startAdvertising() {
