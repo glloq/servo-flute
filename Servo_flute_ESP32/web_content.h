@@ -216,7 +216,6 @@ max-height:120px;overflow-y:auto;color:#9aa}
   <button onclick="showTab('midi',this)"><svg viewBox="0 0 14 16" width="12" height="14"><path d="M12 1v10.5a2.5 2.5 0 11-2-2.45V3.5L5 5v8a2.5 2.5 0 11-2-2.45V1l9-2z" fill="currentColor" opacity=".85"/></svg>MIDI</button>
   <button id="btnTabAir" onclick="showTab('air',this)" style="display:none"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 1C4.5 1 2 4 2 7c0 2 1 3.5 2.5 4.5L4 15h8l-.5-3.5C13 10.5 14 9 14 7c0-3-2.5-6-6-6z" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M6 7.5c0-1.5 1-2.5 2-2.5s2 1 2 2.5" fill="none" stroke="currentColor" stroke-width="1"/></svg>Air</button>
   <button id="btnTabCalib" onclick="showTab('calib',this)"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M6.5 1L7 4H5L2 8h3l-.5 7 6-9H7.5l2-5z" fill="currentColor" opacity=".85"/></svg>Calibration</button>
-  <button onclick="showTab('browser',this)"><svg viewBox="0 0 16 16" width="14" height="14"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.2"/><ellipse cx="8" cy="8" rx="3" ry="6.5" fill="none" stroke="currentColor" stroke-width="1"/><line x1="1.5" y1="8" x2="14.5" y2="8" stroke="currentColor" stroke-width="1"/></svg>Web</button>
 </div>
 
 <!-- TAB: KEYBOARD -->
@@ -250,6 +249,13 @@ max-height:120px;overflow-y:auto;color:#9aa}
       <input type="file" id="midiFile" accept=".mid,.midi" style="display:none" onchange="uploadMidi(this)">
     </div>
     <div class="upload-bar" id="uploadBar"><div class="upload-fill" id="uploadFill"></div></div>
+    <div style="margin-top:8px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <span style="font-size:.75em;color:#888" id="midiStorageText">0 / 500 KB</span>
+      </div>
+      <div class="progress-bar" style="height:6px"><div id="midiStorageFill" class="progress-fill" style="width:0%;background:#4ecca3"></div></div>
+    </div>
+    <div id="midiFileList" style="margin-top:8px"></div>
     <div class="file-info" id="fileInfo" style="margin-top:8px">
       <span id="fName"></span> &bull; <span id="fEvents"></span> evt &bull; <span id="fDuration"></span>
     </div>
@@ -563,19 +569,6 @@ max-height:120px;overflow-y:auto;color:#9aa}
 </div>
 
 <!-- TAB: MINI BROWSER -->
-<div class="tab" id="tab-browser">
-  <div class="card" style="padding:8px">
-    <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
-      <button class="btn btn-s" onclick="browserBack()" title="Retour"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <button class="btn btn-s" onclick="browserFwd()" title="Suivant"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <button class="btn btn-s" onclick="browserReload()" title="Recharger"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M13 8a5 5 0 11-1.5-3.5M13 2v3h-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <input type="text" id="browserUrl" class="cfg-input" style="flex:1;font-size:0.8em;padding:6px 8px" placeholder="https://..." value="https://music.youtube.com" onkeydown="if(event.key==='Enter')browserGo()">
-      <button class="btn btn-p" onclick="browserGo()" style="padding:6px 12px">Go</button>
-    </div>
-    <iframe id="browserFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" style="width:100%;height:calc(100vh - 180px);border:1px solid #0f3460;border-radius:6px;background:#fff" src="about:blank"></iframe>
-  </div>
-</div>
-
 <!-- WIZARD OVERLAY (first boot) -->
 <div class="settings-overlay" id="wizardOverlay">
 <div class="settings-box" style="max-width:500px">
@@ -649,6 +642,10 @@ max-height:120px;overflow-y:auto;color:#9aa}
     <div class="cfg-row"><label>Timeout (ms)</label><input type="number" id="cfgUnpower" min="0" max="60000"></div>
   </div>
 
+  <div class="section"><h3>Stockage MIDI</h3>
+    <div class="cfg-row"><label>Limite (KB)</label><input type="number" id="cfgMidiLimit" min="50" max="2000" step="50"></div>
+  </div>
+
   <div class="section"><h3>Interface</h3>
     <div class="cfg-row"><label>Couleur instrument</label><input type="color" id="cfgColor" value="#D4B044" style="width:40px;height:28px;flex:0;padding:0;border:1px solid #555;border-radius:4px;cursor:pointer"></div>
     <div class="cfg-row"><label>Cacher Calibration</label><input type="checkbox" id="cfgHideCalib" style="width:auto;flex:0"></div>
@@ -684,6 +681,13 @@ max-height:120px;overflow-y:auto;color:#9aa}
     <button class="btn btn-s" onclick="resetConfig()">Reset defauts</button>
   </div>
   <div style="font-size:.75em;color:#9aa;text-align:center;margin-top:8px" id="settingsMsg"></div>
+
+  <div style="border-top:1px solid #333;margin-top:20px;padding-top:16px">
+    <div class="btn-row" style="justify-content:center">
+      <button class="btn btn-p" onclick="factoryReset()">Reset usine (changer instrument)</button>
+    </div>
+    <div style="font-size:.7em;color:#666;text-align:center;margin-top:6px">Remet tous les parametres par defaut et relance l'assistant de configuration</div>
+  </div>
 </div>
 </div>
 
@@ -828,7 +832,6 @@ function showTab(id,btn){
   $('tab-'+id).classList.add('active');if(btn)btn.classList.add('active');
   if(id==='calib'&&CFG)buildCalibUI();
   if(id==='air'&&CFG)buildAirUI();
-  if(id==='browser'){const f=$('browserFrame');if(f.src==='about:blank')browserGo()}
 }
 // --- Air System ---
 function applyAirTabVisibility(){
@@ -1013,12 +1016,6 @@ function wizFinish(){
       if(d.ok){showToast('Configuration sauvegardee','success');loadConfig()}
     }).catch(()=>{$('wizardOverlay').classList.remove('open')});
 }
-// --- Mini Browser ---
-function browserGo(){const u=$('browserUrl').value.trim();if(!u)return;
-  const url=u.match(/^https?:\/\//)?u:'https://'+u;$('browserUrl').value=url;$('browserFrame').src=url}
-function browserBack(){try{$('browserFrame').contentWindow.history.back()}catch(e){}}
-function browserFwd(){try{$('browserFrame').contentWindow.history.forward()}catch(e){}}
-function browserReload(){try{$('browserFrame').contentWindow.location.reload()}catch(e){$('browserFrame').src=$('browserFrame').src}}
 function toggleSettings(){$('settingsOverlay').classList.toggle('open');if($('settingsOverlay').classList.contains('open')&&CFG)fillSettings()}
 function applyCalibVisibility(){
   const calibBtn=$('btnTabCalib');
@@ -1306,7 +1303,7 @@ function updateFluteForNote(midi){
   $('fluteNote').textContent=nd?mn(nd.midi):'-';$('fluteInfo').textContent=nd?'MIDI '+nd.midi:''
 }
 
-// --- MIDI UPLOAD ---
+// --- MIDI FILE MANAGEMENT ---
 const dz=$('dropZone');
 dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('hover')});
 dz.addEventListener('dragleave',()=>dz.classList.remove('hover'));
@@ -1319,12 +1316,53 @@ function uploadMidiFile(file){
   const xhr=new XMLHttpRequest();
   xhr.upload.onprogress=e=>{if(e.lengthComputable)uf.style.width=(e.loaded/e.total*100)+'%'};
   xhr.onload=()=>{uf.style.width='100%';setTimeout(()=>ub.style.display='none',1000);
-    try{const d=JSON.parse(xhr.responseText);if(d.ok){showToast('Upload OK: '+d.events+' evt','success');addLog('Upload OK')}
+    try{const d=JSON.parse(xhr.responseText);if(d.ok){showToast('Upload OK: '+d.events+' evt','success');addLog('Upload OK');loadMidiList()}
     else{showToast('Erreur: '+(d.msg||'echec'),'error')}}catch(e){showToast('Erreur upload','error')}};
   xhr.onerror=()=>{ub.style.display='none';showToast('Erreur upload reseau','error')};
   xhr.open('POST','/api/midi');xhr.send(fd)
 }
 function setMidiCh(v){wsSend({t:'ch_filter',ch:parseInt(v)})}
+
+function loadMidiList(){
+  fetch('/api/midi/list').then(r=>r.json()).then(d=>{
+    updateMidiStorage(d.used,d.limit);
+    const list=$('midiFileList');list.innerHTML='';
+    if(!d.files||!d.files.length){list.innerHTML='<div style="font-size:.78em;color:#666">Aucun fichier</div>';return}
+    d.files.forEach(f=>{
+      const row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid #333';
+      const isLoaded=d.loaded&&d.loaded===f.name;
+      const name=document.createElement('span');
+      name.textContent=f.name;name.style.cssText='flex:1;font-size:.82em;cursor:pointer;'+(isLoaded?'color:#4ecca3;font-weight:bold':'color:#ccc');
+      name.onclick=()=>loadMidiFile(f.name);
+      const size=document.createElement('span');
+      size.textContent=(f.size/1024).toFixed(1)+'KB';size.style.cssText='font-size:.72em;color:#888';
+      const del=document.createElement('button');
+      del.textContent='\u2715';del.style.cssText='background:none;border:1px solid #555;color:#e94560;border-radius:4px;padding:1px 6px;cursor:pointer;font-size:.72em';
+      del.onclick=()=>deleteMidiFile(f.name);
+      row.appendChild(name);row.appendChild(size);row.appendChild(del);list.appendChild(row)
+    })
+  }).catch(()=>{})
+}
+function updateMidiStorage(used,limit){
+  const pct=limit>0?Math.min(100,used/limit*100):0;
+  $('midiStorageFill').style.width=pct+'%';
+  $('midiStorageFill').style.background=pct>90?'#e94560':pct>70?'#e9a645':'#4ecca3';
+  $('midiStorageText').textContent=(used/1024|0)+' / '+(limit/1024|0)+' KB'
+}
+function deleteMidiFile(name){
+  if(!confirm('Supprimer '+name+' ?'))return;
+  fetch('/api/midi/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({file:name})})
+    .then(r=>r.json()).then(d=>{if(d.ok){showToast('Supprime','success');loadMidiList()}else showToast(d.msg||'Erreur','error')})
+    .catch(()=>showToast('Erreur reseau','error'))
+}
+function loadMidiFile(name){
+  fetch('/api/midi/load',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({file:name})})
+    .then(r=>r.json()).then(d=>{
+      if(d.ok){showToast('Charge: '+d.events+' evt','success');loadMidiList()}
+      else showToast(d.msg||'Erreur','error')
+    }).catch(()=>showToast('Erreur reseau','error'))
+}
 
 // --- STEP SEQUENCER ---
 let seqNotes=[];// [{step,noteIdx}]
@@ -1747,6 +1785,7 @@ function fillSettings(){
   sp.value=CFG.sol_pin||13;
   $('cfgSolAct').value=CFG.sol_act;$('cfgSolHold').value=CFG.sol_hold;$('cfgSolTime').value=CFG.sol_time;
   $('cfgUnpower').value=CFG.time_unpower;
+  $('cfgMidiLimit').value=CFG.midi_limit||500;
   $('cfgColor').value=CFG.color||'#D4B044';
   $('cfgHideCalib').checked=!!CFG.hide_calib;
   $('cfgShowAir').checked=!!CFG.show_air;
@@ -1769,7 +1808,8 @@ function saveSettings(){
     cc_mod:parseInt($('cfgCCMod').value),cc_breath:parseInt($('cfgCCBreath').value),cc_bright:parseInt($('cfgCCBright').value),
     sol_pin:parseInt($('cfgSolPin').value),
     sol_act:parseInt($('cfgSolAct').value),sol_hold:parseInt($('cfgSolHold').value),sol_time:parseInt($('cfgSolTime').value),
-    time_unpower:parseInt($('cfgUnpower').value),color:$('cfgColor').value,hide_calib:$('cfgHideCalib').checked,
+    time_unpower:parseInt($('cfgUnpower').value),midi_limit:parseInt($('cfgMidiLimit').value),
+    color:$('cfgColor').value,hide_calib:$('cfgHideCalib').checked,
     show_air:$('cfgShowAir').checked};
   fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(r=>r.json()).then(d=>{btnLoad('btnSaveSettings',false);
@@ -1782,6 +1822,18 @@ function saveSettings(){
 function resetConfig(){if(!confirm('Remettre tous les parametres par defaut ?'))return;
   fetch('/api/config/reset',{method:'POST'}).then(r=>r.json()).then(d=>{if(d.ok){addLog('Reset OK');loadConfig();fillSettings()}})
     .catch(e=>addLog('Erreur: '+e))}
+
+function factoryReset(){
+  if(!confirm('Reset usine : tous les parametres seront remis par defaut et l\'assistant de configuration s\'ouvrira.\n\nContinuer ?'))return;
+  fetch('/api/config/reset',{method:'POST'}).then(r=>r.json()).then(d=>{
+    if(d.ok){
+      addLog('Reset usine OK');
+      toggleSettings();
+      loadConfig();
+      setTimeout(()=>showWizard(),300);
+    }
+  }).catch(e=>addLog('Erreur: '+e))
+}
 
 // --- WIFI ---
 let _scanRetries=0;
@@ -1808,7 +1860,7 @@ function connectWifi(){const ssid=$('wifiSsid').value,pass=$('wifiPass').value;
     .catch(e=>{$('wifiMsg').textContent='Erreur: '+e})}
 
 // --- INIT ---
-window.addEventListener('load',()=>{$('velVal').textContent=WEB_DEF_VEL;$('velSlider').value=WEB_DEF_VEL;wsConnect();loadConfig()});
+window.addEventListener('load',()=>{$('velVal').textContent=WEB_DEF_VEL;$('velSlider').value=WEB_DEF_VEL;wsConnect();loadConfig();loadMidiList()});
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
 </script>
 </body>

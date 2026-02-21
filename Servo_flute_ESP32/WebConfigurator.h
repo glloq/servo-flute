@@ -95,6 +95,12 @@ private:
   void handleMidiUpload(AsyncWebServerRequest* request, const String& filename,
                         size_t index, uint8_t* data, size_t len, bool final);
   void handleMidiUploadComplete(AsyncWebServerRequest* request);
+  void handleMidiList(AsyncWebServerRequest* request);
+  void handleMidiDelete(AsyncWebServerRequest* request);
+  void handleMidiLoad(AsyncWebServerRequest* request);
+
+  // Calcule la taille totale des fichiers dans MIDI_DIR (octets)
+  size_t getMidiStorageUsed();
 
   // Handler WebSocket
   void onWsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client,
@@ -110,6 +116,7 @@ private:
   // Fichier temporaire pour upload MIDI
   File _uploadFile;
   size_t _uploadSize;
+  String _uploadFileName;  // Nom original du fichier uploade
 
 #if MIC_ENABLED
   // Audio analyzer (INMP441 microphone)

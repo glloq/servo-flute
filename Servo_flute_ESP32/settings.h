@@ -335,7 +335,9 @@ const uint16_t SERVO_FREQUENCY = 50;
 
 #define MIDI_FILE_MAX_SIZE 102400     // Taille max fichier MIDI (100 KB)
 #define MIDI_FILE_MAX_EVENTS 2000     // Nombre max d'evenements parses
-#define MIDI_FILE_PATH "/midi_temp.mid"  // Chemin temporaire sur LittleFS
+#define MIDI_FILE_PATH "/midi_temp.mid"  // Chemin temporaire (compat, parsing)
+#define MIDI_DIR "/midi"              // Repertoire stockage fichiers MIDI
+#define DEFAULT_MIDI_STORAGE_LIMIT_KB 500  // Limite stockage total MIDI (Ko)
 
 /*******************************************************************************
 -----------------------  WATCHDOG SETTINGS (ESP32)    ------------------------
