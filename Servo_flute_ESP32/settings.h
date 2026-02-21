@@ -123,6 +123,39 @@ Set MIC_ENABLED to false if no mic is connected.
 #define SERVO_AIRFLOW_MAX 100     // Angle maximum absolu
 
 /*******************************************************************************
+-----------------------   AIR DELIVERY SYSTEM          ------------------------
+Modes : 0=classique (solenoide), 1=servo-valve, 2=pompe directe,
+        3=pompe + reservoir avec capteur distance
+******************************************************************************/
+// Modes
+#define AIR_MODE_CLASSIC    0
+#define AIR_MODE_SERVO_VALVE 1
+#define AIR_MODE_PUMP       2
+#define AIR_MODE_PUMP_RESERVOIR 3
+
+// Defaults
+#define DEFAULT_AIR_MODE            AIR_MODE_CLASSIC
+#define DEFAULT_VALVE_USE_SERVO     false
+#define DEFAULT_VALVE_SERVO_CH      11     // Canal PCA si valve=servo
+#define DEFAULT_PUMP_ENABLED        false
+#define DEFAULT_PUMP_PIN            25     // GPIO25 (DAC capable)
+#define DEFAULT_PUMP_MIN_PWM        80     // Seuil demarrage moteur DC
+#define DEFAULT_PUMP_MAX_PWM        255
+#define DEFAULT_RESERVOIR_ENABLED   false
+#define DEFAULT_SENSOR_TYPE         1      // 0=VL53L0X, 1=VL6180X
+#define DEFAULT_SENSOR_TARGET_MM    50     // Hauteur cible ballon (mm)
+#define DEFAULT_SENSOR_MIN_MM       10     // Hauteur min (vide)
+#define DEFAULT_SENSOR_MAX_MM       150    // Hauteur max (plein)
+#define DEFAULT_PID_KP              30     // Gain proportionnel (x10, soit 3.0)
+#define DEFAULT_PID_KI              5      // Gain integral (x10, soit 0.5)
+#define DEFAULT_SHOW_AIR_SYSTEM     false
+
+// Timing capteur / PID
+#define PRESSURE_READ_INTERVAL_MS   50     // Intervalle lecture capteur (ms)
+#define PRESSURE_PID_INTERVAL_MS    100    // Intervalle boucle PID (ms)
+#define PUMP_SAFETY_MAX_MM          5      // Distance min avant coupure securite
+
+/*******************************************************************************
 ---------------------------   POWER MANAGEMENT        ------------------------
 ******************************************************************************/
 #define TIMEUNPOWER 200

@@ -17,9 +17,15 @@ public:
   // Definit le debit d'air pour une note specifique avec velocite
   void setAirflowForNote(byte midiNote, byte velocity);
 
-  void openSolenoid();
-  void closeSolenoid();
-  bool isSolenoidOpen() const;
+  void openValve();
+  void closeValve();
+  bool isValveOpen() const;
+  uint16_t getAirflowAngle() const { return _baseAngleWithoutVibrato; }
+
+  // Deprecated aliases (retro-compat)
+  void openSolenoid() { openValve(); }
+  void closeSolenoid() { closeValve(); }
+  bool isSolenoidOpen() const { return isValveOpen(); }
   void setAirflowToRest();
 
   // Methode update pour gestion PWM solenoide et vibrato (appeler dans loop)
@@ -34,6 +40,9 @@ public:
 
   // Met a jour CC2 (Breath Controller) avec lissage et fallback velocity
   void updateCC2Breath(byte ccBreath);
+
+  // Ajustement live du souffle depuis le slider UI (pourcentage 0-100)
+  void setAirflowLivePercent(uint8_t percent);
 
   // Calibration : positionner le servo airflow a un angle arbitraire
   void testAirflowAngle(uint16_t angle);
@@ -73,6 +82,7 @@ private:
   void setAirflowServoAngle(uint16_t angle);
   uint16_t angleToPWM(uint16_t angle);
   void setSolenoidPWM(uint8_t pwmValue);
+  void setValveServoAngle(bool open);
 };
 
 #endif

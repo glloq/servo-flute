@@ -103,6 +103,23 @@ struct RuntimeConfig {
   // --- Power ---
   uint16_t timeUnpower;
 
+  // --- Air delivery system ---
+  uint8_t airMode;                   // 0=classique, 1=servo-valve, 2=pompe, 3=pompe+reservoir
+  bool valveUseServo;                // true=servo PCA, false=solenoide GPIO
+  uint8_t valveServoPcaChannel;      // Canal PCA9685 si valve=servo
+  bool pumpEnabled;                  // Pompe active
+  uint8_t pumpPin;                   // GPIO PWM pompe
+  uint8_t pumpMinPwm;               // PWM min (seuil demarrage moteur)
+  uint8_t pumpMaxPwm;               // PWM max
+  bool reservoirEnabled;             // Reservoir (ballon) avec capteur
+  uint8_t sensorType;               // 0=VL53L0X, 1=VL6180X
+  uint16_t sensorTargetMm;          // Hauteur cible (mm)
+  uint16_t sensorMinMm;             // Hauteur min (vide)
+  uint16_t sensorMaxMm;             // Hauteur max (plein)
+  uint8_t pidKp;                     // Gain proportionnel PID (x10)
+  uint8_t pidKi;                     // Gain integral PID (x10)
+  bool showAirSystem;                // Afficher schema pneumatique dans l'UI
+
   // --- UI ---
   bool hideCalibration;              // Cacher l'onglet Calibration
   uint8_t solenoidPin;               // GPIO solenoide (configurable)
@@ -153,6 +170,9 @@ public:
 
   // Remet cfg aux valeurs par defaut et sauvegarde
   static void resetToDefaults();
+
+  // Verifie si c'est le premier demarrage (pas de config sauvegardee)
+  static bool isFirstBoot();
 };
 
 #endif

@@ -153,6 +153,9 @@ background:#e94560;border-radius:50%;cursor:pointer;border:2px solid #fff}
 .settings-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;
 background:rgba(0,0,0,.85);z-index:100;overflow-y:auto}
 .settings-overlay.open{display:block}
+.wiz-card{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#16213e;border:2px solid #0f3460;border-radius:8px;cursor:pointer;transition:border-color .2s}
+.wiz-card:has(input:checked){border-color:#e94560;background:#1a2744}
+.wiz-card input{accent-color:#e94560}
 .settings-box{max-width:600px;margin:0 auto;padding:16px;padding-bottom:48px}
 .settings-box h2{color:#e94560;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
 .close-btn{background:none;border:none;color:#9aa;font-size:1.5em;cursor:pointer}
@@ -211,11 +214,16 @@ max-height:120px;overflow-y:auto;color:#9aa}
 <div class="tabs">
   <button class="active" onclick="showTab('keyboard',this)"><svg viewBox="0 0 16 14" width="14" height="12"><rect x="1" y="1" width="14" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="4" width="2" height="2" rx=".5" fill="currentColor"/><rect x="7" y="4" width="2" height="2" rx=".5" fill="currentColor"/><rect x="11" y="4" width="2" height="2" rx=".5" fill="currentColor"/><rect x="4" y="8" width="8" height="2" rx=".5" fill="currentColor"/></svg>Clavier</button>
   <button onclick="showTab('midi',this)"><svg viewBox="0 0 14 16" width="12" height="14"><path d="M12 1v10.5a2.5 2.5 0 11-2-2.45V3.5L5 5v8a2.5 2.5 0 11-2-2.45V1l9-2z" fill="currentColor" opacity=".85"/></svg>MIDI</button>
-  <button onclick="showTab('calib',this)"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M6.5 1L7 4H5L2 8h3l-.5 7 6-9H7.5l2-5z" fill="currentColor" opacity=".85"/></svg>Calibration</button>
+  <button id="btnTabAir" onclick="showTab('air',this)" style="display:none"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M8 1C4.5 1 2 4 2 7c0 2 1 3.5 2.5 4.5L4 15h8l-.5-3.5C13 10.5 14 9 14 7c0-3-2.5-6-6-6z" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M6 7.5c0-1.5 1-2.5 2-2.5s2 1 2 2.5" fill="none" stroke="currentColor" stroke-width="1"/></svg>Air</button>
+  <button id="btnTabCalib" onclick="showTab('calib',this)"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M6.5 1L7 4H5L2 8h3l-.5 7 6-9H7.5l2-5z" fill="currentColor" opacity=".85"/></svg>Calibration</button>
+  <button onclick="showTab('browser',this)"><svg viewBox="0 0 16 16" width="14" height="14"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.2"/><ellipse cx="8" cy="8" rx="3" ry="6.5" fill="none" stroke="currentColor" stroke-width="1"/><line x1="1.5" y1="8" x2="14.5" y2="8" stroke="currentColor" stroke-width="1"/></svg>Web</button>
 </div>
 
 <!-- TAB: KEYBOARD -->
 <div class="tab active" id="tab-keyboard">
+  <div class="flute-box" id="airDiagramBox" style="display:none">
+    <svg id="airSvg" viewBox="0 0 480 70" style="max-height:70px"></svg>
+  </div>
   <div class="flute-box">
     <svg id="fluteSvg" viewBox="0 0 400 100"></svg>
     <div class="flute-info"><span id="fluteNote">-</span> <span id="fluteInfo" style="color:#555">Jouez une note</span></div>
@@ -466,6 +474,139 @@ max-height:120px;overflow-y:auto;color:#9aa}
   </div>
 </div>
 
+<!-- TAB: AIR MANAGEMENT -->
+<div class="tab" id="tab-air">
+  <div class="section">
+    <h3>Systeme d'air</h3>
+    <div class="flute-box">
+      <svg id="airSvgFull" viewBox="0 0 520 120" style="max-height:120px"></svg>
+    </div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px">
+      <div><span style="font-size:.7em;color:#9aa">Pompe</span><div style="font-weight:bold" id="airPumpPwm">OFF</div></div>
+      <div><span style="font-size:.7em;color:#9aa">Reservoir</span><div style="font-weight:bold" id="airResPct">--%</div></div>
+      <div><span style="font-size:.7em;color:#9aa">Distance</span><div style="font-weight:bold" id="airResMm">--mm</div></div>
+      <div><span style="font-size:.7em;color:#9aa">Valve</span><div style="font-weight:bold" id="airValveState">--</div></div>
+      <div><span style="font-size:.7em;color:#9aa">Servo air</span><div style="font-weight:bold" id="airServoAngle">--°</div></div>
+    </div>
+  </div>
+  <div class="section">
+    <h3>Controle pompe</h3>
+    <div class="cfg-row"><label>Cible pression</label>
+      <input type="range" min="0" max="100" value="0" id="pumpTarget" oninput="setPumpTarget(this.value)">
+      <span id="pumpTargetVal" style="min-width:36px;text-align:right">0%</span>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-p" onclick="wsSend({t:'pump_stop'})">Arreter pompe</button>
+      <button class="btn btn-s" onclick="wsSend({t:'test_sol',o:1})">Ouvrir valve</button>
+      <button class="btn btn-s" onclick="wsSend({t:'test_sol',o:0})">Fermer valve</button>
+    </div>
+  </div>
+  <div class="section">
+    <h3>Parametres</h3>
+    <div class="cfg-row"><label>Mode air</label>
+      <select id="airModeSelect" onchange="setAirMode(this.value)">
+        <option value="0">Classique (solenoide)</option>
+        <option value="1">Servo-valve</option>
+        <option value="2">Pompe directe</option>
+        <option value="3">Pompe + reservoir</option>
+      </select>
+    </div>
+    <div id="airParamsPump" style="display:none">
+      <div class="cfg-row"><label>GPIO pompe</label>
+        <select id="airPumpPin"><option value="25">GPIO 25</option><option value="26">GPIO 26</option><option value="27">GPIO 27</option><option value="33">GPIO 33</option></select>
+      </div>
+      <div class="cfg-row"><label>PWM min</label>
+        <input type="number" id="airPumpMin" min="0" max="255" value="80">
+      </div>
+      <div class="cfg-row"><label>PWM max</label>
+        <input type="number" id="airPumpMax" min="0" max="255" value="255">
+      </div>
+    </div>
+    <div id="airParamsValve" style="display:none">
+      <div class="cfg-row"><label>Type valve</label>
+        <select id="airValveType" onchange="toggleValveParams()">
+          <option value="0">Solenoide GPIO</option>
+          <option value="1">Servo PCA</option>
+        </select>
+      </div>
+      <div id="airValveServoParams" style="display:none">
+        <div class="cfg-row"><label>Canal PCA valve</label>
+          <input type="number" id="airValveCh" min="0" max="15" value="11">
+        </div>
+      </div>
+    </div>
+    <div id="airParamsRes" style="display:none">
+      <div class="cfg-row"><label>Capteur</label>
+        <select id="airSensorType"><option value="0">VL53L0X</option><option value="1">VL6180X</option></select>
+      </div>
+      <div class="cfg-row"><label>Cible (mm)</label>
+        <input type="number" id="airSensTarget" min="1" max="300" value="50">
+      </div>
+      <div class="cfg-row"><label>Min (mm)</label>
+        <input type="number" id="airSensMin" min="1" max="300" value="10">
+      </div>
+      <div class="cfg-row"><label>Max (mm)</label>
+        <input type="number" id="airSensMax" min="1" max="300" value="150">
+      </div>
+      <div class="cfg-row"><label>PID Kp (x10)</label>
+        <input type="number" id="airPidKp" min="1" max="100" value="30">
+      </div>
+      <div class="cfg-row"><label>PID Ki (x10)</label>
+        <input type="number" id="airPidKi" min="0" max="50" value="5">
+      </div>
+    </div>
+    <div class="btn-row" style="margin-top:12px">
+      <button class="btn btn-g" onclick="saveAirSettings()">Sauvegarder</button>
+    </div>
+    <div id="airSettingsMsg" style="font-size:.75em;color:#0f0;margin-top:6px"></div>
+  </div>
+</div>
+
+<!-- TAB: MINI BROWSER -->
+<div class="tab" id="tab-browser">
+  <div class="card" style="padding:8px">
+    <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+      <button class="btn btn-s" onclick="browserBack()" title="Retour"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="btn btn-s" onclick="browserFwd()" title="Suivant"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="btn btn-s" onclick="browserReload()" title="Recharger"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M13 8a5 5 0 11-1.5-3.5M13 2v3h-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <input type="text" id="browserUrl" class="cfg-input" style="flex:1;font-size:0.8em;padding:6px 8px" placeholder="https://..." value="https://music.youtube.com" onkeydown="if(event.key==='Enter')browserGo()">
+      <button class="btn btn-p" onclick="browserGo()" style="padding:6px 12px">Go</button>
+    </div>
+    <iframe id="browserFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" style="width:100%;height:calc(100vh - 180px);border:1px solid #0f3460;border-radius:6px;background:#fff" src="about:blank"></iframe>
+  </div>
+</div>
+
+<!-- WIZARD OVERLAY (first boot) -->
+<div class="settings-overlay" id="wizardOverlay">
+<div class="settings-box" style="max-width:500px">
+  <h2>Bienvenue ! Configuration initiale</h2>
+  <div id="wizStep1">
+    <p style="color:#9aa;font-size:.85em;margin-bottom:12px">Choisissez votre type d'instrument :</p>
+    <div id="wizPresets" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn btn-g" onclick="wizNext(2)">Suivant</button>
+    </div>
+  </div>
+  <div id="wizStep2" style="display:none">
+    <p style="color:#9aa;font-size:.85em;margin-bottom:12px">Systeme d'alimentation en air :</p>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <label class="wiz-card" onclick="wizSetAir(0)"><input type="radio" name="wizAir" value="0" checked>
+        <span><b>Classique</b><br><span style="font-size:.75em;color:#9aa">Solenoide GPIO (standard)</span></span></label>
+      <label class="wiz-card" onclick="wizSetAir(1)"><input type="radio" name="wizAir" value="1">
+        <span><b>Servo-valve</b><br><span style="font-size:.75em;color:#9aa">Servo PCA au lieu du solenoide</span></span></label>
+      <label class="wiz-card" onclick="wizSetAir(2)"><input type="radio" name="wizAir" value="2">
+        <span><b>Pompe directe</b><br><span style="font-size:.75em;color:#9aa">Pompe PWM + valve</span></span></label>
+      <label class="wiz-card" onclick="wizSetAir(3)"><input type="radio" name="wizAir" value="3">
+        <span><b>Pompe + reservoir</b><br><span style="font-size:.75em;color:#9aa">Pompe + ballon + capteur distance</span></span></label>
+    </div>
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn btn-s" onclick="wizNext(1)">Retour</button>
+      <button class="btn btn-g" onclick="wizFinish()">Terminer</button>
+    </div>
+  </div>
+</div>
+</div>
+
 <!-- SETTINGS OVERLAY -->
 <div class="settings-overlay" id="settingsOverlay">
 <div class="settings-box">
@@ -511,6 +652,7 @@ max-height:120px;overflow-y:auto;color:#9aa}
   <div class="section"><h3>Interface</h3>
     <div class="cfg-row"><label>Couleur instrument</label><input type="color" id="cfgColor" value="#D4B044" style="width:40px;height:28px;flex:0;padding:0;border:1px solid #555;border-radius:4px;cursor:pointer"></div>
     <div class="cfg-row"><label>Cacher Calibration</label><input type="checkbox" id="cfgHideCalib" style="width:auto;flex:0"></div>
+    <div class="cfg-row"><label>Schema air (clavier)</label><input type="checkbox" id="cfgShowAir" style="width:auto;flex:0"></div>
   </div>
 
   <div class="section"><h3>WiFi</h3>
@@ -685,13 +827,203 @@ function showTab(id,btn){
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
   $('tab-'+id).classList.add('active');if(btn)btn.classList.add('active');
   if(id==='calib'&&CFG)buildCalibUI();
+  if(id==='air'&&CFG)buildAirUI();
+  if(id==='browser'){const f=$('browserFrame');if(f.src==='about:blank')browserGo()}
 }
+// --- Air System ---
+function applyAirTabVisibility(){
+  const airBtn=$('btnTabAir');
+  const diag=$('airDiagramBox');
+  const show=CFG&&(CFG.air_mode>=1||CFG.pump_on||CFG.res_on);
+  airBtn.style.display=show?'':'none';
+  diag.style.display=(CFG&&CFG.show_air&&show)?'':'none';
+}
+function setPumpTarget(v){$('pumpTargetVal').textContent=v+'%';wsSend({t:'pump_target',v:parseInt(v)})}
+function setAirMode(v){
+  const m=parseInt(v);
+  $('airParamsPump').style.display=m>=2?'':'none';
+  $('airParamsValve').style.display=m>=1?'':'none';
+  $('airParamsRes').style.display=m>=3?'':'none';
+}
+function toggleValveParams(){
+  $('airValveServoParams').style.display=$('airValveType').value==='1'?'':'none';
+}
+function saveAirSettings(){
+  const m=parseInt($('airModeSelect').value);
+  const d={air_mode:m,valve_servo:$('airValveType').value==='1',
+    valve_ch:parseInt($('airValveCh').value),
+    pump_on:m>=2,pump_pin:parseInt($('airPumpPin').value),
+    pump_min:parseInt($('airPumpMin').value),pump_max:parseInt($('airPumpMax').value),
+    res_on:m>=3,sens_type:parseInt($('airSensorType').value),
+    sens_target:parseInt($('airSensTarget').value),sens_min:parseInt($('airSensMin').value),
+    sens_max:parseInt($('airSensMax').value),pid_kp:parseInt($('airPidKp').value),
+    pid_ki:parseInt($('airPidKi').value),show_air:true};
+  fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)})
+    .then(r=>r.json()).then(j=>{$('airSettingsMsg').textContent=j.ok?'Sauvegarde OK':'Erreur';
+    if(j.ok){CFG.air_mode=m;CFG.pump_on=d.pump_on;CFG.res_on=d.res_on;CFG.show_air=true;applyAirTabVisibility()}
+    setTimeout(()=>$('airSettingsMsg').textContent='',3000)})
+}
+function fillAirSettings(){
+  if(!CFG)return;
+  $('airModeSelect').value=CFG.air_mode||0;
+  $('airValveType').value=CFG.valve_servo?'1':'0';
+  $('airValveCh').value=CFG.valve_ch||11;
+  $('airPumpPin').value=CFG.pump_pin||25;
+  $('airPumpMin').value=CFG.pump_min||80;
+  $('airPumpMax').value=CFG.pump_max||255;
+  $('airSensorType').value=CFG.sens_type||1;
+  $('airSensTarget').value=CFG.sens_target||50;
+  $('airSensMin').value=CFG.sens_min||10;
+  $('airSensMax').value=CFG.sens_max||150;
+  $('airPidKp').value=CFG.pid_kp||30;
+  $('airPidKi').value=CFG.pid_ki||5;
+  setAirMode(CFG.air_mode||0);toggleValveParams();
+}
+function buildAirUI(){fillAirSettings();buildAirSvg('airSvgFull',true)}
+function buildAirSvg(svgId,full){
+  const svg=$(svgId);if(!svg||!CFG)return;
+  const m=CFG.air_mode||0;
+  const w=full?520:480,h=full?120:70;
+  svg.setAttribute('viewBox','0 0 '+w+' '+h);
+  let s='<defs><linearGradient id="agMetal" x1="0" y1="0" x2="0" y2="1">'+
+    '<stop offset="0%" stop-color="#8899aa"/><stop offset="100%" stop-color="#556677"/></linearGradient>'+
+    '<linearGradient id="agBalloon" x1="0" y1="0" x2="0" y2="1">'+
+    '<stop offset="0%" stop-color="#e07050"/><stop offset="100%" stop-color="#a03020"/></linearGradient></defs>';
+  const cy=h/2,ox=10;
+  // Pompe (si mode>=2)
+  if(m>=2){
+    s+='<rect x="'+ox+'" y="'+(cy-20)+'" width="50" height="40" rx="5" fill="url(#agMetal)" stroke="#334" stroke-width="1.5"/>';
+    s+='<circle id="airPumpIcon" cx="'+(ox+25)+'" cy="'+cy+'" r="12" fill="none" stroke="#dde" stroke-width="1.5"/>';
+    s+='<line id="airPumpBlade" x1="'+(ox+25)+'" y1="'+(cy-10)+'" x2="'+(ox+25)+'" y2="'+(cy+10)+'" stroke="#dde" stroke-width="2"/>';
+    s+='<text x="'+(ox+25)+'" y="'+(cy+30)+'" text-anchor="middle" style="font-size:8px;fill:#9aa">Pompe</text>';
+    // Tuyau pompe -> reservoir/valve
+    const tx=m>=3?140:200;
+    s+='<line x1="'+(ox+50)+'" y1="'+cy+'" x2="'+tx+'" y2="'+cy+'" stroke="#7799bb" stroke-width="4" stroke-linecap="round"/>';
+    s+='<polygon points="'+(tx-6)+','+(cy-4)+' '+tx+','+cy+' '+(tx-6)+','+(cy+4)+'" fill="#7799bb"/>';
+  }
+  // Reservoir/ballon (si mode>=3)
+  if(m>=3){
+    const bx=175,by=cy;
+    s+='<ellipse id="airBalloon" cx="'+bx+'" cy="'+by+'" rx="30" ry="25" fill="url(#agBalloon)" stroke="#802010" stroke-width="1.5" opacity=".85"/>';
+    s+='<ellipse cx="'+(bx-8)+'" cy="'+(by-10)+'" rx="8" ry="5" fill="#fff" opacity=".15"/>';
+    s+='<text x="'+bx+'" y="'+(by+4)+'" text-anchor="middle" style="font-size:10px;fill:#fff;font-weight:bold" id="airBalloonPct">--%</text>';
+    s+='<text x="'+bx+'" y="'+(by+38)+'" text-anchor="middle" style="font-size:8px;fill:#9aa">Reservoir</text>';
+    // Capteur au-dessus
+    s+='<rect x="'+(bx-6)+'" y="'+(by-45)+'" width="12" height="8" rx="2" fill="#334" stroke="#556" stroke-width=".8"/>';
+    s+='<line x1="'+bx+'" y1="'+(by-37)+'" x2="'+bx+'" y2="'+(by-26)+'" stroke="#5af" stroke-width="1" stroke-dasharray="2,2"/>';
+    s+='<text x="'+(bx+10)+'" y="'+(by-38)+'" style="font-size:7px;fill:#5af">ToF</text>';
+    // Tuyau reservoir -> valve
+    s+='<line x1="'+(bx+30)+'" y1="'+by+'" x2="260" y2="'+cy+'" stroke="#7799bb" stroke-width="4" stroke-linecap="round"/>';
+    s+='<polygon points="254,'+(cy-4)+' 260,'+cy+' 254,'+(cy+4)+'" fill="#7799bb"/>';
+  }
+  // Valve (toujours si mode>=1)
+  if(m>=1){
+    const vx=m>=3?270:(m>=2?210:60);
+    s+='<rect id="airValveRect" x="'+vx+'" y="'+(cy-15)+'" width="30" height="30" rx="4" fill="#444" stroke="#667" stroke-width="1.5"/>';
+    s+='<rect id="airValveInd" x="'+(vx+10)+'" y="'+(cy-8)+'" width="10" height="16" rx="2" fill="#e44"/>';
+    s+='<text x="'+(vx+15)+'" y="'+(cy+26)+'" text-anchor="middle" style="font-size:8px;fill:#9aa">'+(CFG.valve_servo?'Servo':'Valve')+'</text>';
+    // Tuyau valve -> servo airflow
+    const ax=vx+70;
+    s+='<line x1="'+(vx+30)+'" y1="'+cy+'" x2="'+ax+'" y2="'+cy+'" stroke="#7799bb" stroke-width="4" stroke-linecap="round"/>';
+    s+='<polygon points="'+(ax-6)+','+(cy-4)+' '+ax+','+cy+' '+(ax-6)+','+(cy+4)+'" fill="#7799bb"/>';
+    // Servo airflow
+    s+='<rect x="'+ax+'" y="'+(cy-18)+'" width="40" height="36" rx="5" fill="url(#agMetal)" stroke="#334" stroke-width="1.5"/>';
+    s+='<path id="airServoNeedle" d="M'+(ax+20)+','+cy+' L'+(ax+20)+','+(cy-14)+'" stroke="#e94" stroke-width="2.5" stroke-linecap="round"/>';
+    s+='<circle cx="'+(ax+20)+'" cy="'+cy+'" r="3" fill="#e94"/>';
+    s+='<text x="'+(ax+20)+'" y="'+(cy+28)+'" text-anchor="middle" style="font-size:8px;fill:#9aa">Servo Air</text>';
+    // Tuyau -> flute
+    const fx=ax+80;
+    s+='<line x1="'+(ax+40)+'" y1="'+cy+'" x2="'+fx+'" y2="'+cy+'" stroke="#7799bb" stroke-width="4" stroke-linecap="round"/>';
+    s+='<polygon points="'+(fx-6)+','+(cy-4)+' '+fx+','+cy+' '+(fx-6)+','+(cy+4)+'" fill="#7799bb"/>';
+    s+='<text x="'+(fx+10)+'" y="'+(cy+4)+'" style="font-size:9px;fill:#bbc;font-style:italic">Flute</text>';
+  } else {
+    // Mode classique : juste solenoide + servo
+    s+='<rect x="20" y="'+(cy-15)+'" width="30" height="30" rx="4" fill="#444" stroke="#667" stroke-width="1.5"/>';
+    s+='<rect id="airValveInd" x="30" y="'+(cy-8)+'" width="10" height="16" rx="2" fill="#e44"/>';
+    s+='<text x="35" y="'+(cy+26)+'" text-anchor="middle" style="font-size:8px;fill:#9aa">Solenoide</text>';
+    s+='<line x1="50" y1="'+cy+'" x2="90" y2="'+cy+'" stroke="#7799bb" stroke-width="4" stroke-linecap="round"/>';
+    s+='<polygon points="84,'+(cy-4)+' 90,'+cy+' 84,'+(cy+4)+'" fill="#7799bb"/>';
+    s+='<rect x="90" y="'+(cy-18)+'" width="40" height="36" rx="5" fill="url(#agMetal)" stroke="#334" stroke-width="1.5"/>';
+    s+='<path id="airServoNeedle" d="M110,'+cy+' L110,'+(cy-14)+'" stroke="#e94" stroke-width="2.5" stroke-linecap="round"/>';
+    s+='<circle cx="110" cy="'+cy+'" r="3" fill="#e94"/>';
+    s+='<text x="110" y="'+(cy+28)+'" text-anchor="middle" style="font-size:8px;fill:#9aa">Servo Air</text>';
+    s+='<line x1="130" y1="'+cy+'" x2="170" y2="'+cy+'" stroke="#7799bb" stroke-width="4" stroke-linecap="round"/>';
+    s+='<polygon points="164,'+(cy-4)+' 170,'+cy+' 164,'+(cy+4)+'" fill="#7799bb"/>';
+    s+='<text x="180" y="'+(cy+4)+'" style="font-size:9px;fill:#bbc;font-style:italic">Flute</text>';
+  }
+  svg.innerHTML=s;
+}
+function updateAirDiagram(d){
+  // Update valve indicator
+  const vi=document.getElementById('airValveInd');
+  if(vi)vi.setAttribute('fill',d.valve_open?'#4e4':'#e44');
+  // Update balloon percent
+  const bp=document.getElementById('airBalloonPct');
+  if(bp)bp.textContent=(d.res_pct!=null?d.res_pct:'--')+'%';
+  // Update pump/reservoir display in Air tab
+  const pp=$('airPumpPwm');if(pp)pp.textContent=d.pump_pwm>0?d.pump_pwm:'OFF';
+  const rp=$('airResPct');if(rp)rp.textContent=(d.res_pct!=null?d.res_pct:'-')+'%';
+  const rm=$('airResMm');if(rm)rm.textContent=(d.res_mm!=null?d.res_mm:'-')+'mm';
+  const vs=$('airValveState');if(vs)vs.textContent=d.valve_open?'OUVERT':'FERME';
+  const sa=$('airServoAngle');if(sa)sa.textContent=(d.air_angle!=null?d.air_angle:'-')+'°';
+}
+// --- First boot wizard ---
+let wizAirMode=0;
+function showWizard(){
+  const wp=$('wizPresets');if(!wp)return;
+  // Build preset radio list from PR array
+  let h='';
+  PR.forEach((p,i)=>{
+    h+='<label class="wiz-card"><input type="radio" name="wizPreset" value="'+i+'"'+(i===0?' checked':'')+'>'+
+      '<span><b>'+p.n+'</b><br><span style="font-size:.75em;color:#9aa">'+p.h+' trous, '+
+      ({trav:'Traversiere',bec:'A bec',naf:'Amerindienne',end:'Embouchure libre',oca:'Ocarina'}[p.em]||p.em)+
+      '</span></span></label>';
+  });
+  h+='<label class="wiz-card"><input type="radio" name="wizPreset" value="-1">'+
+    '<span><b>Personnalise</b><br><span style="font-size:.75em;color:#9aa">Configurer manuellement dans Calibration</span></span></label>';
+  wp.innerHTML=h;
+  $('wizardOverlay').classList.add('open');
+}
+function wizNext(step){
+  $('wizStep1').style.display=step===1?'':'none';
+  $('wizStep2').style.display=step===2?'':'none';
+}
+function wizSetAir(m){wizAirMode=m}
+function wizFinish(){
+  // Get selected preset
+  const radios=document.querySelectorAll('input[name="wizPreset"]');
+  let presetIdx=-1;
+  radios.forEach(r=>{if(r.checked)presetIdx=parseInt(r.value)});
+  // Build config body
+  const body={air_mode:wizAirMode,pump_on:wizAirMode>=2,res_on:wizAirMode>=3,
+    valve_servo:wizAirMode===1,show_air:wizAirMode>=1};
+  // Apply preset if selected
+  if(presetIdx>=0&&presetIdx<PR.length){
+    const p=PR[presetIdx];
+    body.num_fingers=p.h;body.embouchure=p.em;
+    body.fingers=[];
+    for(let i=0;i<p.h;i++){body.fingers.push({ch:i,a:90,d:-1,th:p.th===i?1:0})}
+    body.notes=[];
+    p.d.forEach(nd=>{body.notes.push({midi:nd[0],fp:nd[1],amn:nd[2],amx:nd[3]})});
+    body.num_notes=p.d.length;body.angle_open=30;body.half_hole_pct=50;
+  }
+  fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(r=>r.json()).then(d=>{
+      $('wizardOverlay').classList.remove('open');
+      if(d.ok){showToast('Configuration sauvegardee','success');loadConfig()}
+    }).catch(()=>{$('wizardOverlay').classList.remove('open')});
+}
+// --- Mini Browser ---
+function browserGo(){const u=$('browserUrl').value.trim();if(!u)return;
+  const url=u.match(/^https?:\/\//)?u:'https://'+u;$('browserUrl').value=url;$('browserFrame').src=url}
+function browserBack(){try{$('browserFrame').contentWindow.history.back()}catch(e){}}
+function browserFwd(){try{$('browserFrame').contentWindow.history.forward()}catch(e){}}
+function browserReload(){try{$('browserFrame').contentWindow.location.reload()}catch(e){$('browserFrame').src=$('browserFrame').src}}
 function toggleSettings(){$('settingsOverlay').classList.toggle('open');if($('settingsOverlay').classList.contains('open')&&CFG)fillSettings()}
 function applyCalibVisibility(){
-  const btns=document.querySelectorAll('.tabs button');
-  const calibBtn=btns[btns.length-1]; // Calibration = dernier onglet
+  const calibBtn=$('btnTabCalib');
   if(CFG&&CFG.hide_calib){calibBtn.style.display='none';
-    if($('tab-calib').classList.contains('active')){showTab('keyboard',btns[0])}
+    if($('tab-calib').classList.contains('active')){showTab('keyboard',document.querySelector('.tabs button'))}
   }else{calibBtn.style.display=''}
 }
 
@@ -716,6 +1048,8 @@ function handleWs(d){
     updateCC(1,d.cc1);updateCC(2,d.cc2);updateCC(7,d.cc7);updateCC(11,d.cc11);
     if(d.pp!==undefined)$('progressFill').style.width=d.pp+'%';
     if(d.ppos!==undefined)$('progressText').textContent=fmt(d.ppos)+' / '+fmt(playerDuration);
+    // Air system live update
+    if(d.valve_open!==undefined)updateAirDiagram(d);
     if(d.ps!==undefined){$('btnPlay').disabled=(d.ps===1);$('btnPause').disabled=(d.ps!==1);$('btnStop').disabled=(d.ps===0&&!fileLoaded)}
   }else if(d.t==='midi_loaded'){
     fileLoaded=true;playerDuration=d.duration||0;
@@ -760,7 +1094,9 @@ function loadConfig(){
     CFG=d;micDetected=d.mic||false;
     $('devName').childNodes[0].textContent=d.device||'ServoFlute';
     buildKeyboard();buildFlute(CFG,'fluteSvg',false);markClean();
-    applyCalibVisibility();drawSeqGrid();
+    applyCalibVisibility();applyAirTabVisibility();drawSeqGrid();
+    buildAirSvg('airSvg',false);buildAirSvg('airSvgFull',true);
+    if(CFG.first_boot)showWizard();
     if(micDetected){$('micSection').style.display='';wsSend({t:'mic_mon',on:1})}
     else $('micSection').style.display='none';
   }).catch(e=>{addLog('Erreur config: '+e);showToast('Erreur chargement config','error')})
@@ -840,10 +1176,11 @@ function fluteMouth(g,em,ty,by,th,cy){
     // Amerindienne: bec (arc 90° centre=coin bas-gauche, sweep=CCW, lip en haut) + bloc oiseau + chanfrain
     m+='<path d="M4,'+ty+' L58,'+ty+' L58,'+by+' L'+(4+ar)+','+by+' A'+ar+','+ar+' 0 0,0 4,'+(by-ar)+' L4,'+ty+' Z" fill="url(#wg_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
     m+='<rect x="'+(4+ar/2)+'" y="'+ty+'" width="'+(54-ar/2)+'" height="5" rx="0" fill="#D4B044" opacity=".15"/>';
-    // Bloc oiseau/fetiche juste avant le chanfrain
-    m+='<rect x="40" y="'+(ty-6)+'" width="12" height="8" rx="2" fill="url(#cr_'+g+')" stroke="#5C4A0A" stroke-width=".8"/>';
-    // Chanfrain (petit rect noir en haut-droite)
-    m+='<rect x="50" y="'+(ty-2)+'" width="10" height="6" rx="1" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".8"/>'
+    // Bloc oiseau/fetiche juste avant le chanfrain (plus large, dessus courbe vers le bas)
+    const bx1=36,bx2=54,byt=ty-7,byb=ty+2;
+    m+='<path d="M'+bx1+','+byb+' L'+bx1+','+byt+' Q'+((bx1+bx2)/2)+','+(byt+5)+' '+bx2+','+byt+' L'+bx2+','+byb+' Z" fill="url(#cr_'+g+')" stroke="#5C4A0A" stroke-width=".8"/>';
+    // Chanfrain (fente d'air entre bloc oiseau et embouchure)
+    m+='<rect x="50" y="'+(ty-2)+'" width="10" height="5" rx="1" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".8"/>'
   }else if(em==='bec'||em==='end'){
     // Bec / end-blown: arc 90° (centre=coin bas-gauche, sweep=CCW, lip en haut) + chanfrain haut-droite
     m+='<path d="M4,'+ty+' L58,'+ty+' L58,'+by+' L'+(4+ar)+','+by+' A'+ar+','+ar+' 0 0,0 4,'+(by-ar)+' L4,'+ty+' Z" fill="url(#wg_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
@@ -869,7 +1206,7 @@ function buildFlute(cfg,svgId,showNums){
   const em=cfg.embouchure||'trav';
   // Ocarina = forme speciale
   if(em==='oca'){buildOcarina(cfg,svgId,showNums);return}
-  const sp=50,sx=80,r=14;
+  const sp=50,sx=100,r=14;
   const topHoles=[],botHoles=[];
   for(let i=0;i<nf;i++){(fingers[i]&&fingers[i].th?botHoles:topHoles).push(i)}
   const posTop=topHoles.map((_,i)=>sx+i*sp);
@@ -1412,8 +1749,9 @@ function fillSettings(){
   $('cfgUnpower').value=CFG.time_unpower;
   $('cfgColor').value=CFG.color||'#D4B044';
   $('cfgHideCalib').checked=!!CFG.hide_calib;
-  // Appliquer visibilite onglet calibration
-  applyCalibVisibility();
+  $('cfgShowAir').checked=!!CFG.show_air;
+  // Appliquer visibilite onglets
+  applyCalibVisibility();applyAirTabVisibility();
   $('wifiSsid').value=CFG.wifi_ssid||'';
   // WiFi status
   fetch('/api/wifi/status').then(r=>r.json()).then(d=>{
@@ -1431,7 +1769,8 @@ function saveSettings(){
     cc_mod:parseInt($('cfgCCMod').value),cc_breath:parseInt($('cfgCCBreath').value),cc_bright:parseInt($('cfgCCBright').value),
     sol_pin:parseInt($('cfgSolPin').value),
     sol_act:parseInt($('cfgSolAct').value),sol_hold:parseInt($('cfgSolHold').value),sol_time:parseInt($('cfgSolTime').value),
-    time_unpower:parseInt($('cfgUnpower').value),color:$('cfgColor').value,hide_calib:$('cfgHideCalib').checked};
+    time_unpower:parseInt($('cfgUnpower').value),color:$('cfgColor').value,hide_calib:$('cfgHideCalib').checked,
+    show_air:$('cfgShowAir').checked};
   fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(r=>r.json()).then(d=>{btnLoad('btnSaveSettings',false);
       if(d.ok){showToast('Parametres sauvegardes','success');markClean();loadConfig()}
