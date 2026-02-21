@@ -32,7 +32,7 @@ void ConfigStorage::initDefaults() {
     cfg.notes[i].airflowMaxPercent = DEFAULT_NOTES[i].airflowMaxPercent;
     // Copy finger pattern (default has DEFAULT_NUM_FINGERS, pad rest with 0)
     for (int f = 0; f < MAX_FINGER_SERVOS; f++) {
-      cfg.notes[i].fingerPattern[f] = (f < DEFAULT_NUM_FINGERS) ? DEFAULT_NOTES[i].fingerPattern[f] : false;
+      cfg.notes[i].fingerPattern[f] = (f < DEFAULT_NUM_FINGERS) ? DEFAULT_NOTES[i].fingerPattern[f] : 0;
     }
   }
 
@@ -91,6 +91,7 @@ void ConfigStorage::initDefaults() {
   // --- UI ---
   cfg.hideCalibration = false;
   cfg.solenoidPin = SOLENOID_PIN;
+  strncpy(cfg.instrumentColor, "#D4B044", sizeof(cfg.instrumentColor));
 }
 
 bool ConfigStorage::load() {
@@ -158,7 +159,7 @@ bool ConfigStorage::load() {
       JsonArray fp = n["fp"];
       if (fp) {
         for (int f = 0; f < MAX_FINGER_SERVOS; f++) {
-          cfg.notes[i].fingerPattern[f] = (f < (int)fp.size()) ? (fp[f].as<int>() != 0) : false;
+          cfg.notes[i].fingerPattern[f] = (f < (int)fp.size()) ? (uint8_t)fp[f].as<int>() : 0;
         }
       }
     }
@@ -189,6 +190,8 @@ bool ConfigStorage::load() {
   cfg.timeUnpower = doc["time_unpower"] | cfg.timeUnpower;
   cfg.hideCalibration = doc["hide_calib"] | (cfg.hideCalibration ? 1 : 0);
   cfg.solenoidPin = doc["sol_pin"] | cfg.solenoidPin;
+  const char* color = doc["color"];
+  if (color) { strncpy(cfg.instrumentColor, color, sizeof(cfg.instrumentColor) - 1); cfg.instrumentColor[sizeof(cfg.instrumentColor) - 1] = '\0'; }
   cfg.airAttackMode = doc["air_atk_mode"] | cfg.airAttackMode;
   cfg.airAttackOffset = doc["air_atk_off"] | cfg.airAttackOffset;
   cfg.airAttackMs = doc["air_atk_ms"] | cfg.airAttackMs;
@@ -247,7 +250,7 @@ bool ConfigStorage::save() {
     n["amx"] = cfg.notes[i].airflowMaxPercent;
     JsonArray fp = n["fp"].to<JsonArray>();
     for (int f = 0; f < MAX_FINGER_SERVOS; f++) {
-      fp.add(cfg.notes[i].fingerPattern[f] ? 1 : 0);
+      fp.add((int)cfg.notes[i].fingerPattern[f]);
     }
   }
 
@@ -276,6 +279,7 @@ bool ConfigStorage::save() {
   doc["time_unpower"] = cfg.timeUnpower;
   doc["hide_calib"] = cfg.hideCalibration ? 1 : 0;
   doc["sol_pin"] = cfg.solenoidPin;
+  doc["color"] = cfg.instrumentColor;
   doc["air_atk_mode"] = cfg.airAttackMode;
   doc["air_atk_off"] = cfg.airAttackOffset;
   doc["air_atk_ms"] = cfg.airAttackMs;
