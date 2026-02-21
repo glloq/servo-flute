@@ -360,11 +360,31 @@ void WebConfigurator::handleApiConfig(AsyncWebServerRequest* request) {
   json += ",\"air_atk_ms\":" + String(cfg.airAttackMs);
   json += ",\"air_vel_resp\":" + String(cfg.airVelocityResponse);
 
+  // Air delivery system
+  json += ",\"air_mode\":" + String(cfg.airMode);
+  json += ",\"valve_servo\":" + String(cfg.valveUseServo ? "true" : "false");
+  json += ",\"valve_ch\":" + String(cfg.valveServoPcaChannel);
+  json += ",\"pump_on\":" + String(cfg.pumpEnabled ? "true" : "false");
+  json += ",\"pump_pin\":" + String(cfg.pumpPin);
+  json += ",\"pump_min\":" + String(cfg.pumpMinPwm);
+  json += ",\"pump_max\":" + String(cfg.pumpMaxPwm);
+  json += ",\"res_on\":" + String(cfg.reservoirEnabled ? "true" : "false");
+  json += ",\"sens_type\":" + String(cfg.sensorType);
+  json += ",\"sens_target\":" + String(cfg.sensorTargetMm);
+  json += ",\"sens_min\":" + String(cfg.sensorMinMm);
+  json += ",\"sens_max\":" + String(cfg.sensorMaxMm);
+  json += ",\"pid_kp\":" + String(cfg.pidKp);
+  json += ",\"pid_ki\":" + String(cfg.pidKi);
+  json += ",\"show_air\":" + String(cfg.showAirSystem ? "true" : "false");
+
 #if MIC_ENABLED
   json += ",\"mic\":" + String((_audio && _audio->isMicDetected()) ? "true" : "false");
 #else
   json += ",\"mic\":false";
 #endif
+
+  // First boot flag
+  json += ",\"first_boot\":" + String(ConfigStorage::isFirstBoot() ? "true" : "false");
 
   // Doigts (depuis RuntimeConfig)
   json += ",\"fingers\":[";
@@ -459,6 +479,23 @@ void WebConfigurator::handleApiConfigFinalize(AsyncWebServerRequest* request) {
     if (doc.containsKey("air_atk_off")) cfg.airAttackOffset = doc["air_atk_off"];
     if (doc.containsKey("air_atk_ms")) cfg.airAttackMs = doc["air_atk_ms"];
     if (doc.containsKey("air_vel_resp")) cfg.airVelocityResponse = doc["air_vel_resp"];
+
+    // Air delivery system
+    if (doc.containsKey("air_mode")) cfg.airMode = doc["air_mode"];
+    if (doc.containsKey("valve_servo")) cfg.valveUseServo = doc["valve_servo"].as<bool>();
+    if (doc.containsKey("valve_ch")) cfg.valveServoPcaChannel = doc["valve_ch"];
+    if (doc.containsKey("pump_on")) cfg.pumpEnabled = doc["pump_on"].as<bool>();
+    if (doc.containsKey("pump_pin")) cfg.pumpPin = doc["pump_pin"];
+    if (doc.containsKey("pump_min")) cfg.pumpMinPwm = doc["pump_min"];
+    if (doc.containsKey("pump_max")) cfg.pumpMaxPwm = doc["pump_max"];
+    if (doc.containsKey("res_on")) cfg.reservoirEnabled = doc["res_on"].as<bool>();
+    if (doc.containsKey("sens_type")) cfg.sensorType = doc["sens_type"];
+    if (doc.containsKey("sens_target")) cfg.sensorTargetMm = doc["sens_target"];
+    if (doc.containsKey("sens_min")) cfg.sensorMinMm = doc["sens_min"];
+    if (doc.containsKey("sens_max")) cfg.sensorMaxMm = doc["sens_max"];
+    if (doc.containsKey("pid_kp")) cfg.pidKp = doc["pid_kp"];
+    if (doc.containsKey("pid_ki")) cfg.pidKi = doc["pid_ki"];
+    if (doc.containsKey("show_air")) cfg.showAirSystem = doc["show_air"].as<bool>();
 
     if (doc.containsKey("device")) {
       strncpy(cfg.deviceName, doc["device"] | cfg.deviceName, sizeof(cfg.deviceName) - 1);
@@ -743,6 +780,16 @@ void WebConfigurator::processWsMessage(AsyncWebSocketClient* client, uint8_t* da
       _instrument->getAirflowCtrl().setAirflowForNote(note, _webVelocity);
     }
 
+  } else if (type == "pump_target") {
+    int vIdx = msg.indexOf("\"v\":");
+    if (vIdx >= 0) {
+      uint8_t pct = (uint8_t)msg.substring(vIdx + 4).toInt();
+      _instrument->getPressureCtrl().setTargetPercent(pct);
+    }
+
+  } else if (type == "pump_stop") {
+    _instrument->getPressureCtrl().stop();
+
 #if MIC_ENABLED
   } else if (type == "mic_mon") {
     int oIdx = msg.indexOf("\"on\":");
@@ -792,6 +839,19 @@ void WebConfigurator::broadcastStatus() {
       json += ",\"pp\":" + String(_player->getProgressPercent(), 1);
       json += ",\"ppos\":" + String(_player->getPositionMs());
     }
+  }
+
+  // Air system live data
+  if (_instrument && (cfg.pumpEnabled || cfg.reservoirEnabled)) {
+    PressureController& pc = _instrument->getPressureCtrl();
+    json += ",\"pump_pwm\":" + String(pc.getPumpPwm());
+    json += ",\"res_pct\":" + String(pc.getFillPercent());
+    json += ",\"res_mm\":" + String(pc.getDistanceMm());
+    json += ",\"sens_ok\":" + String(pc.isSensorDetected() ? "true" : "false");
+  }
+  if (_instrument) {
+    json += ",\"valve_open\":" + String(_instrument->getAirflowCtrl().isValveOpen() ? "true" : "false");
+    json += ",\"air_angle\":" + String(_instrument->getAirflowCtrl().getAirflowAngle());
   }
 
   json += ",\"heap\":" + String(ESP.getFreeHeap());

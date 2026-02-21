@@ -228,46 +228,67 @@ void AirflowController::setAirflowForNote(byte midiNote, byte velocity) {
   }
 }
 
-void AirflowController::openSolenoid() {
-  #if SOLENOID_USE_PWM
-    setSolenoidPWM(cfg.solenoidPwmActivation);
-    _solenoidOpenTime = millis();
-  #else
-    if (SOLENOID_ACTIVE_HIGH) {
-      digitalWrite(cfg.solenoidPin, HIGH);
-    } else {
-      digitalWrite(cfg.solenoidPin, LOW);
-    }
-  #endif
+void AirflowController::openValve() {
+  if (cfg.valveUseServo) {
+    // Mode servo-valve : ouvrir via PCA9685
+    setValveServoAngle(true);
+  } else {
+    // Mode solenoide classique
+    #if SOLENOID_USE_PWM
+      setSolenoidPWM(cfg.solenoidPwmActivation);
+      _solenoidOpenTime = millis();
+    #else
+      if (SOLENOID_ACTIVE_HIGH) {
+        digitalWrite(cfg.solenoidPin, HIGH);
+      } else {
+        digitalWrite(cfg.solenoidPin, LOW);
+      }
+    #endif
+  }
 
   _solenoidOpen = true;
 
   if (DEBUG) {
-    Serial.println("DEBUG: AirflowController - Solenoide OUVERT");
+    Serial.print("DEBUG: AirflowController - Valve OUVERTE (");
+    Serial.print(cfg.valveUseServo ? "servo" : "solenoide");
+    Serial.println(")");
   }
 }
 
-void AirflowController::closeSolenoid() {
-  #if SOLENOID_USE_PWM
-    setSolenoidPWM(0);
-  #else
-    if (SOLENOID_ACTIVE_HIGH) {
-      digitalWrite(cfg.solenoidPin, LOW);
-    } else {
-      digitalWrite(cfg.solenoidPin, HIGH);
-    }
-  #endif
+void AirflowController::closeValve() {
+  if (cfg.valveUseServo) {
+    setValveServoAngle(false);
+  } else {
+    #if SOLENOID_USE_PWM
+      setSolenoidPWM(0);
+    #else
+      if (SOLENOID_ACTIVE_HIGH) {
+        digitalWrite(cfg.solenoidPin, LOW);
+      } else {
+        digitalWrite(cfg.solenoidPin, HIGH);
+      }
+    #endif
+  }
 
   _solenoidOpen = false;
   _solenoidOpenTime = 0;
 
   if (DEBUG) {
-    Serial.println("DEBUG: AirflowController - Solenoide FERME");
+    Serial.print("DEBUG: AirflowController - Valve FERMEE (");
+    Serial.print(cfg.valveUseServo ? "servo" : "solenoide");
+    Serial.println(")");
   }
 }
 
-bool AirflowController::isSolenoidOpen() const {
+bool AirflowController::isValveOpen() const {
   return _solenoidOpen;
+}
+
+void AirflowController::setValveServoAngle(bool open) {
+  // Servo-valve : 0° = ferme, 90° = ouvert
+  uint16_t angle = open ? 90 : 0;
+  uint16_t pwmValue = angleToPWM(angle);
+  _pwm.setPWM(cfg.valveServoPcaChannel, 0, pwmValue);
 }
 
 void AirflowController::setAirflowToRest() {

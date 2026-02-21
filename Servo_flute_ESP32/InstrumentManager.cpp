@@ -39,6 +39,15 @@ void InstrumentManager::begin() {
   _fingerCtrl.begin();
   _airflowCtrl.begin();
 
+  // Initialiser le controleur de pression (pompe/reservoir) si active
+  if (cfg.pumpEnabled || cfg.reservoirEnabled) {
+    bool sensorOk = _pressureCtrl.begin();
+    if (DEBUG) {
+      Serial.print("DEBUG: InstrumentManager - PressureController: ");
+      Serial.println(sensorOk ? "capteur OK" : "sans capteur");
+    }
+  }
+
   // Initialiser les valeurs CC dans AirflowController
   _airflowCtrl.setCCValues(_ccVolume, _ccExpression, _ccModulation);
 
@@ -55,6 +64,9 @@ void InstrumentManager::begin() {
 void InstrumentManager::update() {
   _sequencer.update();
   _airflowCtrl.update();
+  if (cfg.pumpEnabled || cfg.reservoirEnabled) {
+    _pressureCtrl.update();
+  }
   managePower();
 }
 

@@ -6,6 +6,7 @@
 #include "EventQueue.h"
 #include "FingerController.h"
 #include "AirflowController.h"
+#include "PressureController.h"
 #include "NoteSequencer.h"
 #include "settings.h"
 
@@ -39,12 +40,14 @@ public:
   // Calibration : acces direct aux controleurs
   FingerController& getFingerCtrl() { return _fingerCtrl; }
   AirflowController& getAirflowCtrl() { return _airflowCtrl; }
+  PressureController& getPressureCtrl() { return _pressureCtrl; }
 
 private:
   Adafruit_PWMServoDriver _pwm;
   EventQueue _eventQueue;
   FingerController _fingerCtrl;
   AirflowController _airflowCtrl;
+  PressureController _pressureCtrl;
   NoteSequencer _sequencer;
 
   unsigned long _lastActivityTime;

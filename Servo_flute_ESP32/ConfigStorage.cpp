@@ -89,6 +89,23 @@ void ConfigStorage::initDefaults() {
   // --- Power ---
   cfg.timeUnpower = TIMEUNPOWER;
 
+  // --- Air delivery system ---
+  cfg.airMode = DEFAULT_AIR_MODE;
+  cfg.valveUseServo = DEFAULT_VALVE_USE_SERVO;
+  cfg.valveServoPcaChannel = DEFAULT_VALVE_SERVO_CH;
+  cfg.pumpEnabled = DEFAULT_PUMP_ENABLED;
+  cfg.pumpPin = DEFAULT_PUMP_PIN;
+  cfg.pumpMinPwm = DEFAULT_PUMP_MIN_PWM;
+  cfg.pumpMaxPwm = DEFAULT_PUMP_MAX_PWM;
+  cfg.reservoirEnabled = DEFAULT_RESERVOIR_ENABLED;
+  cfg.sensorType = DEFAULT_SENSOR_TYPE;
+  cfg.sensorTargetMm = DEFAULT_SENSOR_TARGET_MM;
+  cfg.sensorMinMm = DEFAULT_SENSOR_MIN_MM;
+  cfg.sensorMaxMm = DEFAULT_SENSOR_MAX_MM;
+  cfg.pidKp = DEFAULT_PID_KP;
+  cfg.pidKi = DEFAULT_PID_KI;
+  cfg.showAirSystem = DEFAULT_SHOW_AIR_SYSTEM;
+
   // --- UI ---
   cfg.hideCalibration = false;
   cfg.solenoidPin = SOLENOID_PIN;
@@ -199,6 +216,23 @@ bool ConfigStorage::load() {
   cfg.airAttackMs = doc["air_atk_ms"] | cfg.airAttackMs;
   cfg.airVelocityResponse = doc["air_vel_resp"] | cfg.airVelocityResponse;
 
+  // --- Air delivery system ---
+  cfg.airMode = doc["air_mode"] | cfg.airMode;
+  cfg.valveUseServo = doc["valve_servo"] | (cfg.valveUseServo ? 1 : 0);
+  cfg.valveServoPcaChannel = doc["valve_ch"] | cfg.valveServoPcaChannel;
+  cfg.pumpEnabled = doc["pump_on"] | (cfg.pumpEnabled ? 1 : 0);
+  cfg.pumpPin = doc["pump_pin"] | cfg.pumpPin;
+  cfg.pumpMinPwm = doc["pump_min"] | cfg.pumpMinPwm;
+  cfg.pumpMaxPwm = doc["pump_max"] | cfg.pumpMaxPwm;
+  cfg.reservoirEnabled = doc["res_on"] | (cfg.reservoirEnabled ? 1 : 0);
+  cfg.sensorType = doc["sens_type"] | cfg.sensorType;
+  cfg.sensorTargetMm = doc["sens_target"] | cfg.sensorTargetMm;
+  cfg.sensorMinMm = doc["sens_min"] | cfg.sensorMinMm;
+  cfg.sensorMaxMm = doc["sens_max"] | cfg.sensorMaxMm;
+  cfg.pidKp = doc["pid_kp"] | cfg.pidKp;
+  cfg.pidKi = doc["pid_ki"] | cfg.pidKi;
+  cfg.showAirSystem = doc["show_air"] | (cfg.showAirSystem ? 1 : 0);
+
   const char* ssid = doc["wifi_ssid"];
   if (ssid) { strncpy(cfg.wifiSsid, ssid, sizeof(cfg.wifiSsid) - 1); cfg.wifiSsid[sizeof(cfg.wifiSsid) - 1] = '\0'; }
 
@@ -287,6 +321,22 @@ bool ConfigStorage::save() {
   doc["air_atk_off"] = cfg.airAttackOffset;
   doc["air_atk_ms"] = cfg.airAttackMs;
   doc["air_vel_resp"] = cfg.airVelocityResponse;
+  // --- Air delivery system ---
+  doc["air_mode"] = cfg.airMode;
+  doc["valve_servo"] = cfg.valveUseServo ? 1 : 0;
+  doc["valve_ch"] = cfg.valveServoPcaChannel;
+  doc["pump_on"] = cfg.pumpEnabled ? 1 : 0;
+  doc["pump_pin"] = cfg.pumpPin;
+  doc["pump_min"] = cfg.pumpMinPwm;
+  doc["pump_max"] = cfg.pumpMaxPwm;
+  doc["res_on"] = cfg.reservoirEnabled ? 1 : 0;
+  doc["sens_type"] = cfg.sensorType;
+  doc["sens_target"] = cfg.sensorTargetMm;
+  doc["sens_min"] = cfg.sensorMinMm;
+  doc["sens_max"] = cfg.sensorMaxMm;
+  doc["pid_kp"] = cfg.pidKp;
+  doc["pid_ki"] = cfg.pidKi;
+  doc["show_air"] = cfg.showAirSystem ? 1 : 0;
   doc["wifi_ssid"] = cfg.wifiSsid;
   doc["wifi_pass"] = cfg.wifiPassword;
   doc["device"] = cfg.deviceName;
@@ -317,4 +367,8 @@ void ConfigStorage::resetToDefaults() {
   if (DEBUG) {
     Serial.println("DEBUG: ConfigStorage - Reset aux valeurs par defaut");
   }
+}
+
+bool ConfigStorage::isFirstBoot() {
+  return !LittleFS.exists(CONFIG_FILE_PATH);
 }
