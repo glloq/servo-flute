@@ -164,16 +164,19 @@ void WebConfigurator::setupRoutes() {
     handleApiConfig(request);
   });
 
-  // API Config POST (body handler pour JSON)
+  // API Config POST (body handler accumule, request handler traite)
   _server.on("/api/config", HTTP_POST,
     [this](AsyncWebServerRequest* request) {
-      if (_configBody.length() == 0) {
-        request->send(400, "application/json", "{\"ok\":false,\"msg\":\"Body vide\"}");
-      }
+      handleApiConfigFinalize(request);
     },
     NULL,
     [this](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
-      handleApiConfigPost(request, data, len, index, total);
+      // Accumuler le body
+      if (index == 0) {
+        _configBody = "";
+        _configBody.reserve(total);
+      }
+      _configBody += String((char*)data).substring(0, len);
     }
   );
 
@@ -378,16 +381,13 @@ void WebConfigurator::handleApiConfig(AsyncWebServerRequest* request) {
   request->send(200, "application/json", json);
 }
 
-void WebConfigurator::handleApiConfigPost(AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
-  // Accumuler le body
-  if (index == 0) {
-    _configBody = "";
-    _configBody.reserve(total);
+void WebConfigurator::handleApiConfigFinalize(AsyncWebServerRequest* request) {
+  if (_configBody.length() == 0) {
+    request->send(400, "application/json", "{\"ok\":false,\"msg\":\"Body vide\"}");
+    return;
   }
-  _configBody += String((char*)data).substring(0, len);
 
-  // Fin du body
-  if (index + len == total) {
+  {
     JsonDocument doc;
     DeserializationError err = deserializeJson(doc, _configBody);
 
@@ -490,8 +490,8 @@ void WebConfigurator::handleApiConfigPost(AsyncWebServerRequest* request, uint8_
 
     String resp = "{\"ok\":" + String(saved ? "true" : "false") + "}";
     request->send(200, "application/json", resp);
-    _configBody = "";
   }
+  _configBody = "";
 }
 
 void WebConfigurator::handleApiConfigReset(AsyncWebServerRequest* request) {

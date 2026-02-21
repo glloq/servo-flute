@@ -90,7 +90,7 @@ private:
   void handleRoot(AsyncWebServerRequest* request);
   void handleApiStatus(AsyncWebServerRequest* request);
   void handleApiConfig(AsyncWebServerRequest* request);
-  void handleApiConfigPost(AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total);
+  void handleApiConfigFinalize(AsyncWebServerRequest* request);
   void handleApiConfigReset(AsyncWebServerRequest* request);
   void handleMidiUpload(AsyncWebServerRequest* request, const String& filename,
                         size_t index, uint8_t* data, size_t len, bool final);
