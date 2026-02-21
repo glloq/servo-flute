@@ -929,9 +929,9 @@ function showTab(id,btn){
 function applyAirTabVisibility(){
   const airBtn=$('btnTabAir');
   const diag=$('airDiagramBox');
-  const show=CFG&&(CFG.air_mode>=1||CFG.pump_on||CFG.res_on);
-  airBtn.style.display=show?'':'none';
-  diag.style.display=(CFG&&CFG.show_air&&show)?'':'none';
+  const hasAir=CFG&&(CFG.show_air||CFG.air_mode>=1||CFG.pump_on||CFG.res_on);
+  airBtn.style.display=hasAir?'':'none';
+  diag.style.display=(CFG&&CFG.show_air)?'':'none';
 }
 function setPumpTarget(v){$('pumpTargetVal').textContent=v+'%';wsSend({t:'pump_target',v:parseInt(v)})}
 function setAirMode(v){
@@ -1091,7 +1091,7 @@ function wizFinish(){
   radios.forEach(r=>{if(r.checked)presetIdx=parseInt(r.value)});
   // Build config body
   const body={air_mode:wizAirMode,pump_on:wizAirMode>=2,res_on:wizAirMode>=3,
-    valve_servo:wizAirMode===1,show_air:wizAirMode>=1};
+    valve_servo:wizAirMode===1,show_air:true};
   // Apply preset if selected
   if(presetIdx>=0&&presetIdx<PR.length){
     const p=PR[presetIdx];
