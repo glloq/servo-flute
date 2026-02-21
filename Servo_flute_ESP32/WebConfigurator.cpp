@@ -317,6 +317,7 @@ void WebConfigurator::handleApiConfig(AsyncWebServerRequest* request) {
   json += ",\"num_notes\":" + String(cfg.numNotes);
   json += ",\"air_pca\":" + String(cfg.airflowPcaChannel);
   json += ",\"angle_open\":" + String(cfg.fingerAngleOpen);
+  json += ",\"embouchure\":\"" + String(cfg.embouchure) + "\"";
 
   // Scalaires
   json += ",\"midi_ch\":" + String(cfg.midiChannel);
@@ -404,6 +405,10 @@ void WebConfigurator::handleApiConfigFinalize(AsyncWebServerRequest* request) {
     }
     if (doc.containsKey("air_pca")) cfg.airflowPcaChannel = doc["air_pca"];
     if (doc.containsKey("angle_open")) cfg.fingerAngleOpen = doc["angle_open"];
+    if (doc.containsKey("embouchure")) {
+      strncpy(cfg.embouchure, doc["embouchure"] | "trav", sizeof(cfg.embouchure) - 1);
+      cfg.embouchure[sizeof(cfg.embouchure) - 1] = '\0';
+    }
 
     // --- Scalaires ---
     if (doc.containsKey("midi_ch")) cfg.midiChannel = doc["midi_ch"];

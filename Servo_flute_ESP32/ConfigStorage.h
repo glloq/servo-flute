@@ -47,6 +47,7 @@ struct RuntimeConfig {
   uint8_t numNotes;                          // 1-32 (nombre effectif de notes)
   uint8_t airflowPcaChannel;                // Canal PCA9685 pour servo airflow
   uint8_t fingerAngleOpen;                   // Amplitude ouverture commune (degres)
+  char embouchure[5];                        // Type: trav, bec, naf, end, oca
   FingerConfig fingers[MAX_FINGER_SERVOS];   // Config doigts (seuls [0..numFingers-1] actifs)
   NoteConfig notes[MAX_NOTES];               // Config notes (seuls [0..numNotes-1] actifs)
 

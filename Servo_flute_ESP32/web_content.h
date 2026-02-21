@@ -724,7 +724,7 @@ function fluteGrad(g,em){
 
 // Draw mouthpiece based on embouchure type
 function fluteMouth(g,em,ty,by,th,cy){
-  let m='';const lip=5,ar=th-lip;
+  let m='';const lip=10,ar=th-lip;
   if(em==='naf'){
     // Amerindienne: bec (arc 90° centre=coin bas-gauche, sweep=CCW, lip en haut) + bloc oiseau + chanfrain
     m+='<path d="M4,'+ty+' L58,'+ty+' L58,'+by+' L'+(4+ar)+','+by+' A'+ar+','+ar+' 0 0,0 4,'+(by-ar)+' L4,'+ty+' Z" fill="url(#wg_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
@@ -769,9 +769,10 @@ function buildFlute(cfg,svgId,showNums){
   svg.setAttribute('viewBox','0 0 '+tw+' 100');
   const g=svgId,ty=34,by=66,th=by-ty;
   let h=fluteGrad(g,em);
-  // Corps du tube
-  h+='<rect x="14" y="'+ty+'" width="'+(tw-24)+'" height="'+th+'" rx="0" fill="url(#wg_'+g+')" stroke="#5C4A0A" stroke-width="1.5"/>';
-  h+='<rect x="14" y="'+ty+'" width="'+(tw-24)+'" height="6" rx="0" fill="#D4B044" opacity=".18"/>';
+  // Corps du tube (demarre apres l'embouchure a x=58)
+  const bx=em==='trav'?63:58;
+  h+='<rect x="'+bx+'" y="'+ty+'" width="'+(tw-bx-10)+'" height="'+th+'" rx="0" fill="url(#wg_'+g+')" stroke="#5C4A0A" stroke-width="1.5"/>';
+  h+='<rect x="'+bx+'" y="'+ty+'" width="'+(tw-bx-10)+'" height="6" rx="0" fill="#D4B044" opacity=".18"/>';
   // Embouchure adaptative
   h+=fluteMouth(g,em,ty,by,th,cy);
   // Type label
@@ -805,7 +806,7 @@ function buildOcarina(cfg,svgId,showNums){
   h+='<ellipse cx="'+bcx+'" cy="'+bcy+'" rx="'+rx+'" ry="'+ry+'" fill="url(#wg_'+g+')" stroke="#5C2810" stroke-width="1.8"/>';
   h+='<ellipse cx="'+(bcx-10)+'" cy="'+(bcy-12)+'" rx="'+(rx-20)+'" ry="14" fill="#D88050" opacity=".12"/>';
   // Embouchure bec: arc 90° centre=coin bas-gauche, lip=4px en haut
-  const bx=bcx-rx,mw=50,mty=bcy-10,mby=bcy+10,mth=20,mlip=4,mar=mth-mlip;
+  const bx=bcx-rx,mw=50,mty=bcy-10,mby=bcy+10,mth=20,mlip=8,mar=mth-mlip;
   h+='<path d="M'+(bx-mw)+','+mty+' L'+bx+','+mty+' L'+bx+','+mby+' L'+(bx-mw+mar)+','+mby+' A'+mar+','+mar+' 0 0,0 '+(bx-mw)+','+(mby-mar)+' L'+(bx-mw)+','+mty+' Z" fill="url(#lp_'+g+')" stroke="#5C2810" stroke-width="1.2"/>';
   // Chanfrain (petit rect noir en haut-droite du bec)
   h+='<rect x="'+(bx-8)+'" y="'+(mty-2)+'" width="10" height="5" rx="1" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".6"/>';
@@ -963,9 +964,9 @@ function saveStep1(){
     CFG.fingers[i].d=parseInt($('fd'+i).value);
     const thEl=$('fth'+i);CFG.fingers[i].th=thEl?thEl.checked?1:0:0
   }
-  const body={num_fingers:CFG.num_fingers,air_pca:CFG.air_pca,angle_open:CFG.angle_open,fingers:CFG.fingers.slice(0,CFG.num_fingers)};
+  const body={num_fingers:CFG.num_fingers,air_pca:CFG.air_pca,angle_open:CFG.angle_open,embouchure:CFG.embouchure||'trav',fingers:CFG.fingers.slice(0,CFG.num_fingers)};
   fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
-    .then(r=>r.json()).then(d=>{btnLoad('btnSaveStep1',false);if(d.ok){showToast('Doigts sauvegardes','success');markClean();goStep(2)}else showToast('Erreur sauvegarde','error')})
+    .then(r=>r.json()).then(d=>{btnLoad('btnSaveStep1',false);if(d.ok){showToast('Doigts sauvegardes','success');markClean();buildFlute(CFG,'fluteSvg',false);goStep(2)}else showToast('Erreur sauvegarde','error')})
     .catch(e=>{btnLoad('btnSaveStep1',false);showToast('Erreur: '+e,'error')})
 }
 
@@ -1041,7 +1042,7 @@ function saveStep2(){
   if(!CFG)return;btnLoad('btnSaveStep2',true);
   const body={num_fingers:CFG.num_fingers,notes:CFG.notes.map(n=>({midi:n.midi,fp:n.fp.slice(0,CFG.num_fingers),amn:n.amn,amx:n.amx}))};
   fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
-    .then(r=>r.json()).then(d=>{btnLoad('btnSaveStep2',false);if(d.ok){showToast('Doigtes sauvegardes','success');markClean();fpHistory=[];fpFuture=[];updUndoUI();goStep(3);buildKeyboard()}else showToast('Erreur sauvegarde','error')})
+    .then(r=>r.json()).then(d=>{btnLoad('btnSaveStep2',false);if(d.ok){showToast('Doigtes sauvegardes','success');markClean();fpHistory=[];fpFuture=[];updUndoUI();goStep(3);buildKeyboard();buildFlute(CFG,'fluteSvg',false)}else showToast('Erreur sauvegarde','error')})
     .catch(e=>{btnLoad('btnSaveStep2',false);showToast('Erreur: '+e,'error')})
 }
 
@@ -1076,7 +1077,7 @@ function saveStep3(){
   if(!CFG)return;btnLoad('btnSaveStep3',true);
   const body={notes_air:CFG.notes.map(n=>({amn:n.amn,amx:n.amx}))};
   fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
-    .then(r=>r.json()).then(d=>{btnLoad('btnSaveStep3',false);if(d.ok){showToast('Calibration terminee !','success');markClean();buildKeyboard()}else showToast('Erreur sauvegarde','error')})
+    .then(r=>r.json()).then(d=>{btnLoad('btnSaveStep3',false);if(d.ok){showToast('Calibration terminee !','success');markClean();buildKeyboard();buildFlute(CFG,'fluteSvg',false)}else showToast('Erreur sauvegarde','error')})
     .catch(e=>{btnLoad('btnSaveStep3',false);showToast('Erreur: '+e,'error')})
 }
 
