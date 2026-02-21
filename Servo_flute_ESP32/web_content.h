@@ -427,7 +427,6 @@ max-height:120px;overflow-y:auto;color:#9aa}
   </div>
 
   <div class="section"><h3>Servo Airflow</h3>
-    <div class="cfg-row"><label>Angle repos</label><input type="number" id="cfgAirOff" min="0" max="180"></div>
     <div class="cfg-row"><label>Angle min</label><input type="number" id="cfgAirMin" min="0" max="180"></div>
     <div class="cfg-row"><label>Angle max</label><input type="number" id="cfgAirMax" min="0" max="180"></div>
   </div>
@@ -452,14 +451,19 @@ max-height:120px;overflow-y:auto;color:#9aa}
     <div class="cfg-row"><label>Timeout (ms)</label><input type="number" id="cfgCC2To" min="0" max="10000"></div>
   </div>
 
-  <div class="section"><h3>Solenoide PWM</h3>
+  <div class="section"><h3>Solenoide</h3>
+    <div class="cfg-row"><label>GPIO Pin</label><select id="cfgSolPin"></select></div>
     <div class="cfg-row"><label>PWM activation</label><input type="number" id="cfgSolAct" min="0" max="255"></div>
     <div class="cfg-row"><label>PWM maintien</label><input type="number" id="cfgSolHold" min="0" max="255"></div>
     <div class="cfg-row"><label>Temps (ms)</label><input type="number" id="cfgSolTime" min="0" max="500"></div>
   </div>
 
-  <div class="section"><h3>Power</h3>
+  <div class="section"><h3>Power off servo</h3>
     <div class="cfg-row"><label>Timeout (ms)</label><input type="number" id="cfgUnpower" min="0" max="60000"></div>
+  </div>
+
+  <div class="section"><h3>Interface</h3>
+    <div class="cfg-row"><label>Cacher Calibration</label><input type="checkbox" id="cfgHideCalib" style="width:auto;flex:0"></div>
   </div>
 
   <div class="section"><h3>WiFi</h3>
@@ -636,6 +640,13 @@ function showTab(id,btn){
   if(id==='calib'&&CFG)buildCalibUI();
 }
 function toggleSettings(){$('settingsOverlay').classList.toggle('open');if($('settingsOverlay').classList.contains('open')&&CFG)fillSettings()}
+function applyCalibVisibility(){
+  const btns=document.querySelectorAll('.tabs button');
+  const calibBtn=btns[btns.length-1]; // Calibration = dernier onglet
+  if(CFG&&CFG.hide_calib){calibBtn.style.display='none';
+    if($('tab-calib').classList.contains('active')){showTab('keyboard',btns[0])}
+  }else{calibBtn.style.display=''}
+}
 
 // --- WebSocket ---
 let wsRetry=0;
@@ -696,6 +707,7 @@ function loadConfig(){
     CFG=d;micDetected=d.mic||false;
     $('devName').childNodes[0].textContent=d.device||'ServoFlute';
     buildKeyboard();buildFlute(CFG,'fluteSvg',false);markClean();
+    applyCalibVisibility();
     if(micDetected){$('micSection').style.display='';wsSend({t:'mic_mon',on:1})}
     else $('micSection').style.display='none';
   }).catch(e=>{addLog('Erreur config: '+e);showToast('Erreur chargement config','error')})
@@ -1200,14 +1212,22 @@ function fillSettings(){
   for(let i=1;i<=16;i++){const o=document.createElement('option');o.value=i;o.textContent='Canal '+i;sel.appendChild(o)}
   sel.value=CFG.midi_ch||0;
   $('cfgDelay').value=CFG.servo_delay;$('cfgValveInt').value=CFG.valve_interval;$('cfgMinNote').value=CFG.min_note_dur;
-  $('cfgAirOff').value=CFG.air_off;$('cfgAirMin').value=CFG.air_min;$('cfgAirMax').value=CFG.air_max;
+  $('cfgAirMin').value=CFG.air_min;$('cfgAirMax').value=CFG.air_max;
   $('cfgVibF').value=CFG.vib_freq;$('cfgVibA').value=CFG.vib_amp;
   $('cfgCCVol').value=CFG.cc_vol!=null?CFG.cc_vol:127;$('cfgCCExpr').value=CFG.cc_expr!=null?CFG.cc_expr:127;
   $('cfgCCMod').value=CFG.cc_mod!=null?CFG.cc_mod:0;$('cfgCCBreath').value=CFG.cc_breath!=null?CFG.cc_breath:127;
   $('cfgCCBright').value=CFG.cc_bright!=null?CFG.cc_bright:64;
   $('cfgCC2On').checked=CFG.cc2_on;$('cfgCC2Thr').value=CFG.cc2_thr;$('cfgCC2Curve').value=CFG.cc2_curve;$('cfgCC2To').value=CFG.cc2_timeout;
+  // Solenoid pin dropdown
+  const sp=$('cfgSolPin');sp.innerHTML='';
+  [2,4,5,12,13,14,15,16,17,18,19,21,22,23,25,26,27,32,33].forEach(p=>{
+    const o=document.createElement('option');o.value=p;o.textContent='GPIO '+p;sp.appendChild(o)});
+  sp.value=CFG.sol_pin||13;
   $('cfgSolAct').value=CFG.sol_act;$('cfgSolHold').value=CFG.sol_hold;$('cfgSolTime').value=CFG.sol_time;
   $('cfgUnpower').value=CFG.time_unpower;
+  $('cfgHideCalib').checked=!!CFG.hide_calib;
+  // Appliquer visibilite onglet calibration
+  applyCalibVisibility();
   $('wifiSsid').value=CFG.wifi_ssid||'';
   // WiFi status
   fetch('/api/wifi/status').then(r=>r.json()).then(d=>{
@@ -1220,14 +1240,15 @@ function saveSettings(){
   const body={device:$('cfgDevice').value,midi_ch:parseInt($('cfgMidiCh').value),
     servo_delay:parseInt($('cfgDelay').value),valve_interval:parseInt($('cfgValveInt').value),
     min_note_dur:parseInt($('cfgMinNote').value),
-    air_off:parseInt($('cfgAirOff').value),air_min:parseInt($('cfgAirMin').value),air_max:parseInt($('cfgAirMax').value),
+    air_min:parseInt($('cfgAirMin').value),air_max:parseInt($('cfgAirMax').value),
     vib_freq:parseFloat($('cfgVibF').value),vib_amp:parseFloat($('cfgVibA').value),
     cc_vol:parseInt($('cfgCCVol').value),cc_expr:parseInt($('cfgCCExpr').value),
     cc_mod:parseInt($('cfgCCMod').value),cc_breath:parseInt($('cfgCCBreath').value),cc_bright:parseInt($('cfgCCBright').value),
     cc2_on:$('cfgCC2On').checked,cc2_thr:parseInt($('cfgCC2Thr').value),
     cc2_curve:parseFloat($('cfgCC2Curve').value),cc2_timeout:parseInt($('cfgCC2To').value),
+    sol_pin:parseInt($('cfgSolPin').value),
     sol_act:parseInt($('cfgSolAct').value),sol_hold:parseInt($('cfgSolHold').value),sol_time:parseInt($('cfgSolTime').value),
-    time_unpower:parseInt($('cfgUnpower').value)};
+    time_unpower:parseInt($('cfgUnpower').value),hide_calib:$('cfgHideCalib').checked};
   fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(r=>r.json()).then(d=>{btnLoad('btnSaveSettings',false);
       if(d.ok){showToast('Parametres sauvegardes','success');markClean();loadConfig()}
@@ -1241,16 +1262,20 @@ function resetConfig(){if(!confirm('Remettre tous les parametres par defaut ?'))
     .catch(e=>addLog('Erreur: '+e))}
 
 // --- WIFI ---
-function startWifiScan(){$('scanStatus').textContent='Scan...';
-  fetch('/api/wifi/scan').then(()=>{setTimeout(checkScan,3000)}).catch(e=>{$('scanStatus').textContent='Erreur'})}
+let _scanRetries=0;
+function startWifiScan(){$('scanStatus').textContent='Scan...';_scanRetries=0;
+  fetch('/api/wifi/scan').then(()=>{setTimeout(checkScan,3000)})
+    .catch(()=>{$('scanStatus').textContent='Erreur lancement scan'})}
 function checkScan(){fetch('/api/wifi/results').then(r=>r.json()).then(d=>{
-    if(!d.done){setTimeout(checkScan,2000);return}
-    $('scanStatus').textContent='';const c=$('wifiList');c.innerHTML='';
-    if(d.networks)d.networks.forEach(n=>{
+    if(!d.done){if(_scanRetries<10){_scanRetries++;setTimeout(checkScan,2000)}else{$('scanStatus').textContent='Timeout'}return}
+    $('scanStatus').textContent='';const c=$('wifiList');c.innerHTML='';_scanRetries=0;
+    if(d.networks&&d.networks.length){d.networks.forEach(n=>{
       const el=document.createElement('div');el.className='wifi-item';
       el.innerHTML='<span>'+esc(n.ssid)+'</span><span style="color:#888">'+esc(n.rssi)+' dBm</span>';
-      el.onclick=()=>{$('wifiSsid').value=n.ssid};c.appendChild(el)})
-  }).catch(()=>{$('scanStatus').textContent='Erreur'})}
+      el.onclick=()=>{$('wifiSsid').value=n.ssid};c.appendChild(el)})}
+    else{$('scanStatus').textContent='Aucun reseau trouve'}
+  }).catch(()=>{if(_scanRetries<5){_scanRetries++;$('scanStatus').textContent='Retry ('+_scanRetries+')...';setTimeout(checkScan,3000)}
+    else{$('scanStatus').textContent='Erreur scan';_scanRetries=0}})}
 
 function connectWifi(){const ssid=$('wifiSsid').value,pass=$('wifiPass').value;
   if(!ssid){$('wifiMsg').textContent='SSID requis';return}

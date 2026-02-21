@@ -48,7 +48,7 @@ AirflowController::AirflowController(Adafruit_PWMServoDriver& pwm)
 }
 
 void AirflowController::begin() {
-  pinMode(SOLENOID_PIN, OUTPUT);
+  pinMode(cfg.solenoidPin, OUTPUT);
   closeSolenoid();
   setAirflowToRest();
 
@@ -234,9 +234,9 @@ void AirflowController::openSolenoid() {
     _solenoidOpenTime = millis();
   #else
     if (SOLENOID_ACTIVE_HIGH) {
-      digitalWrite(SOLENOID_PIN, HIGH);
+      digitalWrite(cfg.solenoidPin, HIGH);
     } else {
-      digitalWrite(SOLENOID_PIN, LOW);
+      digitalWrite(cfg.solenoidPin, LOW);
     }
   #endif
 
@@ -252,9 +252,9 @@ void AirflowController::closeSolenoid() {
     setSolenoidPWM(0);
   #else
     if (SOLENOID_ACTIVE_HIGH) {
-      digitalWrite(SOLENOID_PIN, LOW);
+      digitalWrite(cfg.solenoidPin, LOW);
     } else {
-      digitalWrite(SOLENOID_PIN, HIGH);
+      digitalWrite(cfg.solenoidPin, HIGH);
     }
   #endif
 
@@ -354,9 +354,9 @@ void AirflowController::setSolenoidPWM(uint8_t pwmValue) {
   #if SOLENOID_USE_PWM
     // ESP32 : analogWrite() est supporte depuis Arduino core 3.x
     if (SOLENOID_ACTIVE_HIGH) {
-      analogWrite(SOLENOID_PIN, pwmValue);
+      analogWrite(cfg.solenoidPin, pwmValue);
     } else {
-      analogWrite(SOLENOID_PIN, PWM_MAX_VALUE - pwmValue);
+      analogWrite(cfg.solenoidPin, PWM_MAX_VALUE - pwmValue);
     }
   #endif
 }
