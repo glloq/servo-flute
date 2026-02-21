@@ -60,6 +60,12 @@ private:
   uint16_t _currentMinAngle;
   uint16_t _currentMaxAngle;
 
+  // Transition attaque (modes accent/crescendo)
+  bool _attackActive;
+  unsigned long _attackStartTime;
+  uint16_t _attackStartAngle;
+  uint16_t _attackTargetAngle;
+
   void setAirflowServoAngle(uint16_t angle);
   uint16_t angleToPWM(uint16_t angle);
   void setSolenoidPWM(uint8_t pwmValue);
