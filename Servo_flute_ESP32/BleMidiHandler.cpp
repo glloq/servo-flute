@@ -7,7 +7,7 @@
 #include <hardware/BLEMIDI_ESP32_NimBLE.h>
 
 // Instance MIDI BLE globale
-BLEMIDI_CREATE_INSTANCE(DEVICE_NAME, bleMidi);
+BLEMIDI_CREATE_INSTANCE(DEVICE_NAME, MIDI);
 
 // Instance statique pour les callbacks
 BleMidiHandler* BleMidiHandler::_instance = nullptr;
