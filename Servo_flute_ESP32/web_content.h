@@ -102,13 +102,10 @@ max-width:320px;pointer-events:auto;box-shadow:0 4px 16px rgba(0,0,0,.4)}
 .skeleton{background:linear-gradient(90deg,#16213e 25%,#1e2d50 50%,#16213e 75%);
 background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px;min-height:20px}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-.skeleton-key{width:60px;height:70px;border-radius:6px;display:inline-block}
-.skeleton-row{height:16px;margin-bottom:8px}
 @keyframes fadeInUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .fade-in{animation:fadeInUp .3s ease forwards}
 .fade-delay-1{animation-delay:.05s;opacity:0}.fade-delay-2{animation-delay:.1s;opacity:0}
 .fade-delay-3{animation-delay:.15s;opacity:0}.fade-delay-4{animation-delay:.2s;opacity:0}
-.step-panel{transition:opacity .3s ease,transform .3s ease}
 .steps{display:flex;align-items:center;justify-content:center;gap:0;padding:12px 0}
 .step-dot{width:12px;height:12px;border-radius:50%;background:#444;cursor:pointer;transition:.2s}
 .step-dot.active{background:#e94560;box-shadow:0 0 8px #e94560}.step-dot.done{background:#4ecca3}
@@ -273,7 +270,7 @@ max-height:120px;overflow-y:auto;color:#9aa}
         </div>
       </div>
       <div class="cfg-row"><label>Servo airflow PCA</label>
-        <select id="airPca" style="max-width:80px"></select>
+        <select id="airPca" style="max-width:80px" onchange="checkPca()"></select>
       </div>
       <div class="cfg-row"><label>Amplitude ouverture</label>
         <input type="range" min="10" max="90" value="30" id="angleOpen" oninput="$('aoVal').textContent=this.value+'&deg;'">
@@ -460,7 +457,7 @@ function showToast(msg,type){type=type||'info';const c=$('toastContainer');
   error:'<svg viewBox="0 0 16 16" width="16" height="16"><path d="M5.5 5.5l5 5M10.5 5.5l-5 5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>',
   info:'<svg viewBox="0 0 16 16" width="16" height="16"><circle cx="8" cy="8" r="6" fill="none" stroke="#fff" stroke-width="1.5"/><path d="M8 7v4M8 5v.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>'};
   const t=document.createElement('div');t.className='toast '+type;
-  t.innerHTML=(ic[type]||ic.info)+'<span>'+msg+'</span>';c.appendChild(t);
+  t.innerHTML=(ic[type]||ic.info)+'<span>'+esc(msg)+'</span>';c.appendChild(t);
   requestAnimationFrame(()=>requestAnimationFrame(()=>t.classList.add('show')));
   setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),300)},3000)}
 function markDirty(){dirty=true;$('unsavedBadge').classList.add('show')}
@@ -484,14 +481,19 @@ function checkPca(){if(!CFG)return;const used={};const airP=parseInt($('airPca')
     let conflict=used[ch]!==undefined;card.classList.toggle('pca-conflict',conflict);
     const w=card.querySelector('.pca-warn');if(w)w.textContent=conflict?'Conflit PCA '+ch+' avec '+used[ch]:'';
     used[ch]='Doigt '+(i+1)})}
-function updDualFill(ni){const f=$('drf'+ni);if(!f||!CFG)return;const a=CFG.notes[ni].amn,b=CFG.notes[ni].amx;
-  f.style.left=a+'%';f.style.width=Math.max(0,b-a)+'%'}
+function updDualFill(ni){if(!CFG)return;
+  if(CFG.notes[ni].amn>CFG.notes[ni].amx){const t=CFG.notes[ni].amn;CFG.notes[ni].amn=CFG.notes[ni].amx;CFG.notes[ni].amx=t;
+    const mi=$('amn'+ni),mx=$('amx'+ni);if(mi)mi.textContent=CFG.notes[ni].amn;if(mx)mx.textContent=CFG.notes[ni].amx}
+  const f=$('drf'+ni);if(!f)return;const a=CFG.notes[ni].amn,b=CFG.notes[ni].amx;
+  f.style.left=a+'%';f.style.width=(b-a)+'%'}
 
 function mn(m){return N[m%12]+(Math.floor(m/12)-1)}
 function isBlack(m){return[1,3,6,8,10].includes(m%12)}
 function $(id){return document.getElementById(id)}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function fmt(ms){if(!ms||ms<=0)return'--:--';const s=Math.floor(ms/1000);return String(s/60|0).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
-function addLog(t){const b=$('logBox');if(!b)return;b.innerHTML+='<div>'+t+'</div>';b.scrollTop=b.scrollHeight}
+function addLog(t){const b=$('logBox');if(!b)return;b.innerHTML+='<div>'+esc(t)+'</div>';b.scrollTop=b.scrollHeight;
+  while(b.children.length>100)b.removeChild(b.firstChild)}
 
 // --- Tabs ---
 function showTab(id,btn){
@@ -503,13 +505,15 @@ function showTab(id,btn){
 function toggleSettings(){$('settingsOverlay').classList.toggle('open');if($('settingsOverlay').classList.contains('open')&&CFG)fillSettings()}
 
 // --- WebSocket ---
+let wsRetry=0;
 function wsConnect(){
   const p=location.protocol==='https:'?'wss:':'ws:';
   ws=new WebSocket(p+'//'+location.host+'/ws');
-  ws.onopen=()=>{$('sDot').className='dot on';$('sText').textContent='Connecte';addLog('WS connecte')};
-  ws.onclose=()=>{$('sDot').className='dot off';$('sText').textContent='Deconnecte';setTimeout(wsConnect,2000)};
+  ws.onopen=()=>{wsRetry=0;$('sDot').className='dot on';$('sText').textContent='Connecte';addLog('WS connecte')};
+  ws.onclose=()=>{$('sDot').className='dot off';$('sText').textContent='Deconnecte';
+    const d=Math.min(30000,2000*Math.pow(1.5,wsRetry));wsRetry++;setTimeout(wsConnect,d)};
   ws.onerror=()=>{ws.close()};
-  ws.onmessage=e=>{try{handleWs(JSON.parse(e.data))}catch(x){}};
+  ws.onmessage=e=>{try{handleWs(JSON.parse(e.data))}catch(x){addLog('WS err: '+x.message)}};
 }
 function wsSend(o){if(ws&&ws.readyState===1)ws.send(JSON.stringify(o))}
 
@@ -544,7 +548,7 @@ function handleWs(d){
     autoCalRunning=false;$('btnAcalStart').style.display='';$('btnAcalStop').style.display='none';
     $('acalFill').style.width='100%';$('acalState').textContent='Termine !';addLog('Auto-cal OK');
     if(d.results){let h='';d.results.forEach(r=>{h+='<div style="display:flex;justify-content:space-between;font-size:.8em;padding:2px 0">'+
-      '<span>'+r.name+'</span><span style="color:'+(r.ok?'#4ecca3':'#e94560')+'">'+(r.ok?r.min+'%-'+r.max+'%':'Echec')+'</span></div>'});
+      '<span>'+esc(r.name)+'</span><span style="color:'+(r.ok?'#4ecca3':'#e94560')+'">'+(r.ok?esc(r.min+'%-'+r.max+'%'):'Echec')+'</span></div>'});
       $('acalResults').innerHTML=h;$('acalResults').style.display='block'}
     setTimeout(loadConfig,1000)
   }
@@ -593,7 +597,7 @@ function setVelocity(v){velocity=parseInt(v);$('velVal').textContent=v;wsSend({t
 // Keyboard shortcuts
 const KC='azertyuiopqsdfghjklmwxcvbn'.split('');let keyMap={},keysDown=new Set();
 function buildKeyMap(){keyMap={};if(!CFG)return;CFG.notes.forEach((n,i)=>{if(i<KC.length)keyMap[KC[i]]=n.midi})}
-document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT'||e.repeat)return;
+document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT'||e.repeat||e.ctrlKey||e.altKey||e.metaKey)return;
   const n=keyMap[e.key.toLowerCase()];if(n&&!keysDown.has(e.key)){keysDown.add(e.key);noteOn(n);
     const el=document.querySelector('.key[data-midi="'+n+'"]');if(el)el.classList.add('pressed')}});
 document.addEventListener('keyup',e=>{const n=keyMap[e.key.toLowerCase()];if(n){keysDown.delete(e.key);noteOff(n);
@@ -690,7 +694,7 @@ function changeFingers(delta){
   if(nf<1)nf=1;if(nf>MAX_FINGERS)nf=MAX_FINGERS;CFG.num_fingers=nf;
   // Add defaults for new fingers
   while(CFG.fingers.length<nf)CFG.fingers.push({ch:CFG.fingers.length,a:90,d:1,th:0});
-  $('numFingersDisp').textContent=nf;buildFingerCards();buildFlute(CFG,'calFluteSvg',true)
+  $('numFingersDisp').textContent=nf;buildFingerCards();buildFlute(CFG,'calFluteSvg',true);markDirty()
 }
 
 function buildFingerCards(){
@@ -711,10 +715,10 @@ function buildFingerCards(){
       '<div class="cfg-row"><label>Angle ferme</label><input type="range" min="0" max="180" value="'+f.a+'" id="fa'+i+
         '" oninput="CFG.fingers['+i+'].a=parseInt(this.value);$(\'fav'+i+'\').textContent=this.value+\'&deg;\';testFinger('+i+',parseInt(this.value))">'+
         '<span id="fav'+i+'" style="min-width:36px">'+f.a+'&deg;</span></div>'+
-      '<div class="cfg-row"><label>Direction</label><select id="fd'+i+'" style="max-width:80px" onchange="CFG.fingers['+i+'].d=parseInt(this.value)">'+
+      '<div class="cfg-row"><label>Direction</label><select id="fd'+i+'" style="max-width:80px" onchange="CFG.fingers['+i+'].d=parseInt(this.value);markDirty()">'+
         '<option value="1"'+(f.d===1?' selected':'')+'>+1</option><option value="-1"'+(f.d===-1?' selected':'')+'>-1</option></select></div>'+
       '<div class="cfg-row"><label>Trou arriere</label><input type="checkbox" id="fth'+i+'"'+(f.th?' checked':'')+
-        ' style="width:auto;flex:0" onchange="CFG.fingers['+i+'].th=this.checked?1:0;buildFlute(CFG,\'calFluteSvg\',true)"></div>'+
+        ' style="width:auto;flex:0" onchange="CFG.fingers['+i+'].th=this.checked?1:0;buildFlute(CFG,\'calFluteSvg\',true);markDirty()"></div>'+
       '<div class="btn-row"><button class="btn btn-s" onclick="testPulse(this);testFinger('+i+',CFG.fingers['+i+'].a)">Fermer</button>'+
         '<button class="btn btn-s" onclick="testPulse(this);testFinger('+i+',CFG.fingers['+i+'].a+(CFG.angle_open||30)*CFG.fingers['+i+'].d)">Ouvrir</button></div>'+
       '<div class="pca-warn"></div>';
@@ -790,7 +794,7 @@ function applyPreset(val){
     ];
     // Pad fp arrays to num_fingers
     CFG.notes.forEach(n=>{while(n.fp.length<CFG.num_fingers)n.fp.push(0)});
-    CFG.num_notes=CFG.notes.length;buildFingeringRows()
+    CFG.num_notes=CFG.notes.length;fpSnap();buildFingeringRows();markDirty()
   }
 }
 
@@ -893,7 +897,7 @@ function checkScan(){fetch('/api/wifi/results').then(r=>r.json()).then(d=>{
     $('scanStatus').textContent='';const c=$('wifiList');c.innerHTML='';
     if(d.networks)d.networks.forEach(n=>{
       const el=document.createElement('div');el.className='wifi-item';
-      el.innerHTML='<span>'+n.ssid+'</span><span style="color:#888">'+n.rssi+' dBm</span>';
+      el.innerHTML='<span>'+esc(n.ssid)+'</span><span style="color:#888">'+esc(n.rssi)+' dBm</span>';
       el.onclick=()=>{$('wifiSsid').value=n.ssid};c.appendChild(el)})
   }).catch(()=>{$('scanStatus').textContent='Erreur'})}
 
@@ -907,6 +911,7 @@ function connectWifi(){const ssid=$('wifiSsid').value,pass=$('wifiPass').value;
 
 // --- INIT ---
 window.addEventListener('load',()=>{$('velVal').textContent=WEB_DEF_VEL;$('velSlider').value=WEB_DEF_VEL;wsConnect();loadConfig()});
+window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
 </script>
 </body>
 </html>
