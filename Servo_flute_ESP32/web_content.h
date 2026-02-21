@@ -26,6 +26,8 @@ background:#1a1a2e;color:#e0e0e0;overflow-x:hidden;min-height:100vh;padding-bott
 .hdr{background:#16213e;padding:10px 16px;display:flex;justify-content:space-between;
 align-items:center;border-bottom:2px solid #0f3460;position:sticky;top:0;z-index:10}
 .hdr h1{font-size:1.1em;color:#e94560;display:flex;align-items:center}
+.hdr-c{display:flex;align-items:center;gap:2px;font-size:.85em;font-weight:700;color:#8aa;user-select:none}
+.hdr-c svg{vertical-align:middle}
 .hdr-r{display:flex;align-items:center;gap:12px}
 .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
 .dot.on{background:#4ecca3;box-shadow:0 0 6px #4ecca3}.dot.off{background:#777}
@@ -192,6 +194,7 @@ max-height:120px;overflow-y:auto;color:#9aa}
 <div class="toast-container" id="toastContainer"></div>
 <div class="hdr">
   <h1 id="devName">ServoFlute<span class="unsaved-badge" id="unsavedBadge">modifi&eacute;</span></h1>
+  <div class="hdr-c"><span style="color:#e94560">B</span><svg viewBox="0 0 28 28" width="22" height="22"><circle cx="14" cy="14" r="12" fill="none" stroke="#8aa" stroke-width="1.5"/><path d="M6,14 C6,9 10,6 14,10 C18,6 22,9 22,14 C22,19 18,22 14,18 C10,22 6,19 6,14 Z" fill="none" stroke="#e94560" stroke-width="1.6" stroke-linecap="round"/></svg><span style="color:#e94560">P</span></div>
   <div class="hdr-r">
     <span class="dot off" id="sDot"></span>
     <button class="gear-btn" onclick="toggleSettings()" title="Reglages" id="gearBtn">
@@ -723,54 +726,40 @@ function fluteGrad(g,em){
 function fluteMouth(g,em,ty,by,th,cy){
   let m='';
   if(em==='bec'){
-    // Bec (recorder/whistle) - tapered beak with windway and labium window
-    m+='<path d="M4,'+cy+' L14,'+(ty+4)+' L58,'+ty+' L58,'+by+' L14,'+(by-4)+' L4,'+cy+' Z" fill="url(#wg_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
-    // Windway canal line
-    m+='<line x1="6" y1="'+cy+'" x2="36" y2="'+(ty+3)+'" stroke="#5C4A0A" stroke-width=".7" opacity=".6"/>';
-    // Labium window (fente ou le son nait)
-    m+='<rect x="36" y="'+(ty-5)+'" width="14" height="7" rx="2" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".8"/>';
-    // Edge du labium
-    m+='<line x1="50" y1="'+(ty-4)+'" x2="50" y2="'+(ty+1)+'" stroke="#D4B044" stroke-width="1" opacity=".5"/>';
-    // Beak tip highlight
-    m+='<circle cx="5" cy="'+cy+'" r="2" fill="#A8862A" opacity=".5"/>'
+    // Bec: rectangle + arc de cercle retire en bas-gauche + chanfrain noir en haut-droite
+    m+='<path d="M4,'+ty+' L58,'+ty+' L58,'+by+' L20,'+by+' A16,16 0 0,1 4,'+(by-16)+' Z" fill="url(#wg_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
+    // Reflet haut du bloc
+    m+='<rect x="4" y="'+ty+'" width="54" height="5" rx="0" fill="#D4B044" opacity=".15"/>';
+    // Chanfrain (petit rect noir en haut-droite du bloc embouchure)
+    m+='<rect x="50" y="'+(ty-2)+'" width="10" height="6" rx="1" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".8"/>'
   }else if(em==='naf'){
     // Flute amerindienne - slow air chamber + bird/fetish block + flue
-    // Slow air chamber (chambre lente, a gauche)
     m+='<rect x="4" y="'+ty+'" width="24" height="'+th+'" rx="2" fill="url(#wg_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
     m+='<rect x="4" y="'+ty+'" width="24" height="5" rx="1" fill="#D4B044" opacity=".15"/>';
-    // Bouchon gauche
     m+='<rect x="2" y="'+(ty-1)+'" width="4" height="'+(th+2)+'" rx="1" fill="url(#cr_'+g+')" stroke="#5C4A0A" stroke-width=".8"/>';
-    // Bird/fetish block assis sur le tube
     m+='<rect x="24" y="'+(ty-14)+'" width="20" height="12" rx="3" fill="url(#cr_'+g+')" stroke="#5C4A0A" stroke-width="1"/>';
-    // Detail decoratif de l\'oiseau (yeux + bec)
     m+='<circle cx="30" cy="'+(ty-10)+'" r="1.5" fill="#1A1008"/>';
     m+='<path d="M24,'+(ty-8)+' L20,'+(ty-9)+' L24,'+(ty-10)+'" fill="#5C4A0A" stroke="none"/>';
-    // Flue channel (canal sous l\'oiseau)
     m+='<rect x="28" y="'+(ty-2)+'" width="12" height="3" rx="1" fill="#1A1008" opacity=".8"/>';
-    // Sound hole (trou de son)
     m+='<rect x="42" y="'+(ty-3)+'" width="8" height="5" rx="1.5" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".6"/>';
-    // Separation entre chambres
     m+='<line x1="28" y1="'+ty+'" x2="28" y2="'+by+'" stroke="#5C4A0A" stroke-width="1" opacity=".4"/>'
   }else if(em==='end'){
-    // End-blown (shakuhachi, quena, ney, kaval) - tube ouvert avec encoche utaguchi
-    // Coupe biseautee du bout
+    // End-blown - tube ouvert avec encoche utaguchi
     m+='<path d="M18,'+ty+' L10,'+(ty-8)+' L16,'+(ty-12)+' L22,'+(ty-6)+' L18,'+ty+'" fill="url(#lp_'+g+')" stroke="#5C4A0A" stroke-width="1"/>';
-    // Encoche utaguchi (notch) - profonde, en V
     m+='<path d="M12,'+(ty-6)+' L16,'+(ty-16)+' L20,'+(ty-6)+'" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".8"/>';
-    // Edge brillant du biseau
     m+='<line x1="16" y1="'+(ty-15)+'" x2="20" y2="'+(ty-7)+'" stroke="#D4B044" stroke-width=".8" opacity=".5"/>';
-    // Ouverture du tube - interieur sombre visible
     m+='<ellipse cx="16" cy="'+cy+'" rx="4" ry="'+(th/2-2)+'" fill="url(#eh_'+g+')" stroke="#5C4A0A" stroke-width="1" opacity=".6"/>'
   }else{
-    // Traversiere (defaut) - couronne + plaque de levre + trou
-    m+='<rect x="4" y="'+(ty-3)+'" width="12" height="'+(th+6)+'" rx="1" fill="url(#cr_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
-    m+='<line x1="10" y1="'+(ty-2)+'" x2="10" y2="'+(by+2)+'" stroke="#5C4A0A" stroke-width=".6" opacity=".5"/>';
-    m+='<rect x="62" y="'+(ty-1)+'" width="4" height="'+(th+2)+'" rx="0" fill="#A8862A" stroke="#5C4A0A" stroke-width=".6" opacity=".7"/>';
-    m+='<path d="M28,'+ty+' Q28,'+(ty-14)+' 42,'+(ty-16)+' Q56,'+(ty-14)+' 56,'+ty+'" fill="url(#lp_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
-    m+='<path d="M31,'+(ty-2)+' Q31,'+(ty-11)+' 42,'+(ty-13)+' Q53,'+(ty-11)+' 53,'+(ty-2)+'" fill="none" stroke="#EDD580" stroke-width=".7" opacity=".3"/>';
-    m+='<rect x="36" y="'+(ty-10)+'" width="12" height="8" rx="3" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".8"/>';
-    m+='<line x1="48" y1="'+(ty-9)+'" x2="48" y2="'+(ty-3)+'" stroke="#D4B044" stroke-width="1" opacity=".5"/>';
-    m+='<rect x="37" y="'+(ty-9)+'" width="10" height="6" rx="2" fill="none" stroke="#0A0600" stroke-width=".4" opacity=".3"/>'
+    // Traversiere: rectangle embouchure + trou rond centre partie haute
+    m+='<rect x="4" y="'+(ty-2)+'" width="56" height="'+(th+4)+'" rx="2" fill="url(#wg_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
+    // Reflet haut
+    m+='<rect x="4" y="'+(ty-2)+'" width="56" height="5" rx="1" fill="#D4B044" opacity=".15"/>';
+    // Bague de jonction tete/corps
+    m+='<rect x="58" y="'+(ty-3)+'" width="5" height="'+(th+6)+'" rx="1" fill="#A8862A" stroke="#5C4A0A" stroke-width=".6" opacity=".7"/>';
+    // Trou rond d\'embouchure centre dans la partie haute
+    m+='<circle cx="32" cy="'+(ty+4)+'" r="6" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width="1"/>';
+    // Reflet du trou
+    m+='<circle cx="31" cy="'+(ty+3)+'" r="3" fill="none" stroke="#EDD580" stroke-width=".4" opacity=".3"/>'
   }
   return m
 }
@@ -819,47 +808,43 @@ function buildOcarina(cfg,svgId,showNums){
   const svg=$(svgId);if(!svg||!cfg)return;
   const nf=cfg.num_fingers||4,fingers=cfg.fingers||[];
   const g=svgId;
-  // Dimensions: corps ovale + bec court
+  // Dimensions: embouchure bec (60px) + corps ovale
   const bcx=160,bcy=50,rx=Math.max(80,nf*18+20),ry=38;
   const tw=bcx+rx+30;
   svg.setAttribute('viewBox','0 0 '+tw+' 100');
   let h=fluteGrad(g,'oca');
   // Corps ovale (ceramique terra cotta)
   h+='<ellipse cx="'+bcx+'" cy="'+bcy+'" rx="'+rx+'" ry="'+ry+'" fill="url(#wg_'+g+')" stroke="#5C2810" stroke-width="1.8"/>';
-  // Reflet ceramique
   h+='<ellipse cx="'+(bcx-10)+'" cy="'+(bcy-12)+'" rx="'+(rx-20)+'" ry="14" fill="#D88050" opacity=".12"/>';
-  // Bec (mouthpiece) - petit tube a gauche
-  const bx=bcx-rx;
-  h+='<path d="M'+(bx-25)+','+bcy+' L'+(bx-15)+','+(bcy-8)+' L'+(bx+5)+','+(bcy-10)+' L'+(bx+5)+','+(bcy+10)+' L'+(bx-15)+','+(bcy+8)+' Z" fill="url(#lp_'+g+')" stroke="#5C2810" stroke-width="1.2"/>';
-  // Trou du bec
-  h+='<ellipse cx="'+(bx-18)+'" cy="'+bcy+'" rx="3" ry="4" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".6"/>';
-  // Trou de pouce (dessous, indique en pointille)
-  h+='<ellipse cx="'+(bcx+rx-20)+'" cy="'+(bcy+ry-8)+'" rx="6" ry="4" fill="none" stroke="#5C2810" stroke-width=".8" stroke-dasharray="2,2" opacity=".5"/>';
-  h+='<text x="'+(bcx+rx-20)+'" y="'+(bcy+ry+6)+'" text-anchor="middle" style="font-size:8px;fill:#887">dessous</text>';
-  // Trous sur la face superieure, repartis en arc
-  const topH=[],botH=[];
-  for(let i=0;i<nf;i++){(fingers[i]&&fingers[i].th?botH:topH).push(i)}
-  // Top row - arc distribue
-  const tsp=Math.min(32,rx*1.2/Math.max(topH.length,1));
-  const tsx=bcx-(topH.length-1)*tsp/2;
-  topH.forEach((fi,i)=>{
-    const cx=tsx+i*tsp;
-    const a=((i/(topH.length-1||1))-0.5)*0.8;
-    const ocY=bcy-10+Math.abs(a)*6;
-    h+='<circle id="fh_'+svgId+'_'+fi+'" cx="'+cx+'" cy="'+ocY+'" r="10" class="flute-hole closed"/>';
-    if(showNums)h+='<text x="'+cx+'" y="'+(ocY+3)+'" text-anchor="middle" class="flute-num">'+(fi+1)+'</text>'
-  });
-  // Bottom row (thumb holes)
-  if(botH.length){
-    const bsp=Math.min(32,rx*0.8/Math.max(botH.length,1));
-    const bsx=bcx-(botH.length-1)*bsp/2;
-    botH.forEach((fi,i)=>{
-      const cx=bsx+i*bsp;
-      h+='<circle id="fh_'+svgId+'_'+fi+'" cx="'+cx+'" cy="'+(bcy+14)+'" r="8" class="flute-hole closed thumb"/>';
-      if(showNums)h+='<text x="'+cx+'" y="'+(bcy+17)+'" text-anchor="middle" class="flute-num">'+(fi+1)+'</text>'
-    });
-    h+='<text x="'+bsx+'" y="'+(bcy+30)+'" text-anchor="middle" class="flute-lbl">Pouce</text>'
+  // Embouchure type bec: rectangle + arc bas-gauche + chanfrain haut-droite
+  const bx=bcx-rx,mw=50,mty=bcy-10,mby=bcy+10,mth=20;
+  h+='<path d="M'+(bx-mw)+','+mty+' L'+bx+','+mty+' L'+bx+','+mby+' L'+(bx-mw+16)+','+mby+' A14,14 0 0,1 '+(bx-mw)+','+(mby-14)+' Z" fill="url(#lp_'+g+')" stroke="#5C2810" stroke-width="1.2"/>';
+  // Chanfrain (petit rect noir en haut-droite du bec)
+  h+='<rect x="'+(bx-8)+'" y="'+(mty-2)+'" width="10" height="5" rx="1" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".6"/>';
+  // Trous alternes: impair (1,3,5,7) en haut, pair (2,4,6,8) en bas
+  const topRow=[],botRow=[];
+  for(let i=0;i<nf;i++){
+    if(fingers[i]&&fingers[i].th){botRow.push(i)} // Pouce toujours en bas
+    else if(i%2===0){topRow.push(i)} // Impair (1-based) = index pair → haut
+    else{botRow.push(i)} // Pair (1-based) = index impair → bas
   }
+  const hsp=Math.min(30,rx*1.1/Math.max(Math.max(topRow.length,botRow.length),1));
+  // Top row (impair: doigts 1,3,5,7)
+  if(topRow.length){
+    const tsx=bcx-(topRow.length-1)*hsp/2;
+    topRow.forEach((fi,i)=>{
+      const cx=tsx+i*hsp;
+      h+='<circle id="fh_'+svgId+'_'+fi+'" cx="'+cx+'" cy="'+(bcy-12)+'" r="9" class="flute-hole closed"/>';
+      if(showNums)h+='<text x="'+cx+'" y="'+(bcy-9)+'" text-anchor="middle" class="flute-num">'+(fi+1)+'</text>'
+    })}
+  // Bottom row (pair: doigts 2,4,6,8 + pouces)
+  if(botRow.length){
+    const bsx=bcx-(botRow.length-1)*hsp/2;
+    botRow.forEach((fi,i)=>{
+      const cx=bsx+i*hsp;const isThumb=fingers[fi]&&fingers[fi].th;
+      h+='<circle id="fh_'+svgId+'_'+fi+'" cx="'+cx+'" cy="'+(bcy+12)+'" r="'+(isThumb?7:9)+'" class="flute-hole closed'+(isThumb?' thumb':'')+'"/>';
+      if(showNums)h+='<text x="'+cx+'" y="'+(bcy+15)+'" text-anchor="middle" class="flute-num">'+(fi+1)+'</text>'
+    })}
   // Label
   h+='<text x="'+(tw-10)+'" y="94" text-anchor="end" style="font-size:9px;fill:#667;font-style:italic">Ocarina</text>';
   svg.innerHTML=h
@@ -1031,20 +1016,13 @@ function buildPresetSelect(){
   const s=$('presetSelect');if(!s||!CFG)return;
   s.innerHTML='<option value="">-- Personnalis\u00e9 --</option>';
   const nf=CFG.num_fingers;
-  // Presets compatibles (meme nombre de trous)
+  // Uniquement les presets compatibles (meme nombre de trous)
   const compat=PR.filter(p=>p.h===nf);
-  // Presets autres (nb trous different)
-  const other=PR.filter(p=>p.h!==nf);
   if(compat.length){
-    const og=document.createElement('optgroup');og.label='Compatible ('+nf+' trous)';
+    const og=document.createElement('optgroup');og.label='Accordages '+nf+' trous';
     compat.forEach(p=>{const o=document.createElement('option');o.value=p.id;
       o.textContent=p.n+' - '+p.d.length+' notes ('+mn(p.d[0][0])+'\u2192'+mn(p.d[p.d.length-1][0])+')';og.appendChild(o)});
     s.appendChild(og)}
-  if(other.length){
-    const og2=document.createElement('optgroup');og2.label='Autres instruments';
-    other.forEach(p=>{const o=document.createElement('option');o.value=p.id;
-      o.textContent=p.n+' ('+p.h+' trous, '+p.d.length+' notes)';o.style.opacity='.6';og2.appendChild(o)});
-    s.appendChild(og2)}
   updPresetInfo()
 }
 
@@ -1057,8 +1035,7 @@ function updPresetInfo(){
   if(!val){el.innerHTML=CFG&&CFG.notes.length?'<b>Personnalis\u00e9</b> - '+CFG.notes.length+' notes ('+mn(CFG.notes[0].midi)+'\u2192'+mn(CFG.notes[CFG.notes.length-1].midi)+')':'Selectionnez un preset ou ajoutez des notes manuellement';return}
   const p=PR.find(x=>x.id===val);if(!p){el.innerHTML='';return}
   const lo=mn(p.d[0][0]),hi=mn(p.d[p.d.length-1][0]);
-  const warn=p.h!==CFG.num_fingers?' <span style="color:#e94560">Attention: '+p.h+' trous \u2260 '+CFG.num_fingers+' configures</span>':'';
-  el.innerHTML='<b>'+esc(p.n)+'</b> - '+p.d.length+' notes, de '+lo+' a '+hi+(p.th>=0?' (pouce doigt '+(p.th+1)+')':'')+warn
+  el.innerHTML='<b>'+esc(p.n)+'</b> - '+p.d.length+' notes, de '+lo+' a '+hi+(p.th>=0?' (pouce doigt '+(p.th+1)+')':'')
 }
 
 function applyPreset(val){
