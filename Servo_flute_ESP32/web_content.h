@@ -217,6 +217,10 @@ max-height:120px;overflow-y:auto;color:#9aa}
       <input type="range" min="1" max="127" value="100" id="velSlider" oninput="setVelocity(this.value)">
       <span id="velVal" style="min-width:28px;text-align:right"></span>
     </div>
+    <div class="cfg-row"><label>Souffle</label>
+      <input type="range" min="0" max="100" value="50" id="airSlider" oninput="setAirLive(this.value)">
+      <span id="airVal" style="min-width:36px;text-align:right">50%</span>
+    </div>
   </div>
   <div class="keys" id="pianoKeys"></div>
 </div>
@@ -298,6 +302,11 @@ max-height:120px;overflow-y:auto;color:#9aa}
       </div>
     </div>
     <div class="section" id="fingeringSection">
+      <div style="display:flex;gap:12px;font-size:.75em;color:#888;margin-bottom:8px">
+        <span><span class="fg-dot open" style="display:inline-block;width:12px;height:12px;vertical-align:middle"></span> Ouvert</span>
+        <span><span class="fg-dot closed" style="display:inline-block;width:12px;height:12px;vertical-align:middle"></span> Ferme</span>
+        <span><span class="fg-dot closed thumb" style="display:inline-block;width:12px;height:12px;vertical-align:middle"></span> Pouce</span>
+      </div>
       <div class="undo-bar">
         <button class="btn btn-s" id="undoBtn" onclick="undoFp()" disabled title="Ctrl+Z"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M4 7h8a3 3 0 010 6H9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7 4L4 7l3 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Annuler</button>
         <button class="btn btn-s" id="redoBtn" onclick="redoFp()" disabled title="Ctrl+Y"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M12 7H4a3 3 0 000 6h3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M9 4l3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Retablir</button>
@@ -589,10 +598,17 @@ function buildKeyboard(){
 
 function noteOn(midi){curNote=midi;updateFluteForNote(midi);
   document.querySelectorAll('#fluteSvg .flute-hole.open').forEach(h=>h.classList.add('playing'));
+  // Update airflow slider range for this note
+  if(CFG){const nd=CFG.notes.find(n=>n.midi===midi);if(nd){
+    const sl=$('airSlider'),av=$('airVal');
+    sl.min=nd.amn;sl.max=nd.amx;
+    const mid=Math.round((nd.amn+nd.amx)/2);sl.value=mid;av.textContent=mid+'%';
+    wsSend({t:'air_live',v:mid})}}
   wsSend({t:'non',n:midi,v:velocity})}
 function noteOff(midi){wsSend({t:'nof',n:midi});if(curNote===midi){curNote=null;
   document.querySelectorAll('#fluteSvg .flute-hole.playing').forEach(h=>h.classList.remove('playing'))}}
 function setVelocity(v){velocity=parseInt(v);$('velVal').textContent=v;wsSend({t:'velocity',v:velocity})}
+function setAirLive(v){$('airVal').textContent=v+'%';wsSend({t:'air_live',v:parseInt(v)})}
 
 // Keyboard shortcuts
 const KC='azertyuiopqsdfghjklmwxcvbn'.split('');let keyMap={},keysDown=new Set();
@@ -610,15 +626,11 @@ document.addEventListener('keydown',e=>{if(!e.ctrlKey)return;
 function buildFlute(cfg,svgId,showNums){
   const svg=$(svgId);if(!svg||!cfg)return;
   const nf=cfg.num_fingers||6,fingers=cfg.fingers||[];
-  const sp=50,sx=80,gap=30,r=14;
+  const sp=50,sx=80,r=14;
   const topHoles=[],botHoles=[];
   for(let i=0;i<nf;i++){(fingers[i]&&fingers[i].th?botHoles:topHoles).push(i)}
-  // Calculate positions
-  const lc=Math.ceil(topHoles.length/2),rc=topHoles.length-lc;
   const posTop=[];
-  for(let i=0;i<topHoles.length;i++){
-    const x=sx+(i<lc?i:(lc+1))*sp+(i>=lc?gap:0);posTop.push(x)
-  }
+  for(let i=0;i<topHoles.length;i++){posTop.push(sx+i*sp)}
   const posBot=[];
   for(let i=0;i<botHoles.length;i++){posBot.push(sx+i*sp)}
   const allX=[...posTop,...posBot,sx+200];
@@ -628,8 +640,11 @@ function buildFlute(cfg,svgId,showNums){
   let h='<defs><linearGradient id="wg_'+svgId+'" x1="0" y1="0" x2="0" y2="1">';
   h+='<stop offset="0%" stop-color="#C4A035"/><stop offset="45%" stop-color="#9B7A1C"/>';
   h+='<stop offset="100%" stop-color="#6B4F10"/></linearGradient></defs>';
+  // Corps de la flute
   h+='<rect x="15" y="28" width="'+(tw-30)+'" height="44" rx="22" fill="url(#wg_'+svgId+')" stroke="#5C4A0A" stroke-width="2"/>';
-  h+='<ellipse cx="24" cy="'+cy+'" rx="13" ry="24" fill="#B08C20" stroke="#5C4A0A" stroke-width="2"/>';
+  // Embouchure (trou ovale + lèvre)
+  h+='<ellipse cx="28" cy="'+cy+'" rx="8" ry="18" fill="#1a1a2e" stroke="#5C4A0A" stroke-width="1.5"/>';
+  h+='<rect x="18" y="30" width="6" height="40" rx="3" fill="#B08C20" stroke="#5C4A0A" stroke-width="1"/>';
   // Top holes
   topHoles.forEach((fi,i)=>{
     h+='<circle id="fh_'+svgId+'_'+fi+'" cx="'+posTop[i]+'" cy="'+h_top+'" r="'+r+'" class="flute-hole closed"/>';
@@ -640,13 +655,6 @@ function buildFlute(cfg,svgId,showNums){
     h+='<circle id="fh_'+svgId+'_'+fi+'" cx="'+posBot[i]+'" cy="'+h_bot+'" r="'+(r-2)+'" class="flute-hole closed thumb"/>';
     if(showNums)h+='<text x="'+posBot[i]+'" y="'+(h_bot+4)+'" text-anchor="middle" class="flute-num">'+(fi+1)+'</text>'
   });
-  // Hand separator
-  if(topHoles.length>1&&lc>0&&rc>0){
-    const sepX=(posTop[lc-1]+posTop[lc])/2;
-    h+='<line x1="'+sepX+'" y1="22" x2="'+sepX+'" y2="50" stroke="#5C4A0A" stroke-width="1" stroke-dasharray="3,3" opacity="0.4"/>';
-    h+='<text x="'+((posTop[0]+posTop[lc-1])/2)+'" y="18" text-anchor="middle" class="flute-lbl">G</text>';
-    h+='<text x="'+((posTop[lc]+posTop[topHoles.length-1])/2)+'" y="18" text-anchor="middle" class="flute-lbl">D</text>'
-  }
   if(botHoles.length>0)h+='<text x="'+(posBot[0])+'" y="88" text-anchor="middle" class="flute-lbl">Pouce</text>';
   svg.innerHTML=h
 }
@@ -709,20 +717,25 @@ function buildFingerCards(){
   for(let i=0;i<CFG.num_fingers;i++){
     const f=CFG.fingers[i]||{ch:i,a:90,d:1,th:0};
     const d=document.createElement('div');d.className='cal-card';
-    d.innerHTML='<h4>Doigt '+(i+1)+' <span style="color:#888;font-size:.85em">(PCA '+f.ch+')</span></h4>'+
-      '<div class="cfg-row"><label>PCA</label><select id="fch'+i+'" style="max-width:80px" onchange="CFG.fingers['+i+'].ch=parseInt(this.value);checkPca();markDirty()">'+
-        Array.from({length:16},(_,j)=>'<option value="'+j+'"'+(j===f.ch?' selected':'')+'>'+j+'</option>').join('')+'</select></div>'+
-      '<div class="cfg-row"><label>Angle ferme</label><input type="range" min="0" max="180" value="'+f.a+'" id="fa'+i+
-        '" oninput="CFG.fingers['+i+'].a=parseInt(this.value);$(\'fav'+i+'\').textContent=this.value+\'&deg;\';testFinger('+i+',parseInt(this.value))">'+
-        '<span id="fav'+i+'" style="min-width:36px">'+f.a+'&deg;</span></div>'+
-      '<div class="cfg-row"><label>Direction</label><select id="fd'+i+'" style="max-width:80px" onchange="CFG.fingers['+i+'].d=parseInt(this.value);markDirty()">'+
-        '<option value="1"'+(f.d===1?' selected':'')+'>+1</option><option value="-1"'+(f.d===-1?' selected':'')+'>-1</option></select></div>'+
-      '<div class="cfg-row"><label>Trou arriere</label><input type="checkbox" id="fth'+i+'"'+(f.th?' checked':'')+
-        ' style="width:auto;flex:0" onchange="CFG.fingers['+i+'].th=this.checked?1:0;buildFlute(CFG,\'calFluteSvg\',true);markDirty()"></div>'+
+    let html='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
+      '<h4 style="margin:0">Doigt '+(i+1)+'</h4>'+
+      '<div style="display:flex;align-items:center;gap:8px">'+
+        '<span style="font-size:.75em;color:#888">Pin PCA</span>'+
+        '<select id="fch'+i+'" style="max-width:70px" onchange="CFG.fingers['+i+'].ch=parseInt(this.value);checkPca();markDirty()">'+
+          Array.from({length:16},(_,j)=>'<option value="'+j+'"'+(j===f.ch?' selected':'')+'>'+j+'</option>').join('')+'</select>'+
+        '<select id="fd'+i+'" style="max-width:60px" onchange="CFG.fingers['+i+'].d=parseInt(this.value);markDirty()">'+
+          '<option value="1"'+(f.d===1?' selected':'')+'>+1</option><option value="-1"'+(f.d===-1?' selected':'')+'>-1</option></select>'+
+      '</div></div>';
+    if(i===0) html+='<div class="cfg-row"><label>Pouce (arriere)</label><input type="checkbox" id="fth'+i+'"'+(f.th?' checked':'')+
+      ' style="width:auto;flex:0" onchange="CFG.fingers['+i+'].th=this.checked?1:0;buildFlute(CFG,\'calFluteSvg\',true);markDirty()"></div>';
+    html+='<div style="margin:6px 0"><div style="display:flex;justify-content:space-between;font-size:.75em;color:#888;margin-bottom:2px">'+
+      '<span>Angle ferme</span><span id="fav'+i+'">'+f.a+'&deg;</span></div>'+
+      '<input type="range" min="0" max="180" value="'+f.a+'" id="fa'+i+'" style="width:100%"'+
+        ' oninput="CFG.fingers['+i+'].a=parseInt(this.value);$(\'fav'+i+'\').textContent=this.value+\'&deg;\';testFinger('+i+',parseInt(this.value))"></div>'+
       '<div class="btn-row"><button class="btn btn-s" onclick="testPulse(this);testFinger('+i+',CFG.fingers['+i+'].a)">Fermer</button>'+
         '<button class="btn btn-s" onclick="testPulse(this);testFinger('+i+',CFG.fingers['+i+'].a+(CFG.angle_open||30)*CFG.fingers['+i+'].d)">Ouvrir</button></div>'+
       '<div class="pca-warn"></div>';
-    c.appendChild(d)
+    d.innerHTML=html;c.appendChild(d)
   }
   checkPca()
 }
@@ -739,7 +752,7 @@ function saveStep1(){
     CFG.fingers[i].ch=parseInt($('fch'+i).value);
     CFG.fingers[i].a=parseInt($('fa'+i).value);
     CFG.fingers[i].d=parseInt($('fd'+i).value);
-    CFG.fingers[i].th=$('fth'+i).checked?1:0
+    const thEl=$('fth'+i);CFG.fingers[i].th=thEl?thEl.checked?1:0:0
   }
   const body={num_fingers:CFG.num_fingers,air_pca:CFG.air_pca,angle_open:CFG.angle_open,fingers:CFG.fingers.slice(0,CFG.num_fingers)};
   fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
