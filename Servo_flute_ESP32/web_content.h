@@ -708,14 +708,33 @@ function buildFlute(cfg,svgId,showNums){
   const tw=Math.max(...allX)+60;
   const h_top=35,h_bot=65,cy=50;
   svg.setAttribute('viewBox','0 0 '+tw+' 100');
-  let h='<defs><linearGradient id="wg_'+svgId+'" x1="0" y1="0" x2="0" y2="1">';
-  h+='<stop offset="0%" stop-color="#C4A035"/><stop offset="45%" stop-color="#9B7A1C"/>';
-  h+='<stop offset="100%" stop-color="#6B4F10"/></linearGradient></defs>';
-  // Corps de la flute
-  h+='<rect x="15" y="28" width="'+(tw-30)+'" height="44" rx="22" fill="url(#wg_'+svgId+')" stroke="#5C4A0A" stroke-width="2"/>';
-  // Embouchure (trou ovale + lèvre)
-  h+='<ellipse cx="28" cy="'+cy+'" rx="8" ry="18" fill="#1a1a2e" stroke="#5C4A0A" stroke-width="1.5"/>';
-  h+='<rect x="18" y="30" width="6" height="40" rx="3" fill="#B08C20" stroke="#5C4A0A" stroke-width="1"/>';
+  const g=svgId;
+  let h='<defs><linearGradient id="wg_'+g+'" x1="0" y1="0" x2="0" y2="1">'+
+    '<stop offset="0%" stop-color="#D4B044"/><stop offset="30%" stop-color="#C4A035"/>'+
+    '<stop offset="70%" stop-color="#9B7A1C"/><stop offset="100%" stop-color="#6B4F10"/></linearGradient>'+
+    '<linearGradient id="lp_'+g+'" x1="0" y1="0" x2="0" y2="1">'+
+    '<stop offset="0%" stop-color="#E0C055"/><stop offset="30%" stop-color="#D4B044"/>'+
+    '<stop offset="70%" stop-color="#A8862A"/><stop offset="100%" stop-color="#7A5C15"/></linearGradient>'+
+    '<linearGradient id="cr_'+g+'" x1="0" y1="0" x2="0" y2="1">'+
+    '<stop offset="0%" stop-color="#B89530"/><stop offset="50%" stop-color="#8A6A18"/>'+
+    '<stop offset="100%" stop-color="#5C4A0A"/></linearGradient>'+
+    '<radialGradient id="eh_'+g+'" cx=".5" cy=".4" r=".6">'+
+    '<stop offset="0%" stop-color="#0D0800"/><stop offset="100%" stop-color="#2A1C08"/></radialGradient></defs>';
+  // Corps de la flute (tube principal)
+  h+='<rect x="18" y="28" width="'+(tw-33)+'" height="44" rx="22" fill="url(#wg_'+g+')" stroke="#5C4A0A" stroke-width="1.5"/>';
+  // Couronne (bouchon en bout de tete)
+  h+='<rect x="6" y="30" width="14" height="40" rx="5" fill="url(#cr_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
+  h+='<circle cx="13" cy="'+cy+'" r="4" fill="#8A6A18" stroke="#5C4A0A" stroke-width=".8"/>';
+  h+='<circle cx="12" cy="48" r="1.2" fill="#D4B044" opacity=".4"/>';
+  // Bague de jonction tete/corps
+  h+='<rect x="62" y="29" width="4" height="42" rx="2" fill="#A8862A" stroke="#5C4A0A" stroke-width=".6" opacity=".6"/>';
+  // Plaque de levre (lip plate) - ovale surelevee
+  h+='<ellipse cx="42" cy="'+cy+'" rx="16" ry="19" fill="url(#lp_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
+  h+='<ellipse cx="42" cy="'+cy+'" rx="14" ry="17" fill="none" stroke="#EDD580" stroke-width=".8" opacity=".3"/>';
+  // Trou d\'embouchure (blow hole)
+  h+='<rect x="34" y="42" width="16" height="16" rx="7" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width="1"/>';
+  h+='<rect x="36" y="44" width="12" height="12" rx="5" fill="none" stroke="#0D0800" stroke-width=".5" opacity=".3"/>';
+  h+='<ellipse cx="38" cy="44" rx="3" ry="1.2" fill="#D4B044" opacity=".2"/>';
   // Top holes
   topHoles.forEach((fi,i)=>{
     h+='<circle id="fh_'+svgId+'_'+fi+'" cx="'+posTop[i]+'" cy="'+h_top+'" r="'+r+'" class="flute-hole closed"/>';
