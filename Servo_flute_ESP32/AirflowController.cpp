@@ -314,6 +314,13 @@ void AirflowController::update() {
   }
 }
 
+void AirflowController::setAirflowLivePercent(uint8_t percent) {
+  if (percent > 100) percent = 100;
+  uint16_t angle = cfg.servoAirflowMin + ((cfg.servoAirflowMax - cfg.servoAirflowMin) * percent / 100);
+  _baseAngleWithoutVibrato = angle;
+  setAirflowServoAngle(angle);
+}
+
 void AirflowController::testAirflowAngle(uint16_t angle) {
   if (angle > SERVO_MAX_ANGLE) angle = SERVO_MAX_ANGLE;
   setAirflowServoAngle(angle);
@@ -347,7 +354,7 @@ uint16_t AirflowController::angleToPWM(uint16_t angle) {
   float pulseDuration = (float)pulse / 1000000.0;
   float pwmValue = pulseDuration * SERVO_FREQUENCY * 4096.0;
 
-  return (uint16_t)pwmValue;
+  return (uint16_t)(pwmValue + 0.5f);
 }
 
 void AirflowController::setSolenoidPWM(uint8_t pwmValue) {

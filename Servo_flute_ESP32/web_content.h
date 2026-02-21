@@ -211,7 +211,8 @@ max-height:120px;overflow-y:auto;color:#9aa}
 <div class="tabs">
   <button class="active" onclick="showTab('keyboard',this)"><svg viewBox="0 0 16 14" width="14" height="12"><rect x="1" y="1" width="14" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="4" width="2" height="2" rx=".5" fill="currentColor"/><rect x="7" y="4" width="2" height="2" rx=".5" fill="currentColor"/><rect x="11" y="4" width="2" height="2" rx=".5" fill="currentColor"/><rect x="4" y="8" width="8" height="2" rx=".5" fill="currentColor"/></svg>Clavier</button>
   <button onclick="showTab('midi',this)"><svg viewBox="0 0 14 16" width="12" height="14"><path d="M12 1v10.5a2.5 2.5 0 11-2-2.45V3.5L5 5v8a2.5 2.5 0 11-2-2.45V1l9-2z" fill="currentColor" opacity=".85"/></svg>MIDI</button>
-  <button onclick="showTab('calib',this)"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M6.5 1L7 4H5L2 8h3l-.5 7 6-9H7.5l2-5z" fill="currentColor" opacity=".85"/></svg>Calibration</button>
+  <button id="btnTabCalib" onclick="showTab('calib',this)"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M6.5 1L7 4H5L2 8h3l-.5 7 6-9H7.5l2-5z" fill="currentColor" opacity=".85"/></svg>Calibration</button>
+  <button onclick="showTab('browser',this)"><svg viewBox="0 0 16 16" width="14" height="14"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.2"/><ellipse cx="8" cy="8" rx="3" ry="6.5" fill="none" stroke="currentColor" stroke-width="1"/><line x1="1.5" y1="8" x2="14.5" y2="8" stroke="currentColor" stroke-width="1"/></svg>Web</button>
 </div>
 
 <!-- TAB: KEYBOARD -->
@@ -466,6 +467,20 @@ max-height:120px;overflow-y:auto;color:#9aa}
   </div>
 </div>
 
+<!-- TAB: MINI BROWSER -->
+<div class="tab" id="tab-browser">
+  <div class="card" style="padding:8px">
+    <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+      <button class="btn btn-s" onclick="browserBack()" title="Retour"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="btn btn-s" onclick="browserFwd()" title="Suivant"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="btn btn-s" onclick="browserReload()" title="Recharger"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M13 8a5 5 0 11-1.5-3.5M13 2v3h-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <input type="text" id="browserUrl" class="cfg-input" style="flex:1;font-size:0.8em;padding:6px 8px" placeholder="https://..." value="https://music.youtube.com" onkeydown="if(event.key==='Enter')browserGo()">
+      <button class="btn btn-p" onclick="browserGo()" style="padding:6px 12px">Go</button>
+    </div>
+    <iframe id="browserFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" style="width:100%;height:calc(100vh - 180px);border:1px solid #0f3460;border-radius:6px;background:#fff" src="about:blank"></iframe>
+  </div>
+</div>
+
 <!-- SETTINGS OVERLAY -->
 <div class="settings-overlay" id="settingsOverlay">
 <div class="settings-box">
@@ -685,13 +700,19 @@ function showTab(id,btn){
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
   $('tab-'+id).classList.add('active');if(btn)btn.classList.add('active');
   if(id==='calib'&&CFG)buildCalibUI();
+  if(id==='browser'){const f=$('browserFrame');if(f.src==='about:blank')browserGo()}
 }
+// --- Mini Browser ---
+function browserGo(){const u=$('browserUrl').value.trim();if(!u)return;
+  const url=u.match(/^https?:\/\//)?u:'https://'+u;$('browserUrl').value=url;$('browserFrame').src=url}
+function browserBack(){try{$('browserFrame').contentWindow.history.back()}catch(e){}}
+function browserFwd(){try{$('browserFrame').contentWindow.history.forward()}catch(e){}}
+function browserReload(){try{$('browserFrame').contentWindow.location.reload()}catch(e){$('browserFrame').src=$('browserFrame').src}}
 function toggleSettings(){$('settingsOverlay').classList.toggle('open');if($('settingsOverlay').classList.contains('open')&&CFG)fillSettings()}
 function applyCalibVisibility(){
-  const btns=document.querySelectorAll('.tabs button');
-  const calibBtn=btns[btns.length-1]; // Calibration = dernier onglet
+  const calibBtn=$('btnTabCalib');
   if(CFG&&CFG.hide_calib){calibBtn.style.display='none';
-    if($('tab-calib').classList.contains('active')){showTab('keyboard',btns[0])}
+    if($('tab-calib').classList.contains('active')){showTab('keyboard',document.querySelector('.tabs button'))}
   }else{calibBtn.style.display=''}
 }
 

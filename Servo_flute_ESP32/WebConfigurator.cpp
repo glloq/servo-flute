@@ -688,6 +688,13 @@ void WebConfigurator::processWsMessage(AsyncWebSocketClient* client, uint8_t* da
       if (_webVelocity > MIDI_VELOCITY_MAX) _webVelocity = MIDI_VELOCITY_MAX;
     }
 
+  } else if (type == "air_live") {
+    int vIdx = msg.indexOf("\"v\":");
+    if (vIdx >= 0) {
+      uint8_t pct = (uint8_t)msg.substring(vIdx + 4).toInt();
+      _instrument->getAirflowCtrl().setAirflowLivePercent(pct);
+    }
+
   } else if (type == "play") {
     if (_player) _player->play();
   } else if (type == "pause") {

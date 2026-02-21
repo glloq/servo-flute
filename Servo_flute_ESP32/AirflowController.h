@@ -35,6 +35,9 @@ public:
   // Met a jour CC2 (Breath Controller) avec lissage et fallback velocity
   void updateCC2Breath(byte ccBreath);
 
+  // Ajustement live du souffle depuis le slider UI (pourcentage 0-100)
+  void setAirflowLivePercent(uint8_t percent);
+
   // Calibration : positionner le servo airflow a un angle arbitraire
   void testAirflowAngle(uint16_t angle);
   // Calibration : tester solenoide open/close

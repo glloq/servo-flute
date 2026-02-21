@@ -119,5 +119,5 @@ uint16_t FingerController::angleToPWM(uint16_t angle) {
   float pulseDuration = (float)pulse / 1000000.0;
   float pwmValue = pulseDuration * SERVO_FREQUENCY * 4096.0;
 
-  return (uint16_t)pwmValue;
+  return (uint16_t)(pwmValue + 0.5f);
 }
