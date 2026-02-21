@@ -87,6 +87,10 @@ void ConfigStorage::initDefaults() {
 
   // --- Power ---
   cfg.timeUnpower = TIMEUNPOWER;
+
+  // --- UI ---
+  cfg.hideCalibration = false;
+  cfg.solenoidPin = SOLENOID_PIN;
 }
 
 bool ConfigStorage::load() {
@@ -183,6 +187,8 @@ bool ConfigStorage::load() {
   cfg.solenoidPwmHolding = doc["sol_hold"] | cfg.solenoidPwmHolding;
   cfg.solenoidActivationTimeMs = doc["sol_time"] | cfg.solenoidActivationTimeMs;
   cfg.timeUnpower = doc["time_unpower"] | cfg.timeUnpower;
+  cfg.hideCalibration = doc["hide_calib"] | (cfg.hideCalibration ? 1 : 0);
+  cfg.solenoidPin = doc["sol_pin"] | cfg.solenoidPin;
   cfg.airAttackMode = doc["air_atk_mode"] | cfg.airAttackMode;
   cfg.airAttackOffset = doc["air_atk_off"] | cfg.airAttackOffset;
   cfg.airAttackMs = doc["air_atk_ms"] | cfg.airAttackMs;
@@ -268,6 +274,8 @@ bool ConfigStorage::save() {
   doc["sol_hold"] = cfg.solenoidPwmHolding;
   doc["sol_time"] = cfg.solenoidActivationTimeMs;
   doc["time_unpower"] = cfg.timeUnpower;
+  doc["hide_calib"] = cfg.hideCalibration ? 1 : 0;
+  doc["sol_pin"] = cfg.solenoidPin;
   doc["air_atk_mode"] = cfg.airAttackMode;
   doc["air_atk_off"] = cfg.airAttackOffset;
   doc["air_atk_ms"] = cfg.airAttackMs;

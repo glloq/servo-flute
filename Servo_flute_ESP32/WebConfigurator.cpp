@@ -171,12 +171,18 @@ void WebConfigurator::setupRoutes() {
     },
     NULL,
     [this](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
-      // Accumuler le body
+      // Accumuler le body (data n'est pas null-termine)
       if (index == 0) {
         _configBody = "";
-        _configBody.reserve(total);
+        _configBody.reserve(total + 1);
       }
-      _configBody += String((char*)data).substring(0, len);
+      char* buf = (char*)malloc(len + 1);
+      if (buf) {
+        memcpy(buf, data, len);
+        buf[len] = '\0';
+        _configBody += buf;
+        free(buf);
+      }
     }
   );
 
@@ -219,8 +225,9 @@ void WebConfigurator::setupRoutes() {
     },
     NULL,
     [this](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
-      if (index == 0) { _configBody = ""; _configBody.reserve(total); }
-      _configBody += String((char*)data).substring(0, len);
+      if (index == 0) { _configBody = ""; _configBody.reserve(total + 1); }
+      char* buf = (char*)malloc(len + 1);
+      if (buf) { memcpy(buf, data, len); buf[len] = '\0'; _configBody += buf; free(buf); }
       if (index + len == total) {
         JsonDocument doc;
         DeserializationError err = deserializeJson(doc, _configBody);
@@ -344,6 +351,8 @@ void WebConfigurator::handleApiConfig(AsyncWebServerRequest* request) {
   json += ",\"device\":\"" + String(cfg.deviceName) + "\"";
   json += ",\"wifi_ssid\":\"" + String(cfg.wifiSsid) + "\"";
   json += ",\"time_unpower\":" + String(cfg.timeUnpower);
+  json += ",\"hide_calib\":" + String(cfg.hideCalibration ? "true" : "false");
+  json += ",\"sol_pin\":" + String(cfg.solenoidPin);
   json += ",\"air_atk_mode\":" + String(cfg.airAttackMode);
   json += ",\"air_atk_off\":" + String(cfg.airAttackOffset);
   json += ",\"air_atk_ms\":" + String(cfg.airAttackMs);
@@ -437,6 +446,8 @@ void WebConfigurator::handleApiConfigFinalize(AsyncWebServerRequest* request) {
     if (doc.containsKey("sol_hold")) cfg.solenoidPwmHolding = doc["sol_hold"];
     if (doc.containsKey("sol_time")) cfg.solenoidActivationTimeMs = doc["sol_time"];
     if (doc.containsKey("time_unpower")) cfg.timeUnpower = doc["time_unpower"];
+    if (doc.containsKey("hide_calib")) cfg.hideCalibration = doc["hide_calib"].as<bool>();
+    if (doc.containsKey("sol_pin")) cfg.solenoidPin = doc["sol_pin"];
     if (doc.containsKey("air_atk_mode")) cfg.airAttackMode = doc["air_atk_mode"];
     if (doc.containsKey("air_atk_off")) cfg.airAttackOffset = doc["air_atk_off"];
     if (doc.containsKey("air_atk_ms")) cfg.airAttackMs = doc["air_atk_ms"];

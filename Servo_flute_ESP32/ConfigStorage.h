@@ -101,6 +101,10 @@ struct RuntimeConfig {
 
   // --- Power ---
   uint16_t timeUnpower;
+
+  // --- UI ---
+  bool hideCalibration;              // Cacher l'onglet Calibration
+  uint8_t solenoidPin;               // GPIO solenoide (configurable)
 };
 
 // Config globale accessible depuis tout le projet
