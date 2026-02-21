@@ -265,9 +265,10 @@ max-height:120px;overflow-y:auto;color:#9aa}
   <!-- STEP 1: FINGERS -->
   <div id="step1" class="step-panel">
     <div class="section">
-      <h3>Instrument</h3>
-      <div class="cfg-row"><label>Type d'instrument</label>
-        <select id="instrumentSelect" style="flex:1;max-width:260px" onchange="selectInstrument(this.value)"></select>
+      <h3>Type d'instrument</h3>
+      <p style="font-size:.8em;color:#888;margin:0 0 8px">Choisissez l'instrument pour configurer automatiquement le nombre de trous et le type d'embouchure.</p>
+      <div class="cfg-row"><label>Instrument</label>
+        <select id="instrumentSelect" style="flex:1;max-width:300px" onchange="selectInstrument(this.value)"></select>
       </div>
     </div>
     <div class="section">
@@ -299,9 +300,9 @@ max-height:120px;overflow-y:auto;color:#9aa}
   <!-- STEP 2: FINGERINGS -->
   <div id="step2" class="step-panel" style="display:none">
     <div class="section">
-      <h3>Notes &amp; doigtes</h3>
-      <p style="font-size:.8em;color:#888;margin:0 0 8px">Choisissez un jeu de doigtes pour definir quelles notes l'instrument peut jouer et comment les jouer.</p>
-      <div class="cfg-row"><label>Doigtes</label>
+      <h3>Accordage &amp; doigtes</h3>
+      <p style="font-size:.8em;color:#888;margin:0 0 8px">Selectionnez l'accordage correspondant a l'instrument choisi. Cela definit les notes jouables et les combinaisons de doigts associees.</p>
+      <div class="cfg-row"><label>Accordage</label>
         <select id="presetSelect" style="flex:1;max-width:320px" onchange="applyPreset(this.value);updPresetInfo()"></select>
       </div>
     </div>
@@ -465,72 +466,72 @@ let calibStep=1,fileLoaded=false,playerDuration=0;
 let micDetected=false,autoCalRunning=false;
 let dirty=false,fpHistory=[],fpFuture=[];
 
-// Presets: {id,n:name,h:holes,th:thumbIdx(-1=none),d:[[midi,[fp],amn,amx],...]}
+// Presets: {id,n:name,h:holes,th:thumbIdx(-1=none),em:embouchure(trav|bec|naf|end|oca),d:[[midi,[fp],amn,amx],...]}
 const PR=[
-{id:'tabor_d',n:'Tabor Pipe (R\u00e9)',h:3,th:0,d:[
+{id:'tabor_d',n:'Tabor Pipe (R\u00e9)',h:3,th:0,em:'bec',d:[
 [74,[0,0,0],10,50],[76,[0,0,1],10,50],[78,[0,1,1],10,55],[79,[1,1,1],10,55],
 [81,[0,0,0],30,70],[83,[0,0,1],30,70],[85,[0,1,1],30,75],[86,[1,1,1],35,75]]},
-{id:'ocarina_c',n:'Ocarina 4 trous (Do)',h:4,th:-1,d:[
+{id:'ocarina_c',n:'Ocarina 4 trous (Do)',h:4,th:-1,em:'oca',d:[
 [72,[0,0,0,0],10,50],[74,[0,0,1,0],10,55],[76,[0,1,0,0],15,60],[77,[0,1,0,1],20,65],
 [79,[0,1,1,1],25,70],[81,[1,0,1,0],30,75],[83,[1,1,1,0],35,85],[84,[1,1,1,1],35,90]]},
-{id:'naf_a',n:'Fl\u00fbte am\u00e9rindienne (La)',h:4,th:-1,d:[
+{id:'naf_a',n:'Fl\u00fbte am\u00e9rindienne (La)',h:4,th:-1,em:'naf',d:[
 [69,[0,0,0,0],5,45],[72,[0,0,0,1],5,45],[74,[0,0,1,1],5,50],[76,[0,1,1,1],5,50],[79,[1,1,1,1],5,55],
 [81,[0,0,0,0],40,80],[84,[0,0,0,1],40,80],[86,[0,0,1,1],40,85],[88,[0,1,1,1],45,85]]},
-{id:'shaku_d',n:'Shakuhachi (R\u00e9)',h:5,th:0,d:[
+{id:'shaku_d',n:'Shakuhachi (R\u00e9)',h:5,th:0,em:'end',d:[
 [62,[0,0,0,0,0],5,40],[65,[0,0,0,1,0],5,45],[67,[0,0,1,1,1],5,50],[69,[0,1,1,1,1],10,50],[72,[1,1,1,1,0],10,55],
 [74,[0,0,0,0,0],40,80],[77,[0,0,0,1,0],40,80],[79,[0,0,1,1,1],40,85],[81,[0,1,1,1,1],45,85],[84,[1,1,1,1,0],45,90],[86,[0,0,0,0,0],60,100]]},
-{id:'naf5_fs',n:'Fl\u00fbte am\u00e9rindienne 5 (Fa#)',h:5,th:-1,d:[
+{id:'naf5_fs',n:'Fl\u00fbte am\u00e9rindienne 5 (Fa#)',h:5,th:-1,em:'naf',d:[
 [66,[0,0,0,0,0],5,45],[69,[0,0,0,0,1],5,45],[71,[0,0,0,1,1],5,50],[73,[0,0,1,1,1],5,50],[76,[0,1,1,1,1],5,55],[78,[1,1,1,1,1],5,55],
 [78,[0,0,0,0,0],35,75],[81,[0,0,0,0,1],35,75],[83,[0,0,0,1,1],35,80],[85,[0,0,1,1,1],40,80],[88,[0,1,1,1,1],40,85]]},
-{id:'whistle_d',n:'Tin Whistle (R\u00e9)',h:6,th:-1,d:[
+{id:'whistle_d',n:'Tin Whistle (R\u00e9)',h:6,th:-1,em:'bec',d:[
 [74,[0,0,0,0,0,0],5,50],[76,[0,0,0,0,0,1],5,50],[78,[0,0,0,0,1,1],5,50],[79,[0,0,0,1,1,1],5,55],
 [81,[0,0,1,1,1,1],5,55],[83,[0,1,1,1,1,1],5,60],[85,[1,1,1,1,1,1],5,60],
 [86,[0,0,0,0,0,0],30,80],[88,[0,0,0,0,0,1],30,80],[90,[0,0,0,0,1,1],30,85],[91,[0,0,0,1,1,1],35,85],
 [93,[0,0,1,1,1,1],35,90],[95,[0,1,1,1,1,1],35,90],[97,[1,1,1,1,1,1],40,95]]},
-{id:'irish_c',n:'Fl\u00fbte irlandaise (Do)',h:6,th:-1,d:[
+{id:'irish_c',n:'Fl\u00fbte irlandaise (Do)',h:6,th:-1,em:'trav',d:[
 [82,[0,1,1,1,1,1],10,60],[83,[1,1,1,1,1,1],0,50],
 [84,[0,0,0,0,0,0],20,75],[86,[0,0,0,0,0,1],15,70],[88,[0,0,0,0,1,1],10,65],[89,[0,0,0,1,1,1],10,60],
 [91,[0,0,1,1,1,1],5,55],[93,[0,1,1,1,1,1],5,50],[95,[1,1,1,1,1,1],0,45],
 [96,[0,0,0,0,0,0],50,100],[98,[0,0,0,0,0,1],45,95],[100,[0,0,0,0,1,1],40,90],[101,[0,0,0,1,1,1],35,85],
 [103,[0,0,1,1,1,1],30,80]]},
-{id:'bansuri_a',n:'Bansuri (La)',h:6,th:-1,d:[
+{id:'bansuri_a',n:'Bansuri (La)',h:6,th:-1,em:'trav',d:[
 [64,[0,0,0,0,0,0],5,45],[66,[0,0,0,0,0,1],5,45],[68,[0,0,0,0,1,1],5,50],
 [69,[0,0,0,1,1,1],10,50],[71,[0,0,1,1,1,1],10,55],[73,[0,1,1,1,1,1],10,55],
 [74,[1,0,0,0,0,0],15,60],[76,[0,0,0,0,0,0],20,65],[78,[0,0,0,0,0,1],20,65],[80,[0,0,0,0,1,1],20,70],
 [81,[0,0,0,1,1,1],35,80],[83,[0,0,1,1,1,1],35,85],[85,[0,1,1,1,1,1],40,85]]},
-{id:'dizi_d',n:'Dizi (R\u00e9)',h:6,th:-1,d:[
+{id:'dizi_d',n:'Dizi (R\u00e9)',h:6,th:-1,em:'trav',d:[
 [69,[0,0,0,0,0,0],5,45],[71,[0,0,0,0,0,1],5,45],[73,[0,0,0,0,1,1],5,50],
 [74,[0,0,0,1,1,1],10,50],[76,[0,0,1,1,1,1],10,55],[78,[0,1,1,1,1,1],10,55],
 [81,[0,0,0,0,0,0],30,75],[83,[0,0,0,0,0,1],30,75],[85,[0,0,0,0,1,1],30,80],
 [86,[0,0,0,1,1,1],35,80],[88,[0,0,1,1,1,1],35,85],[90,[0,1,1,1,1,1],40,85]]},
-{id:'fife_bb',n:'Fifre (Sib)',h:6,th:-1,d:[
+{id:'fife_bb',n:'Fifre (Sib)',h:6,th:-1,em:'trav',d:[
 [70,[0,0,0,0,0,0],10,55],[72,[0,0,0,0,0,1],10,55],[74,[0,0,0,0,1,1],10,55],[75,[0,0,0,1,1,1],10,60],
 [77,[0,0,1,1,1,1],10,60],[79,[0,1,1,1,1,1],10,60],[81,[1,1,1,1,1,1],10,65],
 [82,[0,0,0,0,0,0],35,80],[84,[0,0,0,0,0,1],35,80],[86,[0,0,0,0,1,1],35,85],[87,[0,0,0,1,1,1],40,85],
 [89,[0,0,1,1,1,1],40,90],[91,[0,1,1,1,1,1],40,90],[93,[1,1,1,1,1,1],45,95]]},
-{id:'quena_g',n:'Quena (Sol)',h:7,th:0,d:[
+{id:'quena_g',n:'Quena (Sol)',h:7,th:0,em:'end',d:[
 [67,[0,0,0,0,0,0,0],5,45],[69,[0,0,0,0,0,0,1],5,45],[71,[0,0,0,0,0,1,1],5,50],[72,[0,0,0,0,1,1,1],5,50],
 [74,[0,0,0,1,1,1,1],5,55],[76,[0,0,1,1,1,1,1],5,55],[78,[0,1,1,1,1,1,1],5,60],
 [79,[1,0,0,0,0,0,0],25,70],[81,[1,0,0,0,0,0,1],25,70],[83,[1,0,0,0,0,1,1],25,75],[84,[1,0,0,0,1,1,1],30,75],
 [86,[1,0,0,1,1,1,1],30,80],[88,[1,0,1,1,1,1,1],30,80],[90,[1,1,1,1,1,1,1],35,85]]},
-{id:'ney_a',n:'Ney turc (La)',h:7,th:0,d:[
+{id:'ney_a',n:'Ney turc (La)',h:7,th:0,em:'end',d:[
 [57,[0,0,0,0,0,0,0],0,30],[59,[0,0,0,0,0,0,1],0,30],[60,[0,0,0,0,0,1,1],0,35],
 [62,[0,0,0,0,1,1,1],0,35],[64,[0,0,0,1,1,1,1],0,40],[65,[0,0,1,1,1,1,1],0,40],[67,[0,1,1,1,1,1,1],0,45],
 [69,[0,0,0,0,0,0,0],20,65],[71,[0,0,0,0,0,0,1],20,65],[72,[0,0,0,0,0,1,1],20,70],
 [74,[0,0,0,0,1,1,1],25,70],[76,[0,0,0,1,1,1,1],25,75],[77,[0,0,1,1,1,1,1],25,75],[79,[0,1,1,1,1,1,1],30,80]]},
-{id:'recorder_c',n:'Fl\u00fbte \u00e0 bec (Do)',h:7,th:0,d:[
+{id:'recorder_c',n:'Fl\u00fbte \u00e0 bec (Do)',h:7,th:0,em:'bec',d:[
 [72,[0,0,0,0,0,0,0],5,40],[74,[0,0,0,0,0,0,1],5,40],[76,[0,0,0,0,0,1,1],5,45],[77,[0,0,0,0,1,1,1],5,45],
 [79,[0,0,0,1,1,1,1],5,50],[81,[0,0,1,1,1,1,1],5,50],[83,[0,1,1,1,1,1,1],5,55],
 [84,[1,0,0,0,0,0,0],20,65],[86,[1,0,0,0,0,0,1],20,65],[88,[1,0,0,0,0,1,1],25,70],[89,[1,0,0,0,1,1,1],25,70],
 [91,[1,0,0,1,1,1,1],25,75],[93,[1,0,1,1,1,1,1],30,75],[95,[1,1,0,1,1,1,1],30,80],[96,[1,0,1,0,1,1,1],35,85]]},
-{id:'recorder_b8',n:'Fl\u00fbte \u00e0 bec baroque (Do)',h:8,th:0,d:[
+{id:'recorder_b8',n:'Fl\u00fbte \u00e0 bec baroque (Do)',h:8,th:0,em:'bec',d:[
 [72,[0,0,0,0,0,0,0,0],5,40],[74,[0,0,0,0,0,0,1,1],5,40],[76,[0,0,0,0,0,1,1,1],5,45],
 [77,[0,0,0,0,1,0,0,1],5,45],[79,[0,0,0,1,1,1,1,1],5,50],[81,[0,0,1,1,1,1,1,1],10,55],
 [83,[0,1,0,1,1,1,1,1],10,55],
 [84,[1,0,0,1,1,1,1,1],15,60],[86,[1,0,0,0,0,0,1,1],25,70],[88,[1,0,0,0,0,1,1,1],25,70],
 [89,[1,0,0,0,1,0,0,1],30,75],[91,[1,0,0,1,1,1,1,1],30,80],[93,[1,0,1,0,1,1,1,1],35,80],
 [95,[1,1,0,1,0,1,1,1],35,85],[96,[1,0,1,0,1,0,1,1],40,90]]},
-{id:'kaval_d',n:'Kaval (R\u00e9)',h:8,th:0,d:[
+{id:'kaval_d',n:'Kaval (R\u00e9)',h:8,th:0,em:'end',d:[
 [62,[0,0,0,0,0,0,0,0],0,30],[64,[0,0,0,0,0,0,0,1],0,30],[65,[0,0,0,0,0,0,1,1],0,35],
 [67,[0,0,0,0,0,1,1,1],0,35],[69,[0,0,0,0,1,1,1,1],0,40],[71,[0,0,0,1,1,1,1,1],5,40],
 [72,[0,0,1,1,1,1,1,1],5,45],[74,[0,1,1,1,1,1,1,1],5,45],
@@ -701,52 +702,104 @@ document.addEventListener('keydown',e=>{if(!e.ctrlKey)return;
   if(e.key==='y'&&calibStep===2){e.preventDefault();redoFp()}});
 
 // --- SVG FLUTE ---
+// Gradients for flute body materials
+function fluteGrad(g,em){
+  const clay=em==='oca';
+  const c1=clay?'#C47038':'#D4B044',c2=clay?'#A85828':'#C4A035',c3=clay?'#7A3818':'#9B7A1C',c4=clay?'#5C2810':'#6B4F10';
+  return '<defs><linearGradient id="wg_'+g+'" x1="0" y1="0" x2="0" y2="1">'+
+    '<stop offset="0%" stop-color="'+c1+'"/><stop offset="35%" stop-color="'+c2+'"/>'+
+    '<stop offset="70%" stop-color="'+c3+'"/><stop offset="100%" stop-color="'+c4+'"/></linearGradient>'+
+    '<linearGradient id="lp_'+g+'" x1="0" y1="0" x2="0" y2="1">'+
+    '<stop offset="0%" stop-color="'+(clay?'#D88050':'#E8CC60')+'"/><stop offset="40%" stop-color="'+c1+'"/>'+
+    '<stop offset="100%" stop-color="'+(clay?'#8A4820':'#A8862A')+'"/></linearGradient>'+
+    '<linearGradient id="cr_'+g+'" x1="0" y1="0" x2="0" y2="1">'+
+    '<stop offset="0%" stop-color="'+(clay?'#9A5028':'#B89530')+'"/><stop offset="50%" stop-color="'+(clay?'#6A3018':'#8A6A18')+'"/>'+
+    '<stop offset="100%" stop-color="'+c4+'"/></linearGradient>'+
+    '<linearGradient id="eh_'+g+'" x1="0" y1="0" x2="0" y2="1">'+
+    '<stop offset="0%" stop-color="#1A1008"/><stop offset="100%" stop-color="#0A0600"/></linearGradient></defs>'
+}
+
+// Draw mouthpiece based on embouchure type
+function fluteMouth(g,em,ty,by,th,cy){
+  let m='';
+  if(em==='bec'){
+    // Bec (recorder/whistle) - tapered beak with windway and labium window
+    m+='<path d="M4,'+cy+' L14,'+(ty+4)+' L58,'+ty+' L58,'+by+' L14,'+(by-4)+' L4,'+cy+' Z" fill="url(#wg_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
+    // Windway canal line
+    m+='<line x1="6" y1="'+cy+'" x2="36" y2="'+(ty+3)+'" stroke="#5C4A0A" stroke-width=".7" opacity=".6"/>';
+    // Labium window (fente ou le son nait)
+    m+='<rect x="36" y="'+(ty-5)+'" width="14" height="7" rx="2" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".8"/>';
+    // Edge du labium
+    m+='<line x1="50" y1="'+(ty-4)+'" x2="50" y2="'+(ty+1)+'" stroke="#D4B044" stroke-width="1" opacity=".5"/>';
+    // Beak tip highlight
+    m+='<circle cx="5" cy="'+cy+'" r="2" fill="#A8862A" opacity=".5"/>'
+  }else if(em==='naf'){
+    // Flute amerindienne - slow air chamber + bird/fetish block + flue
+    // Slow air chamber (chambre lente, a gauche)
+    m+='<rect x="4" y="'+ty+'" width="24" height="'+th+'" rx="2" fill="url(#wg_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
+    m+='<rect x="4" y="'+ty+'" width="24" height="5" rx="1" fill="#D4B044" opacity=".15"/>';
+    // Bouchon gauche
+    m+='<rect x="2" y="'+(ty-1)+'" width="4" height="'+(th+2)+'" rx="1" fill="url(#cr_'+g+')" stroke="#5C4A0A" stroke-width=".8"/>';
+    // Bird/fetish block assis sur le tube
+    m+='<rect x="24" y="'+(ty-14)+'" width="20" height="12" rx="3" fill="url(#cr_'+g+')" stroke="#5C4A0A" stroke-width="1"/>';
+    // Detail decoratif de l\'oiseau (yeux + bec)
+    m+='<circle cx="30" cy="'+(ty-10)+'" r="1.5" fill="#1A1008"/>';
+    m+='<path d="M24,'+(ty-8)+' L20,'+(ty-9)+' L24,'+(ty-10)+'" fill="#5C4A0A" stroke="none"/>';
+    // Flue channel (canal sous l\'oiseau)
+    m+='<rect x="28" y="'+(ty-2)+'" width="12" height="3" rx="1" fill="#1A1008" opacity=".8"/>';
+    // Sound hole (trou de son)
+    m+='<rect x="42" y="'+(ty-3)+'" width="8" height="5" rx="1.5" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".6"/>';
+    // Separation entre chambres
+    m+='<line x1="28" y1="'+ty+'" x2="28" y2="'+by+'" stroke="#5C4A0A" stroke-width="1" opacity=".4"/>'
+  }else if(em==='end'){
+    // End-blown (shakuhachi, quena, ney, kaval) - tube ouvert avec encoche utaguchi
+    // Coupe biseautee du bout
+    m+='<path d="M18,'+ty+' L10,'+(ty-8)+' L16,'+(ty-12)+' L22,'+(ty-6)+' L18,'+ty+'" fill="url(#lp_'+g+')" stroke="#5C4A0A" stroke-width="1"/>';
+    // Encoche utaguchi (notch) - profonde, en V
+    m+='<path d="M12,'+(ty-6)+' L16,'+(ty-16)+' L20,'+(ty-6)+'" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".8"/>';
+    // Edge brillant du biseau
+    m+='<line x1="16" y1="'+(ty-15)+'" x2="20" y2="'+(ty-7)+'" stroke="#D4B044" stroke-width=".8" opacity=".5"/>';
+    // Ouverture du tube - interieur sombre visible
+    m+='<ellipse cx="16" cy="'+cy+'" rx="4" ry="'+(th/2-2)+'" fill="url(#eh_'+g+')" stroke="#5C4A0A" stroke-width="1" opacity=".6"/>'
+  }else{
+    // Traversiere (defaut) - couronne + plaque de levre + trou
+    m+='<rect x="4" y="'+(ty-3)+'" width="12" height="'+(th+6)+'" rx="1" fill="url(#cr_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
+    m+='<line x1="10" y1="'+(ty-2)+'" x2="10" y2="'+(by+2)+'" stroke="#5C4A0A" stroke-width=".6" opacity=".5"/>';
+    m+='<rect x="62" y="'+(ty-1)+'" width="4" height="'+(th+2)+'" rx="0" fill="#A8862A" stroke="#5C4A0A" stroke-width=".6" opacity=".7"/>';
+    m+='<path d="M28,'+ty+' Q28,'+(ty-14)+' 42,'+(ty-16)+' Q56,'+(ty-14)+' 56,'+ty+'" fill="url(#lp_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
+    m+='<path d="M31,'+(ty-2)+' Q31,'+(ty-11)+' 42,'+(ty-13)+' Q53,'+(ty-11)+' 53,'+(ty-2)+'" fill="none" stroke="#EDD580" stroke-width=".7" opacity=".3"/>';
+    m+='<rect x="36" y="'+(ty-10)+'" width="12" height="8" rx="3" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".8"/>';
+    m+='<line x1="48" y1="'+(ty-9)+'" x2="48" y2="'+(ty-3)+'" stroke="#D4B044" stroke-width="1" opacity=".5"/>';
+    m+='<rect x="37" y="'+(ty-9)+'" width="10" height="6" rx="2" fill="none" stroke="#0A0600" stroke-width=".4" opacity=".3"/>'
+  }
+  return m
+}
+
 function buildFlute(cfg,svgId,showNums){
   const svg=$(svgId);if(!svg||!cfg)return;
   const nf=cfg.num_fingers||6,fingers=cfg.fingers||[];
+  const em=cfg.embouchure||'trav';
+  // Ocarina = forme speciale
+  if(em==='oca'){buildOcarina(cfg,svgId,showNums);return}
   const sp=50,sx=80,r=14;
   const topHoles=[],botHoles=[];
   for(let i=0;i<nf;i++){(fingers[i]&&fingers[i].th?botHoles:topHoles).push(i)}
-  const posTop=[];
-  for(let i=0;i<topHoles.length;i++){posTop.push(sx+i*sp)}
-  const posBot=[];
-  for(let i=0;i<botHoles.length;i++){posBot.push(sx+i*sp)}
+  const posTop=topHoles.map((_,i)=>sx+i*sp);
+  const posBot=botHoles.map((_,i)=>sx+i*sp);
   const allX=[...posTop,...posBot,sx+200];
   const tw=Math.max(...allX)+60;
   const h_top=35,h_bot=65,cy=50;
   svg.setAttribute('viewBox','0 0 '+tw+' 100');
   const g=svgId,ty=34,by=66,th=by-ty;
-  let h='<defs><linearGradient id="wg_'+g+'" x1="0" y1="0" x2="0" y2="1">'+
-    '<stop offset="0%" stop-color="#D4B044"/><stop offset="35%" stop-color="#C4A035"/>'+
-    '<stop offset="70%" stop-color="#9B7A1C"/><stop offset="100%" stop-color="#6B4F10"/></linearGradient>'+
-    '<linearGradient id="lp_'+g+'" x1="0" y1="0" x2="0" y2="1">'+
-    '<stop offset="0%" stop-color="#E8CC60"/><stop offset="40%" stop-color="#D4B044"/>'+
-    '<stop offset="100%" stop-color="#A8862A"/></linearGradient>'+
-    '<linearGradient id="cr_'+g+'" x1="0" y1="0" x2="0" y2="1">'+
-    '<stop offset="0%" stop-color="#B89530"/><stop offset="50%" stop-color="#8A6A18"/>'+
-    '<stop offset="100%" stop-color="#5C4A0A"/></linearGradient>'+
-    '<linearGradient id="eh_'+g+'" x1="0" y1="0" x2="0" y2="1">'+
-    '<stop offset="0%" stop-color="#1A1008"/><stop offset="100%" stop-color="#0A0600"/></linearGradient></defs>';
-  // Corps de la flute - vue de cote, bords droits
+  let h=fluteGrad(g,em);
+  // Corps du tube
   h+='<rect x="14" y="'+ty+'" width="'+(tw-24)+'" height="'+th+'" rx="0" fill="url(#wg_'+g+')" stroke="#5C4A0A" stroke-width="1.5"/>';
-  // Reflet horizontal haut du tube (effet cylindrique)
   h+='<rect x="14" y="'+ty+'" width="'+(tw-24)+'" height="6" rx="0" fill="#D4B044" opacity=".18"/>';
-  // Couronne - bouchon en bout, angles droits, legerement plus haut
-  h+='<rect x="4" y="'+(ty-3)+'" width="12" height="'+(th+6)+'" rx="1" fill="url(#cr_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
-  // Rainure decorative de la couronne
-  h+='<line x1="10" y1="'+(ty-2)+'" x2="10" y2="'+(by+2)+'" stroke="#5C4A0A" stroke-width=".6" opacity=".5"/>';
-  // Bague de jonction tete/corps
-  h+='<rect x="62" y="'+(ty-1)+'" width="4" height="'+(th+2)+'" rx="0" fill="#A8862A" stroke="#5C4A0A" stroke-width=".6" opacity=".7"/>';
-  // Plaque de levre (lip plate) - bosse vue de cote, depasse au-dessus du tube
-  h+='<path d="M28,'+ty+' Q28,'+(ty-14)+' 42,'+(ty-16)+' Q56,'+(ty-14)+' 56,'+ty+'" fill="url(#lp_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
-  // Reflet sur la plaque de levre
-  h+='<path d="M31,'+(ty-2)+' Q31,'+(ty-11)+' 42,'+(ty-13)+' Q53,'+(ty-11)+' 53,'+(ty-2)+'" fill="none" stroke="#EDD580" stroke-width=".7" opacity=".3"/>';
-  // Trou d\'embouchure (blow hole) - fente sombre dans la plaque
-  h+='<rect x="36" y="'+(ty-10)+'" width="12" height="8" rx="3" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".8"/>';
-  // Biseau - arete vive cote droit du trou (ou l\'air se fend)
-  h+='<line x1="48" y1="'+(ty-9)+'" x2="48" y2="'+(ty-3)+'" stroke="#D4B044" stroke-width="1" opacity=".5"/>';
-  // Ombre interieure du trou
-  h+='<rect x="37" y="'+(ty-9)+'" width="10" height="6" rx="2" fill="none" stroke="#0A0600" stroke-width=".4" opacity=".3"/>';
+  // Embouchure adaptative
+  h+=fluteMouth(g,em,ty,by,th,cy);
+  // Type label
+  const emLabels={trav:'Traversiere',bec:'A bec',naf:'Amerindienne',end:'Embouchure libre'};
+  h+='<text x="'+(tw-20)+'" y="94" text-anchor="end" style="font-size:9px;fill:#667;font-style:italic">'+(emLabels[em]||'')+'</text>';
   // Top holes
   topHoles.forEach((fi,i)=>{
     h+='<circle id="fh_'+svgId+'_'+fi+'" cx="'+posTop[i]+'" cy="'+h_top+'" r="'+r+'" class="flute-hole closed"/>';
@@ -758,6 +811,57 @@ function buildFlute(cfg,svgId,showNums){
     if(showNums)h+='<text x="'+posBot[i]+'" y="'+(h_bot+4)+'" text-anchor="middle" class="flute-num">'+(fi+1)+'</text>'
   });
   if(botHoles.length>0)h+='<text x="'+(posBot[0])+'" y="88" text-anchor="middle" class="flute-lbl">Pouce</text>';
+  svg.innerHTML=h
+}
+
+// Ocarina: corps ovale en ceramique avec arrangement compact des trous
+function buildOcarina(cfg,svgId,showNums){
+  const svg=$(svgId);if(!svg||!cfg)return;
+  const nf=cfg.num_fingers||4,fingers=cfg.fingers||[];
+  const g=svgId;
+  // Dimensions: corps ovale + bec court
+  const bcx=160,bcy=50,rx=Math.max(80,nf*18+20),ry=38;
+  const tw=bcx+rx+30;
+  svg.setAttribute('viewBox','0 0 '+tw+' 100');
+  let h=fluteGrad(g,'oca');
+  // Corps ovale (ceramique terra cotta)
+  h+='<ellipse cx="'+bcx+'" cy="'+bcy+'" rx="'+rx+'" ry="'+ry+'" fill="url(#wg_'+g+')" stroke="#5C2810" stroke-width="1.8"/>';
+  // Reflet ceramique
+  h+='<ellipse cx="'+(bcx-10)+'" cy="'+(bcy-12)+'" rx="'+(rx-20)+'" ry="14" fill="#D88050" opacity=".12"/>';
+  // Bec (mouthpiece) - petit tube a gauche
+  const bx=bcx-rx;
+  h+='<path d="M'+(bx-25)+','+bcy+' L'+(bx-15)+','+(bcy-8)+' L'+(bx+5)+','+(bcy-10)+' L'+(bx+5)+','+(bcy+10)+' L'+(bx-15)+','+(bcy+8)+' Z" fill="url(#lp_'+g+')" stroke="#5C2810" stroke-width="1.2"/>';
+  // Trou du bec
+  h+='<ellipse cx="'+(bx-18)+'" cy="'+bcy+'" rx="3" ry="4" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".6"/>';
+  // Trou de pouce (dessous, indique en pointille)
+  h+='<ellipse cx="'+(bcx+rx-20)+'" cy="'+(bcy+ry-8)+'" rx="6" ry="4" fill="none" stroke="#5C2810" stroke-width=".8" stroke-dasharray="2,2" opacity=".5"/>';
+  h+='<text x="'+(bcx+rx-20)+'" y="'+(bcy+ry+6)+'" text-anchor="middle" style="font-size:8px;fill:#887">dessous</text>';
+  // Trous sur la face superieure, repartis en arc
+  const topH=[],botH=[];
+  for(let i=0;i<nf;i++){(fingers[i]&&fingers[i].th?botH:topH).push(i)}
+  // Top row - arc distribue
+  const tsp=Math.min(32,rx*1.2/Math.max(topH.length,1));
+  const tsx=bcx-(topH.length-1)*tsp/2;
+  topH.forEach((fi,i)=>{
+    const cx=tsx+i*tsp;
+    const a=((i/(topH.length-1||1))-0.5)*0.8;
+    const ocY=bcy-10+Math.abs(a)*6;
+    h+='<circle id="fh_'+svgId+'_'+fi+'" cx="'+cx+'" cy="'+ocY+'" r="10" class="flute-hole closed"/>';
+    if(showNums)h+='<text x="'+cx+'" y="'+(ocY+3)+'" text-anchor="middle" class="flute-num">'+(fi+1)+'</text>'
+  });
+  // Bottom row (thumb holes)
+  if(botH.length){
+    const bsp=Math.min(32,rx*0.8/Math.max(botH.length,1));
+    const bsx=bcx-(botH.length-1)*bsp/2;
+    botH.forEach((fi,i)=>{
+      const cx=bsx+i*bsp;
+      h+='<circle id="fh_'+svgId+'_'+fi+'" cx="'+cx+'" cy="'+(bcy+14)+'" r="8" class="flute-hole closed thumb"/>';
+      if(showNums)h+='<text x="'+cx+'" y="'+(bcy+17)+'" text-anchor="middle" class="flute-num">'+(fi+1)+'</text>'
+    });
+    h+='<text x="'+bsx+'" y="'+(bcy+30)+'" text-anchor="middle" class="flute-lbl">Pouce</text>'
+  }
+  // Label
+  h+='<text x="'+(tw-10)+'" y="94" text-anchor="end" style="font-size:9px;fill:#667;font-style:italic">Ocarina</text>';
   svg.innerHTML=h
 }
 
@@ -849,19 +953,21 @@ function buildFingerCards(){
 function buildInstrumentSelect(){
   const s=$('instrumentSelect');if(!s)return;
   s.innerHTML='<option value="">-- Personnalis\u00e9 --</option>';
-  const groups={};PR.forEach(p=>{(groups[p.h]=groups[p.h]||[]).push(p)});
-  Object.keys(groups).sort((a,b)=>a-b).forEach(h=>{
-    const og=document.createElement('optgroup');og.label=h+' trous';
-    groups[h].forEach(p=>{const o=document.createElement('option');o.value=p.id;
-      o.textContent=p.n+(p.th>=0?' (pouce)':'');og.appendChild(o)});
+  const emNames={trav:'Fl\u00fbtes traversieres',bec:'Fl\u00fbtes a bec / sifflets',naf:'Fl\u00fbtes am\u00e9rindiennes',end:'Embouchure libre',oca:'Ocarinas'};
+  const emOrder=['bec','trav','end','naf','oca'];
+  const groups={};PR.forEach(p=>{const k=p.em||'trav';(groups[k]=groups[k]||[]).push(p)});
+  emOrder.forEach(em=>{if(!groups[em])return;
+    const og=document.createElement('optgroup');og.label=emNames[em]||em;
+    groups[em].sort((a,b)=>a.h-b.h).forEach(p=>{const o=document.createElement('option');o.value=p.id;
+      o.textContent=p.n+' ('+p.h+' trous'+(p.th>=0?', pouce':'')+')';og.appendChild(o)});
     s.appendChild(og)})
 }
 
 function selectInstrument(val){
   if(!val||!CFG)return;
   const p=PR.find(x=>x.id===val);if(!p)return;
-  // Step 1 = config physique seulement (trous + pouce), pas les notes
-  CFG.num_fingers=p.h;
+  // Step 1 = config physique seulement (trous + pouce + embouchure), pas les notes
+  CFG.num_fingers=p.h;CFG.embouchure=p.em||'trav';
   while(CFG.fingers.length<p.h)CFG.fingers.push({ch:CFG.fingers.length,a:90,d:1,th:0});
   CFG.fingers.forEach(f=>f.th=0);
   if(p.th>=0&&CFG.fingers[p.th])CFG.fingers[p.th].th=1;
@@ -958,6 +1064,7 @@ function updPresetInfo(){
 function applyPreset(val){
   if(!val||!CFG)return;
   const p=PR.find(x=>x.id===val);if(!p)return;
+  CFG.embouchure=p.em||'trav';
   // Ajuster num_fingers si different (avec avertissement)
   if(CFG.num_fingers!==p.h){
     CFG.num_fingers=p.h;
