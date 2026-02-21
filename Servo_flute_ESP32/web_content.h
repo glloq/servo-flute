@@ -50,6 +50,7 @@ display:flex;align-items:center;justify-content:center;gap:6px}
 position:relative;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
 .btn-p{background:#e94560;color:#fff}.btn-p:hover{background:#d63650}
 .btn-s{background:#0f3460;color:#e0e0e0;border:1px solid #1a4080}.btn-s:hover{background:#1a4080}
+.btn-s.active,.expr-mode.active{background:#4ecca3;color:#1a1a2e;border-color:#4ecca3}
 .btn-g{background:#4ecca3;color:#1a1a2e}.btn-g:hover{background:#3db892}
 .btn:disabled{opacity:.4;cursor:default}
 .btn-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
@@ -260,9 +261,11 @@ max-height:120px;overflow-y:auto;color:#9aa}
     <div class="step-dot" onclick="goStep(2)"></div>
     <div class="step-line"></div>
     <div class="step-dot" onclick="goStep(3)"></div>
+    <div class="step-line"></div>
+    <div class="step-dot" onclick="goStep(4)"></div>
   </div>
   <div class="step-labels">
-    <span>Doigts</span><span>Doigtes</span><span>Souffle</span>
+    <span>Doigts</span><span>Doigtes</span><span>Souffle</span><span>Expression</span>
   </div>
 
   <!-- STEP 1: FINGERS -->
@@ -361,7 +364,46 @@ max-height:120px;overflow-y:auto;color:#9aa}
     </div>
     <div class="btn-row" style="justify-content:space-between">
       <button class="btn btn-s" onclick="goStep(2)"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Retour</button>
-      <button class="btn btn-g" id="btnSaveStep3" onclick="saveStep3()"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M3 8l3.5 4L13 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Sauver &amp; Terminer</button>
+      <button class="btn btn-p" id="btnSaveStep3" onclick="saveStep3()"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M12.7 1H3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V3.3L12.7 1zM8 13a2.5 2.5 0 110-5 2.5 2.5 0 010 5zM11 5H5V2h6v3z" fill="currentColor"/></svg>Sauver &amp; Continuer &rarr;</button>
+    </div>
+  </div>
+
+  <!-- STEP 4: EXPRESSION -->
+  <div id="step4" class="step-panel" style="display:none">
+    <div class="section">
+      <h3>Comportement du souffle</h3>
+      <p style="font-size:.8em;color:#888;margin:0 0 12px">Definissez comment le servo airflow reagit au debut de chaque note (attaque) et l'influence de la velocite MIDI sur le volume de souffle.</p>
+      <div class="cfg-row"><label>Mode d'attaque</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-s expr-mode" data-mode="0" onclick="setAirMode(0)">Stable</button>
+          <button class="btn btn-s expr-mode" data-mode="1" onclick="setAirMode(1)">Accent</button>
+          <button class="btn btn-s expr-mode" data-mode="2" onclick="setAirMode(2)">Crescendo</button>
+        </div>
+      </div>
+      <div id="exprModeDesc" style="font-size:.78em;color:#aaa;margin:4px 0 12px;padding:6px 10px;background:rgba(255,255,255,.04);border-radius:6px"></div>
+      <div id="exprParams">
+        <div class="cfg-row"><label>Ecart (%)</label>
+          <input type="range" min="5" max="50" value="20" id="airAtkOff" oninput="CFG.air_atk_off=parseInt(this.value);$('atkOffVal').textContent=this.value+'%';drawExprCurve();markDirty()">
+          <span id="atkOffVal" style="min-width:36px">20%</span>
+        </div>
+        <div class="cfg-row"><label>Duree attaque (ms)</label>
+          <input type="range" min="10" max="1000" step="10" value="150" id="airAtkMs" oninput="CFG.air_atk_ms=parseInt(this.value);$('atkMsVal').textContent=this.value+'ms';drawExprCurve();markDirty()">
+          <span id="atkMsVal" style="min-width:48px">150ms</span>
+        </div>
+      </div>
+      <div class="cfg-row"><label>Reponse velocite</label>
+        <input type="range" min="0" max="100" value="50" id="airVelResp" oninput="CFG.air_vel_resp=parseInt(this.value);$('velRespVal').textContent=this.value+'%';drawExprCurve();markDirty()">
+        <span id="velRespVal" style="min-width:36px">50%</span>
+      </div>
+    </div>
+    <div class="section">
+      <h3>Apercu</h3>
+      <svg id="exprCurveSvg" viewBox="0 0 320 140" style="width:100%;max-width:400px;height:auto;background:rgba(0,0,0,.2);border-radius:8px"></svg>
+      <div style="font-size:.7em;color:#666;margin-top:4px">Bleu = attaque forte (vel 127) / Gris = attaque douce (vel 40)</div>
+    </div>
+    <div class="btn-row" style="justify-content:space-between">
+      <button class="btn btn-s" onclick="goStep(3)"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Retour</button>
+      <button class="btn btn-g" id="btnSaveStep4" onclick="saveStep4()"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M3 8l3.5 4L13 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Sauver &amp; Terminer</button>
     </div>
   </div>
 </div>
@@ -870,7 +912,7 @@ function buildCalibUI(){if(!CFG)return;buildFlute(CFG,'calFluteSvg',true);buildF
 
 function goStep(s){
   calibStep=s;
-  ['step1','step2','step3'].forEach((id,i)=>{const el=$(id);el.style.display=(i+1===s)?'':'none';
+  ['step1','step2','step3','step4'].forEach((id,i)=>{const el=$(id);el.style.display=(i+1===s)?'':'none';
     if(i+1===s){el.classList.add('fade-in')}else{el.classList.remove('fade-in')}});
   document.querySelectorAll('.step-dot').forEach((d,i)=>{d.className='step-dot'+(i+1===s?' active':i+1<s?' done':' locked')});
   if(s===2){buildPresetSelect();
@@ -878,7 +920,8 @@ function goStep(s){
       // Auto-apply si les notes ne sont pas encore remplies ou viennent d'un autre preset
       if(!CFG.notes.length||CFG._lastInst!==iv.value){applyPreset(iv.value);CFG._lastInst=iv.value}}
     buildFingeringRows();fpHistory=[];fpFuture=[];updUndoUI()}
-  if(s===3)buildAirflowRows()
+  if(s===3)buildAirflowRows();
+  if(s===4)buildExprUI()
 }
 
 function changeFingers(delta){
@@ -1077,8 +1120,76 @@ function saveStep3(){
   if(!CFG)return;btnLoad('btnSaveStep3',true);
   const body={notes_air:CFG.notes.map(n=>({amn:n.amn,amx:n.amx}))};
   fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
-    .then(r=>r.json()).then(d=>{btnLoad('btnSaveStep3',false);if(d.ok){showToast('Calibration terminee !','success');markClean();buildKeyboard();buildFlute(CFG,'fluteSvg',false)}else showToast('Erreur sauvegarde','error')})
+    .then(r=>r.json()).then(d=>{btnLoad('btnSaveStep3',false);if(d.ok){showToast('Souffle sauvegarde','success');markClean();goStep(4)}else showToast('Erreur sauvegarde','error')})
     .catch(e=>{btnLoad('btnSaveStep3',false);showToast('Erreur: '+e,'error')})
+}
+
+// --- STEP 4: EXPRESSION ---
+const EXPR_MODES=[
+  {n:'Stable',d:'Le souffle atteint directement la valeur cible et reste constant pendant toute la note.'},
+  {n:'Accent',d:'Le souffle demarre plus fort que la cible puis reduit progressivement (comme un accent naturel de flutiste).'},
+  {n:'Crescendo',d:'Le souffle demarre plus faible que la cible puis augmente progressivement (entree douce).'}
+];
+
+function buildExprUI(){
+  if(!CFG)return;
+  const m=CFG.air_atk_mode||0;
+  $('airAtkOff').value=CFG.air_atk_off||20;$('atkOffVal').textContent=(CFG.air_atk_off||20)+'%';
+  $('airAtkMs').value=CFG.air_atk_ms||150;$('atkMsVal').textContent=(CFG.air_atk_ms||150)+'ms';
+  $('airVelResp').value=CFG.air_vel_resp!=null?CFG.air_vel_resp:50;$('velRespVal').textContent=(CFG.air_vel_resp!=null?CFG.air_vel_resp:50)+'%';
+  $('exprParams').style.display=m===0?'none':'';
+  setAirMode(m,true)
+}
+
+function setAirMode(m,noMark){
+  CFG.air_atk_mode=m;
+  document.querySelectorAll('.expr-mode').forEach(b=>{b.classList.toggle('active',parseInt(b.dataset.mode)===m)});
+  $('exprModeDesc').textContent=EXPR_MODES[m].d;
+  $('exprParams').style.display=m===0?'none':'';
+  drawExprCurve();if(!noMark)markDirty()
+}
+
+function drawExprCurve(){
+  const svg=$('exprCurveSvg');if(!svg||!CFG)return;
+  const w=320,h=140,pad=30,gw=w-pad*2,gh=h-pad-10;
+  const m=CFG.air_atk_mode||0,off=(CFG.air_atk_off||20)/100,dur=CFG.air_atk_ms||150,vr=(CFG.air_vel_resp!=null?CFG.air_vel_resp:50)/100;
+  const maxMs=Math.max(500,dur*2.5);
+  let s='<line x1="'+pad+'" y1="'+(h-pad)+'" x2="'+(w-pad)+'" y2="'+(h-pad)+'" stroke="#444" stroke-width="1"/>';
+  s+='<line x1="'+pad+'" y1="10" x2="'+pad+'" y2="'+(h-pad)+'" stroke="#444" stroke-width="1"/>';
+  s+='<text x="'+(w/2)+'" y="'+(h-4)+'" text-anchor="middle" style="font-size:9px;fill:#666">Temps (ms)</text>';
+  s+='<text x="8" y="'+(h/2-10)+'" style="font-size:9px;fill:#666" transform="rotate(-90 8 '+(h/2-10)+')">Souffle %</text>';
+  // Ticks
+  for(let t=0;t<=maxMs;t+=100){const x=pad+(t/maxMs)*gw;
+    s+='<line x1="'+x+'" y1="'+(h-pad)+'" x2="'+x+'" y2="'+(h-pad+4)+'" stroke="#555" stroke-width=".5"/>';
+    if(t%200===0)s+='<text x="'+x+'" y="'+(h-pad+14)+'" text-anchor="middle" style="font-size:8px;fill:#555">'+t+'</text>'}
+  for(let p=0;p<=100;p+=25){const y=(h-pad)-(p/100)*gh;
+    s+='<text x="'+(pad-4)+'" y="'+(y+3)+'" text-anchor="end" style="font-size:8px;fill:#555">'+p+'</text>'}
+  // Draw 2 curves: vel=127 (strong) and vel=40 (soft)
+  [['#4ecdc4',127,.9],['#888',40,.5]].forEach(([col,vel,op])=>{
+    const base=40+(vel/127)*60*vr+(1-vr)*60;
+    let pts=[];
+    for(let t=0;t<=maxMs;t+=2){
+      let v=base;
+      if(m===1&&t<dur)v=base+base*off*(1-t/dur);
+      else if(m===2&&t<dur)v=base-base*off*(1-t/dur);
+      v=Math.max(0,Math.min(100,v));
+      const x=pad+(t/maxMs)*gw,y=(h-pad)-(v/100)*gh;
+      pts.push(x.toFixed(1)+','+y.toFixed(1))
+    }
+    s+='<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+col+'" stroke-width="2" opacity="'+op+'"/>';
+    // Target line
+    const ty=(h-pad)-(base/100)*gh;
+    s+='<line x1="'+pad+'" y1="'+ty+'" x2="'+(w-pad)+'" y2="'+ty+'" stroke="'+col+'" stroke-width=".5" stroke-dasharray="4 3" opacity=".4"/>'
+  });
+  svg.innerHTML=s
+}
+
+function saveStep4(){
+  if(!CFG)return;btnLoad('btnSaveStep4',true);
+  const body={air_atk_mode:CFG.air_atk_mode||0,air_atk_off:CFG.air_atk_off||20,air_atk_ms:CFG.air_atk_ms||150,air_vel_resp:CFG.air_vel_resp!=null?CFG.air_vel_resp:50};
+  fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(r=>r.json()).then(d=>{btnLoad('btnSaveStep4',false);if(d.ok){showToast('Calibration terminee !','success');markClean();buildKeyboard();buildFlute(CFG,'fluteSvg',false)}else showToast('Erreur sauvegarde','error')})
+    .catch(e=>{btnLoad('btnSaveStep4',false);showToast('Erreur: '+e,'error')})
 }
 
 // --- SETTINGS ---
