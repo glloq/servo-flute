@@ -22,143 +22,191 @@ const char WEB_HTML_CONTENT[] PROGMEM = R"rawliteral(
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-background:#1a1a2e;color:#e0e0e0;overflow-x:hidden;min-height:100vh}
+background:#1a1a2e;color:#e0e0e0;overflow-x:hidden;min-height:100vh;padding-bottom:36px}
 .hdr{background:#16213e;padding:10px 16px;display:flex;justify-content:space-between;
 align-items:center;border-bottom:2px solid #0f3460;position:sticky;top:0;z-index:10}
-.hdr h1{font-size:1.1em;color:#e94560}
+.hdr h1{font-size:1.1em;color:#e94560;display:flex;align-items:center}
 .hdr-r{display:flex;align-items:center;gap:12px}
 .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
-.dot.on{background:#4ecca3;box-shadow:0 0 6px #4ecca3}.dot.off{background:#555}
-.gear-btn{background:none;border:none;color:#888;font-size:1.4em;cursor:pointer;padding:4px}
+.dot.on{background:#4ecca3;box-shadow:0 0 6px #4ecca3}.dot.off{background:#777}
+.unsaved-badge{display:none;background:#e9a645;color:#1a1a2e;font-size:.6em;padding:2px 6px;
+border-radius:8px;font-weight:bold;margin-left:8px;vertical-align:middle}
+.unsaved-badge.show{display:inline-block}
+.gear-btn{background:none;border:none;color:#9aa;font-size:1.3em;cursor:pointer;padding:4px;
+display:flex;align-items:center}
 .gear-btn:hover{color:#e94560}
 .tabs{display:flex;background:#16213e;border-bottom:1px solid #0f3460;overflow-x:auto}
-.tabs button{flex:1;background:none;border:none;color:#888;padding:12px 8px;font-size:0.85em;
-cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;min-width:80px}
+.tabs button{flex:1;background:none;border:none;color:#9aa;padding:12px 8px;font-size:0.85em;
+cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;min-width:80px;
+display:flex;align-items:center;justify-content:center;gap:6px}
 .tabs button.active{color:#e94560;border-bottom-color:#e94560}
+.tabs button svg{width:14px;height:14px;flex-shrink:0}
 .tab{display:none;padding:12px}.tab.active{display:block}
 .section{background:#16213e;border-radius:8px;padding:12px;margin-bottom:12px;border:1px solid #0f3460}
 .section h3{color:#e94560;font-size:0.9em;margin-bottom:8px}
-/* Buttons */
-.btn{padding:8px 16px;border:none;border-radius:6px;cursor:pointer;font-size:0.85em}
+.btn{padding:8px 16px;border:none;border-radius:6px;cursor:pointer;font-size:0.85em;
+position:relative;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
 .btn-p{background:#e94560;color:#fff}.btn-p:hover{background:#d63650}
 .btn-s{background:#0f3460;color:#e0e0e0;border:1px solid #1a4080}.btn-s:hover{background:#1a4080}
 .btn-g{background:#4ecca3;color:#1a1a2e}.btn-g:hover{background:#3db892}
 .btn:disabled{opacity:.4;cursor:default}
 .btn-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-/* Inputs */
+.btn svg{width:14px;height:14px;flex-shrink:0}
+.btn.loading{color:transparent !important;pointer-events:none}
+.btn.loading::after{content:'';position:absolute;width:14px;height:14px;border:2px solid transparent;
+border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;
+top:50%;left:50%;margin:-7px 0 0 -7px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes testPulse{0%{box-shadow:0 0 0 0 rgba(78,204,163,.7)}70%{box-shadow:0 0 0 10px rgba(78,204,163,0)}100%{box-shadow:0 0 0 0 rgba(78,204,163,0)}}
+.test-pulse{animation:testPulse .6s ease}
 input[type=range]{width:100%;accent-color:#e94560}
 input[type=number],input[type=text],input[type=password],select{background:#0d1b3e;border:1px solid #1a4080;
 color:#e0e0e0;padding:6px 8px;border-radius:4px;font-size:0.85em;width:100%}
 .cfg-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 .cfg-row label{flex:0 0 140px;font-size:0.8em;color:#aaa;text-align:right}
 .cfg-row input,.cfg-row select{flex:1}
-/* Keyboard */
 .keys{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:8px 0}
 .key{background:linear-gradient(180deg,#2a2a4a,#1a1a2e);border:1px solid #0f3460;
 border-radius:6px;padding:10px 8px;text-align:center;cursor:pointer;user-select:none;
-min-width:60px;flex:0 0 auto;transition:background .1s}
-.key.black{background:linear-gradient(180deg,#1a1a2e,#0a0a1e);border-color:#333}
-.key.pressed,.key:active{background:#e94560;border-color:#e94560}
+min-width:60px;flex:0 0 auto;transition:all .15s}
+.key.black{background:linear-gradient(180deg,#1a1a2e,#0a0a1e);border-color:#444}
+.key.pressed,.key:active{background:#e94560;border-color:#e94560;transform:scale(.96)}
 .note-name{display:block;font-weight:bold;font-size:1em;color:#fff}
-.note-midi{display:block;font-size:0.65em;color:#888;margin-top:2px}
+.note-midi{display:block;font-size:0.65em;color:#9aa;margin-top:2px}
+.key-shortcut{display:none;font-size:.55em;color:#777;margin-top:2px}
+.key:hover .key-shortcut{display:block}
 .kf-row{display:flex;gap:3px;justify-content:center;margin-top:4px}
-.kf{width:8px;height:8px;border-radius:50%;border:1px solid #555}
-.kf.c{background:#333}.kf.o{background:#4ecca3}
-/* SVG Flute */
+.kf{width:8px;height:8px;border-radius:50%;border:1px solid #777}
+.kf.c{background:#444}.kf.o{background:#4ecca3}
 .flute-box{background:#0d1b3e;border-radius:8px;padding:12px;text-align:center;margin-bottom:8px}
 .flute-box svg{width:100%;max-width:600px;height:auto}
-.flute-hole{stroke:#5C4A0A;stroke-width:2}
+.flute-hole{stroke:#5C4A0A;stroke-width:2;transition:all .2s}
 .flute-hole.closed{fill:#3a2a0a}.flute-hole.open{fill:#4ecca3}
 .flute-hole.thumb{filter:drop-shadow(0 0 3px #e94560)}
-.flute-lbl{font-size:11px;fill:#888}
+.flute-hole:hover{filter:drop-shadow(0 0 6px #e94560);cursor:pointer}
+@keyframes holePulse{0%,100%{filter:drop-shadow(0 0 4px #4ecca3)}50%{filter:drop-shadow(0 0 14px #4ecca3)}}
+.flute-hole.playing{animation:holePulse 1s ease-in-out infinite}
+.flute-lbl{font-size:11px;fill:#9aa}
 .flute-num{font-size:10px;fill:#fff;font-weight:bold;pointer-events:none}
-.flute-info{text-align:center;font-size:0.8em;color:#888;margin-top:4px}
-/* Calibration steps */
+.flute-info{text-align:center;font-size:0.8em;color:#9aa;margin-top:4px}
+.toast-container{position:fixed;top:56px;right:12px;z-index:200;display:flex;flex-direction:column;
+gap:8px;pointer-events:none}
+.toast{padding:10px 16px;border-radius:8px;font-size:.82em;color:#fff;opacity:0;
+transform:translateX(40px);transition:all .3s ease;display:flex;align-items:center;gap:8px;
+max-width:320px;pointer-events:auto;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.toast.show{opacity:1;transform:translateX(0)}
+.toast.success{background:rgba(45,107,79,.95);border:1px solid #4ecca3}
+.toast.error{background:rgba(107,45,58,.95);border:1px solid #e94560}
+.toast.info{background:rgba(45,58,107,.95);border:1px solid #4a7eca}
+.toast svg{flex-shrink:0;width:16px;height:16px}
+.skeleton{background:linear-gradient(90deg,#16213e 25%,#1e2d50 50%,#16213e 75%);
+background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px;min-height:20px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skeleton-key{width:60px;height:70px;border-radius:6px;display:inline-block}
+.skeleton-row{height:16px;margin-bottom:8px}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeInUp .3s ease forwards}
+.fade-delay-1{animation-delay:.05s;opacity:0}.fade-delay-2{animation-delay:.1s;opacity:0}
+.fade-delay-3{animation-delay:.15s;opacity:0}.fade-delay-4{animation-delay:.2s;opacity:0}
+.step-panel{transition:opacity .3s ease,transform .3s ease}
 .steps{display:flex;align-items:center;justify-content:center;gap:0;padding:12px 0}
-.step-dot{width:12px;height:12px;border-radius:50%;background:#333;cursor:pointer;transition:.2s}
+.step-dot{width:12px;height:12px;border-radius:50%;background:#444;cursor:pointer;transition:.2s}
 .step-dot.active{background:#e94560;box-shadow:0 0 8px #e94560}.step-dot.done{background:#4ecca3}
-.step-line{width:40px;height:2px;background:#333}
-.step-labels{display:flex;justify-content:center;gap:34px;font-size:0.75em;color:#888;margin-bottom:8px}
-.cal-card{background:#0d1b3e;border:1px solid #1a4080;border-radius:8px;padding:10px;margin-bottom:8px}
+.step-dot.locked{opacity:.4;cursor:not-allowed}
+.step-line{width:40px;height:2px;background:#444}
+.step-labels{display:flex;justify-content:center;gap:34px;font-size:0.75em;color:#9aa;margin-bottom:8px}
+.cal-card{background:linear-gradient(135deg,#0d1b3e 0%,#101f45 100%);border:1px solid #1a4080;
+border-radius:8px;padding:10px;margin-bottom:8px}
 .cal-card h4{font-size:0.85em;color:#e94560;margin-bottom:6px}
-/* Fingering table */
+.cal-card.pca-conflict{border-color:#e9a645;box-shadow:0 0 8px rgba(233,166,69,.3)}
+.pca-warn{color:#e9a645;font-size:.75em;margin-top:4px;display:none}
+.pca-conflict .pca-warn{display:block}
 .fg-row{display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid #0f3460}
 .fg-row:last-child{border-bottom:none}
 .fg-note{font-weight:bold;min-width:50px;font-size:0.9em}
-.fg-midi{color:#888;font-size:0.75em;min-width:36px}
+.fg-midi{color:#9aa;font-size:0.75em;min-width:36px}
+.fg-octave{background:#0f3460;padding:4px 10px;font-size:.75em;color:#e94560;
+font-weight:bold;border-radius:4px;margin:6px 0}
 .fg-dots{display:flex;gap:4px;flex:1}
-.fg-dot{width:18px;height:18px;border-radius:50%;border:2px solid #555;cursor:pointer;transition:.15s}
-.fg-dot.closed{background:#333}.fg-dot.open{background:#4ecca3;border-color:#4ecca3}
+.fg-dot{width:18px;height:18px;border-radius:50%;border:2px solid #777;cursor:pointer;transition:.15s}
+.fg-dot.closed{background:#444}.fg-dot.open{background:#4ecca3;border-color:#4ecca3}
 .fg-dot.thumb{border-style:dashed;border-color:#e94560}
-/* Airflow per note */
 .air-card{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #0f3460;flex-wrap:wrap}
 .air-note{font-weight:bold;min-width:40px;font-size:0.85em}
 .air-sliders{flex:1;min-width:150px}
-.air-vals{font-size:0.75em;color:#888;display:flex;justify-content:space-between}
-/* Settings overlay */
+.air-vals{font-size:0.75em;color:#9aa;display:flex;justify-content:space-between}
+.dual-range{position:relative;height:28px;margin:4px 0}
+.dual-range-track{position:absolute;top:12px;left:0;right:0;height:4px;background:#0f3460;border-radius:2px}
+.dual-range-fill{position:absolute;top:12px;height:4px;background:#e94560;border-radius:2px}
+.dual-range input[type=range]{position:absolute;top:0;width:100%;margin:0;pointer-events:none;
+-webkit-appearance:none;appearance:none;background:transparent;height:28px}
+.dual-range input[type=range]::-webkit-slider-thumb{pointer-events:all;-webkit-appearance:none;
+width:16px;height:16px;background:#e94560;border-radius:50%;cursor:pointer;border:2px solid #fff}
+.dual-range input[type=range]::-moz-range-thumb{pointer-events:all;width:16px;height:16px;
+background:#e94560;border-radius:50%;cursor:pointer;border:2px solid #fff}
+.undo-bar{display:flex;gap:6px;align-items:center;margin-bottom:8px}
+.undo-bar button{padding:4px 10px;font-size:.8em}.undo-bar span{font-size:.75em;color:#777}
 .settings-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;
 background:rgba(0,0,0,.85);z-index:100;overflow-y:auto}
 .settings-overlay.open{display:block}
-.settings-box{max-width:600px;margin:0 auto;padding:16px}
+.settings-box{max-width:600px;margin:0 auto;padding:16px;padding-bottom:48px}
 .settings-box h2{color:#e94560;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
-.close-btn{background:none;border:none;color:#888;font-size:1.5em;cursor:pointer}
+.close-btn{background:none;border:none;color:#9aa;font-size:1.5em;cursor:pointer}
 .close-btn:hover{color:#e94560}
-/* MIDI player */
 .drop-zone{border:2px dashed #0f3460;border-radius:8px;padding:30px;text-align:center;
-color:#555;cursor:pointer;transition:border-color .2s}
+color:#777;cursor:pointer;transition:border-color .2s}
 .drop-zone.hover{border-color:#e94560;color:#e94560}
 .transport{display:flex;gap:8px;justify-content:center;align-items:center;margin:12px 0}
-.transport button{width:44px;height:44px;border-radius:50%;font-size:1.2em}
+.transport button{width:44px;height:44px;border-radius:50%;font-size:1.2em;
+display:flex;align-items:center;justify-content:center}
 .progress-bar{height:6px;background:#0f3460;border-radius:3px;overflow:hidden;margin:8px 0}
 .progress-fill{height:100%;background:#e94560;width:0%;transition:width .3s}
-.file-info{font-size:0.8em;color:#888;text-align:center}
-/* Monitor */
+.file-info{font-size:0.8em;color:#9aa;text-align:center}
+.upload-bar{height:4px;background:#0f3460;border-radius:2px;overflow:hidden;margin-top:8px;display:none}
+.upload-fill{height:100%;background:#4ecca3;width:0%;transition:width .15s}
 .cc-bar{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:0.8em}
-.cc-label{min-width:70px;color:#888}.cc-val{min-width:24px;text-align:right}
+.cc-label{min-width:70px;color:#9aa}.cc-val{min-width:24px;text-align:right}
 .cc-track{flex:1;height:6px;background:#0f3460;border-radius:3px;overflow:hidden}
 .cc-fill{height:100%;background:#4ecca3;transition:width .2s}
-/* VU meter */
 .vu{display:flex;align-items:center;gap:8px;margin:8px 0}
 .vu-track{flex:1;height:10px;background:#0f3460;border-radius:5px;overflow:hidden}
 .vu-fill{height:100%;background:#4ecca3;width:0%;transition:width .1s}
 .vu-val{font-size:0.8em;min-width:36px;text-align:right}
-/* MIC badge */
 .mic-badge{display:inline-block;background:#4ecca3;color:#1a1a2e;font-size:0.7em;
 padding:2px 8px;border-radius:10px;font-weight:bold}
-.mic-badge.off{background:#555;color:#888}
-/* Pitch display */
+.mic-badge.off{background:#777;color:#9aa}
 .pitch{display:flex;gap:16px;align-items:center;font-size:0.9em}
 .pitch-note{font-size:1.4em;font-weight:bold;color:#e94560;min-width:50px}
-.pitch-hz{color:#888;font-size:0.85em}
+.pitch-hz{color:#9aa;font-size:0.85em}
 .pitch-cents{font-size:0.85em}.pitch-cents.ok{color:#4ecca3}.pitch-cents.sharp{color:#e94560}.pitch-cents.flat{color:#e9a645}
-/* Auto-cal progress */
 .acal-progress{background:#0d1b3e;border-radius:8px;padding:12px;display:none}
 .acal-bar{height:8px;background:#0f3460;border-radius:4px;overflow:hidden;margin:6px 0}
 .acal-fill{height:100%;background:#e94560;width:0%;transition:width .3s}
-.acal-info{font-size:0.8em;color:#888;display:flex;justify-content:space-between}
-/* WiFi */
+.acal-info{font-size:0.8em;color:#9aa;display:flex;justify-content:space-between}
 .wifi-item{padding:8px;border-bottom:1px solid #0f3460;cursor:pointer;display:flex;justify-content:space-between}
 .wifi-item:hover{background:#0f3460}
-/* Status bar */
-.status-bar{background:#0d1117;padding:6px 16px;font-size:0.75em;color:#555;
+.status-bar{background:#0d1117;padding:6px 16px;font-size:0.75em;color:#777;
 display:flex;justify-content:space-between;position:fixed;bottom:0;left:0;right:0;z-index:5}
 .log{background:#0a0a1a;border-radius:4px;padding:8px;font-family:monospace;font-size:0.75em;
-max-height:120px;overflow-y:auto;color:#888}
+max-height:120px;overflow-y:auto;color:#9aa}
 </style>
 </head>
 <body>
+<div class="toast-container" id="toastContainer"></div>
 <div class="hdr">
-  <h1 id="devName">ServoFlute</h1>
+  <h1 id="devName">ServoFlute<span class="unsaved-badge" id="unsavedBadge">modifi&eacute;</span></h1>
   <div class="hdr-r">
     <span class="dot off" id="sDot"></span>
-    <button class="gear-btn" onclick="toggleSettings()" title="Reglages">&#9881;</button>
+    <button class="gear-btn" onclick="toggleSettings()" title="Reglages" id="gearBtn">
+      <svg viewBox="0 0 16 16" width="18" height="18"><circle cx="8" cy="8" r="2" fill="currentColor"/><path d="M14.3 6.7l-1.2-.2a5.2 5.2 0 00-.5-1.1l.7-1-1.7-1.7-1 .7c-.3-.2-.7-.4-1.1-.5L9.3 1.7H7.7l-.2 1.2c-.4.1-.8.3-1.1.5l-1-.7L3.7 4.4l.7 1c-.2.3-.4.7-.5 1.1L2.7 6.7v1.6l1.2.2c.1.4.3.8.5 1.1l-.7 1 1.7 1.7 1-.7c.3.2.7.4 1.1.5l.2 1.2h1.6l.2-1.2c.4-.1.8-.3 1.1-.5l1 .7 1.7-1.7-.7-1c.2-.3.4-.7.5-1.1l1.2-.2V6.7z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+    </button>
   </div>
 </div>
 
 <div class="tabs">
-  <button class="active" onclick="showTab('keyboard',this)">Clavier</button>
-  <button onclick="showTab('midi',this)">MIDI</button>
-  <button onclick="showTab('calib',this)">Calibration</button>
+  <button class="active" onclick="showTab('keyboard',this)"><svg viewBox="0 0 16 14" width="14" height="12"><rect x="1" y="1" width="14" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="4" width="2" height="2" rx=".5" fill="currentColor"/><rect x="7" y="4" width="2" height="2" rx=".5" fill="currentColor"/><rect x="11" y="4" width="2" height="2" rx=".5" fill="currentColor"/><rect x="4" y="8" width="8" height="2" rx=".5" fill="currentColor"/></svg>Clavier</button>
+  <button onclick="showTab('midi',this)"><svg viewBox="0 0 14 16" width="12" height="14"><path d="M12 1v10.5a2.5 2.5 0 11-2-2.45V3.5L5 5v8a2.5 2.5 0 11-2-2.45V1l9-2z" fill="currentColor" opacity=".85"/></svg>MIDI</button>
+  <button onclick="showTab('calib',this)"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M6.5 1L7 4H5L2 8h3l-.5 7 6-9H7.5l2-5z" fill="currentColor" opacity=".85"/></svg>Calibration</button>
 </div>
 
 <!-- TAB: KEYBOARD -->
@@ -184,15 +232,16 @@ max-height:120px;overflow-y:auto;color:#888}
       Glisser-deposer un fichier MIDI ou cliquer
       <input type="file" id="midiFile" accept=".mid,.midi" style="display:none" onchange="uploadMidi(this)">
     </div>
+    <div class="upload-bar" id="uploadBar"><div class="upload-fill" id="uploadFill"></div></div>
     <div class="file-info" id="fileInfo" style="margin-top:8px">
       <span id="fName"></span> &bull; <span id="fEvents"></span> evt &bull; <span id="fDuration"></span>
     </div>
   </div>
   <div class="section">
     <div class="transport">
-      <button class="btn btn-g" id="btnPlay" onclick="wsSend({t:'play'})" disabled>&#9654;</button>
-      <button class="btn btn-s" id="btnPause" onclick="wsSend({t:'pause'})" disabled>&#10074;&#10074;</button>
-      <button class="btn btn-p" id="btnStop" onclick="wsSend({t:'stop'})" disabled>&#9632;</button>
+      <button class="btn btn-g" id="btnPlay" onclick="wsSend({t:'play'})" disabled><svg viewBox="0 0 16 16" width="18" height="18"><path d="M4 2l10 6-10 6z" fill="currentColor"/></svg></button>
+      <button class="btn btn-s" id="btnPause" onclick="wsSend({t:'pause'})" disabled><svg viewBox="0 0 16 16" width="18" height="18"><rect x="3" y="2" width="3.5" height="12" rx="1" fill="currentColor"/><rect x="9.5" y="2" width="3.5" height="12" rx="1" fill="currentColor"/></svg></button>
+      <button class="btn btn-p" id="btnStop" onclick="wsSend({t:'stop'})" disabled><svg viewBox="0 0 16 16" width="18" height="18"><rect x="3" y="3" width="10" height="10" rx="1" fill="currentColor"/></svg></button>
     </div>
     <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
     <div class="file-info" id="progressText">--:-- / --:--</div>
@@ -213,7 +262,7 @@ max-height:120px;overflow-y:auto;color:#888}
   </div>
 
   <!-- STEP 1: FINGERS -->
-  <div id="step1">
+  <div id="step1" class="step-panel">
     <div class="section">
       <h3>Configuration des servos</h3>
       <div class="cfg-row"><label>Nombre de doigts</label>
@@ -236,12 +285,12 @@ max-height:120px;overflow-y:auto;color:#888}
     </div>
     <div id="fingerCards"></div>
     <div class="btn-row" style="justify-content:flex-end">
-      <button class="btn btn-p" onclick="saveStep1()">Sauver &amp; Continuer &rarr;</button>
+      <button class="btn btn-p" id="btnSaveStep1" onclick="saveStep1()"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M12.7 1H3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V3.3L12.7 1zM8 13a2.5 2.5 0 110-5 2.5 2.5 0 010 5zM11 5H5V2h6v3z" fill="currentColor"/></svg>Sauver &amp; Continuer &rarr;</button>
     </div>
   </div>
 
   <!-- STEP 2: FINGERINGS -->
-  <div id="step2" style="display:none">
+  <div id="step2" class="step-panel" style="display:none">
     <div class="section">
       <h3>Doigtes par note</h3>
       <div class="cfg-row"><label>Preset</label>
@@ -252,6 +301,11 @@ max-height:120px;overflow-y:auto;color:#888}
       </div>
     </div>
     <div class="section" id="fingeringSection">
+      <div class="undo-bar">
+        <button class="btn btn-s" id="undoBtn" onclick="undoFp()" disabled title="Ctrl+Z"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M4 7h8a3 3 0 010 6H9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7 4L4 7l3 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Annuler</button>
+        <button class="btn btn-s" id="redoBtn" onclick="redoFp()" disabled title="Ctrl+Y"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M12 7H4a3 3 0 000 6h3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M9 4l3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Retablir</button>
+        <span id="undoInfo"></span>
+      </div>
       <div id="fingeringRows"></div>
       <div class="btn-row">
         <button class="btn btn-s" onclick="addNote()">+ Ajouter note</button>
@@ -259,13 +313,13 @@ max-height:120px;overflow-y:auto;color:#888}
       </div>
     </div>
     <div class="btn-row" style="justify-content:space-between">
-      <button class="btn btn-s" onclick="goStep(1)">&larr; Retour</button>
-      <button class="btn btn-p" onclick="saveStep2()">Sauver &amp; Continuer &rarr;</button>
+      <button class="btn btn-s" onclick="goStep(1)"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Retour</button>
+      <button class="btn btn-p" id="btnSaveStep2" onclick="saveStep2()"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M12.7 1H3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V3.3L12.7 1zM8 13a2.5 2.5 0 110-5 2.5 2.5 0 010 5zM11 5H5V2h6v3z" fill="currentColor"/></svg>Sauver &amp; Continuer &rarr;</button>
     </div>
   </div>
 
   <!-- STEP 3: AIRFLOW -->
-  <div id="step3" style="display:none">
+  <div id="step3" class="step-panel" style="display:none">
     <div class="section" id="micSection" style="display:none">
       <h3><span class="mic-badge" id="micBadge">MIC</span> Auto-calibration</h3>
       <div class="vu"><span style="font-size:.8em;min-width:24px">VU</span>
@@ -292,8 +346,8 @@ max-height:120px;overflow-y:auto;color:#888}
       <div id="airflowRows"></div>
     </div>
     <div class="btn-row" style="justify-content:space-between">
-      <button class="btn btn-s" onclick="goStep(2)">&larr; Retour</button>
-      <button class="btn btn-g" onclick="saveStep3()">Sauver &amp; Terminer &#10003;</button>
+      <button class="btn btn-s" onclick="goStep(2)"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Retour</button>
+      <button class="btn btn-g" id="btnSaveStep3" onclick="saveStep3()"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M3 8l3.5 4L13 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Sauver &amp; Terminer</button>
     </div>
   </div>
 </div>
@@ -325,6 +379,14 @@ max-height:120px;overflow-y:auto;color:#888}
   <div class="section"><h3>Vibrato</h3>
     <div class="cfg-row"><label>Frequence (Hz)</label><input type="number" id="cfgVibF" min="0" max="20" step="0.5"></div>
     <div class="cfg-row"><label>Amplitude (deg)</label><input type="number" id="cfgVibA" min="0" max="30" step="0.5"></div>
+  </div>
+
+  <div class="section"><h3>CC Defaults</h3>
+    <div class="cfg-row"><label>Volume (CC7)</label><input type="number" id="cfgCCVol" min="0" max="127"></div>
+    <div class="cfg-row"><label>Expression (CC11)</label><input type="number" id="cfgCCExpr" min="0" max="127"></div>
+    <div class="cfg-row"><label>Modulation (CC1)</label><input type="number" id="cfgCCMod" min="0" max="127"></div>
+    <div class="cfg-row"><label>Breath (CC2)</label><input type="number" id="cfgCCBreath" min="0" max="127"></div>
+    <div class="cfg-row"><label>Brightness (CC74)</label><input type="number" id="cfgCCBright" min="0" max="127"></div>
   </div>
 
   <div class="section"><h3>Breath CC2</h3>
@@ -369,10 +431,10 @@ max-height:120px;overflow-y:auto;color:#888}
   </div>
 
   <div class="btn-row" style="justify-content:center;margin-top:16px">
-    <button class="btn btn-g" onclick="saveSettings()">Sauvegarder</button>
+    <button class="btn btn-g" id="btnSaveSettings" onclick="saveSettings()"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M12.7 1H3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V3.3L12.7 1zM8 13a2.5 2.5 0 110-5 2.5 2.5 0 010 5zM11 5H5V2h6v3z" fill="currentColor"/></svg>Sauvegarder</button>
     <button class="btn btn-s" onclick="resetConfig()">Reset defauts</button>
   </div>
-  <div style="font-size:.75em;color:#888;text-align:center;margin-top:8px" id="settingsMsg"></div>
+  <div style="font-size:.75em;color:#9aa;text-align:center;margin-top:8px" id="settingsMsg"></div>
 </div>
 </div>
 
@@ -391,6 +453,39 @@ const STATES=['IDLE','POSITIONING','PLAYING','STOPPING'];
 let ws=null,velocity=WEB_DEF_VEL,CFG=null,curNote=null;
 let calibStep=1,fileLoaded=false,playerDuration=0;
 let micDetected=false,autoCalRunning=false;
+let dirty=false,fpHistory=[],fpFuture=[];
+
+function showToast(msg,type){type=type||'info';const c=$('toastContainer');
+  const ic={success:'<svg viewBox="0 0 16 16" width="16" height="16"><path d="M3 8l3.5 4L13 4" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  error:'<svg viewBox="0 0 16 16" width="16" height="16"><path d="M5.5 5.5l5 5M10.5 5.5l-5 5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  info:'<svg viewBox="0 0 16 16" width="16" height="16"><circle cx="8" cy="8" r="6" fill="none" stroke="#fff" stroke-width="1.5"/><path d="M8 7v4M8 5v.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>'};
+  const t=document.createElement('div');t.className='toast '+type;
+  t.innerHTML=(ic[type]||ic.info)+'<span>'+msg+'</span>';c.appendChild(t);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>t.classList.add('show')));
+  setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),300)},3000)}
+function markDirty(){dirty=true;$('unsavedBadge').classList.add('show')}
+function markClean(){dirty=false;$('unsavedBadge').classList.remove('show')}
+function btnLoad(id,on){const b=$(id);if(!b)return;if(on){b.classList.add('loading');b.disabled=true}else{b.classList.remove('loading');b.disabled=false}}
+function testPulse(el){el.classList.add('test-pulse');setTimeout(()=>el.classList.remove('test-pulse'),600)}
+function fpSnap(){if(!CFG)return;fpHistory.push(JSON.stringify(CFG.notes.map(n=>({midi:n.midi,fp:[...n.fp]}))));
+  fpFuture=[];if(fpHistory.length>50)fpHistory.shift();updUndoUI()}
+function undoFp(){if(!fpHistory.length||!CFG)return;
+  fpFuture.push(JSON.stringify(CFG.notes.map(n=>({midi:n.midi,fp:[...n.fp]}))));
+  const s=JSON.parse(fpHistory.pop());s.forEach((sn,i)=>{if(CFG.notes[i]){CFG.notes[i].midi=sn.midi;CFG.notes[i].fp=sn.fp}});
+  buildFingeringRows();updUndoUI();markDirty()}
+function redoFp(){if(!fpFuture.length||!CFG)return;
+  fpHistory.push(JSON.stringify(CFG.notes.map(n=>({midi:n.midi,fp:[...n.fp]}))));
+  const s=JSON.parse(fpFuture.pop());s.forEach((sn,i)=>{if(CFG.notes[i]){CFG.notes[i].midi=sn.midi;CFG.notes[i].fp=sn.fp}});
+  buildFingeringRows();updUndoUI();markDirty()}
+function updUndoUI(){$('undoBtn').disabled=!fpHistory.length;$('redoBtn').disabled=!fpFuture.length;
+  $('undoInfo').textContent=fpHistory.length?fpHistory.length+' modif.':''}
+function checkPca(){if(!CFG)return;const used={};const airP=parseInt($('airPca').value);used[airP]='Souffle';
+  document.querySelectorAll('.cal-card').forEach((card,i)=>{const ch=CFG.fingers[i]?CFG.fingers[i].ch:i;
+    let conflict=used[ch]!==undefined;card.classList.toggle('pca-conflict',conflict);
+    const w=card.querySelector('.pca-warn');if(w)w.textContent=conflict?'Conflit PCA '+ch+' avec '+used[ch]:'';
+    used[ch]='Doigt '+(i+1)})}
+function updDualFill(ni){const f=$('drf'+ni);if(!f||!CFG)return;const a=CFG.notes[ni].amn,b=CFG.notes[ni].amx;
+  f.style.left=a+'%';f.style.width=Math.max(0,b-a)+'%'}
 
 function mn(m){return N[m%12]+(Math.floor(m/12)-1)}
 function isBlack(m){return[1,3,6,8,10].includes(m%12)}
@@ -459,23 +554,25 @@ function updateCC(n,v){if(v===undefined)return;const p=(v/MIDI_CC_MAX*100).toFix
 
 // --- Load config ---
 function loadConfig(){
+  const pk=$('pianoKeys');if(pk&&!CFG)pk.innerHTML='<div class="skeleton" style="width:100%;height:80px;margin:12px 0"></div>';
   fetch('/api/config').then(r=>r.json()).then(d=>{
     CFG=d;micDetected=d.mic||false;
-    $('devName').textContent=d.device||'ServoFlute';
-    buildKeyboard();buildFlute(CFG,'fluteSvg',false);
+    $('devName').childNodes[0].textContent=d.device||'ServoFlute';
+    buildKeyboard();buildFlute(CFG,'fluteSvg',false);markClean();
     if(micDetected){$('micSection').style.display='';wsSend({t:'mic_mon',on:1})}
     else $('micSection').style.display='none';
-  }).catch(e=>addLog('Erreur config: '+e))
+  }).catch(e=>{addLog('Erreur config: '+e);showToast('Erreur chargement config','error')})
 }
 
 // --- KEYBOARD ---
 function buildKeyboard(){
   const c=$('pianoKeys');c.innerHTML='';if(!CFG||!CFG.notes||!CFG.notes.length){c.innerHTML='<div style="color:#888;padding:16px;text-align:center">Aucune note</div>';return}
-  CFG.notes.forEach(n=>{
+  CFG.notes.forEach((n,idx)=>{
     const name=mn(n.midi);const key=document.createElement('div');
-    key.className='key'+(isBlack(n.midi)?' black':'');key.dataset.midi=n.midi;
+    key.className='key'+(isBlack(n.midi)?' black':'')+' fade-in fade-delay-'+(Math.min(4,(idx%4)+1));key.dataset.midi=n.midi;
     let dots='<span class="kf-row">';for(let f=0;f<CFG.num_fingers;f++)dots+='<span class="kf '+(n.fp[f]?'o':'c')+'"></span>';dots+='</span>';
-    key.innerHTML='<span class="note-name">'+name+'</span><span class="note-midi">'+n.midi+'</span>'+dots;
+    const sc=idx<KC.length?KC[idx].toUpperCase():'';
+    key.innerHTML='<span class="note-name">'+name+'</span><span class="note-midi">'+n.midi+'</span>'+dots+(sc?'<span class="key-shortcut">'+sc+'</span>':'');
     key.addEventListener('touchstart',e=>{e.preventDefault();noteOn(n.midi);key.classList.add('pressed')},{passive:false});
     key.addEventListener('touchend',e=>{e.preventDefault();noteOff(n.midi);key.classList.remove('pressed')},{passive:false});
     key.addEventListener('mousedown',e=>{e.preventDefault();noteOn(n.midi);key.classList.add('pressed')});
@@ -486,8 +583,11 @@ function buildKeyboard(){
   buildKeyMap()
 }
 
-function noteOn(midi){curNote=midi;updateFluteForNote(midi);wsSend({t:'non',n:midi,v:velocity})}
-function noteOff(midi){wsSend({t:'nof',n:midi});if(curNote===midi)curNote=null}
+function noteOn(midi){curNote=midi;updateFluteForNote(midi);
+  document.querySelectorAll('#fluteSvg .flute-hole.open').forEach(h=>h.classList.add('playing'));
+  wsSend({t:'non',n:midi,v:velocity})}
+function noteOff(midi){wsSend({t:'nof',n:midi});if(curNote===midi){curNote=null;
+  document.querySelectorAll('#fluteSvg .flute-hole.playing').forEach(h=>h.classList.remove('playing'))}}
 function setVelocity(v){velocity=parseInt(v);$('velVal').textContent=v;wsSend({t:'velocity',v:velocity})}
 
 // Keyboard shortcuts
@@ -498,6 +598,9 @@ document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.target.
     const el=document.querySelector('.key[data-midi="'+n+'"]');if(el)el.classList.add('pressed')}});
 document.addEventListener('keyup',e=>{const n=keyMap[e.key.toLowerCase()];if(n){keysDown.delete(e.key);noteOff(n);
     const el=document.querySelector('.key[data-midi="'+n+'"]');if(el)el.classList.remove('pressed')}});
+document.addEventListener('keydown',e=>{if(!e.ctrlKey)return;
+  if(e.key==='z'&&calibStep===2){e.preventDefault();undoFp()}
+  if(e.key==='y'&&calibStep===2){e.preventDefault();redoFp()}});
 
 // --- SVG FLUTE ---
 function buildFlute(cfg,svgId,showNums){
@@ -560,9 +663,14 @@ dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('hover');
 function uploadMidi(input){if(input.files.length)uploadMidiFile(input.files[0])}
 function uploadMidiFile(file){
   const fd=new FormData();fd.append('file',file);
-  fetch('/api/midi',{method:'POST',body:fd}).then(r=>r.json()).then(d=>{
-    if(d.ok){addLog('Upload OK: '+d.events+' evt')}else{addLog('ERR: '+(d.msg||'echec'))}
-  }).catch(e=>addLog('Upload erreur: '+e))
+  const ub=$('uploadBar'),uf=$('uploadFill');ub.style.display='block';uf.style.width='0%';
+  const xhr=new XMLHttpRequest();
+  xhr.upload.onprogress=e=>{if(e.lengthComputable)uf.style.width=(e.loaded/e.total*100)+'%'};
+  xhr.onload=()=>{uf.style.width='100%';setTimeout(()=>ub.style.display='none',1000);
+    try{const d=JSON.parse(xhr.responseText);if(d.ok){showToast('Upload OK: '+d.events+' evt','success');addLog('Upload OK')}
+    else{showToast('Erreur: '+(d.msg||'echec'),'error')}}catch(e){showToast('Erreur upload','error')}};
+  xhr.onerror=()=>{ub.style.display='none';showToast('Erreur upload reseau','error')};
+  xhr.open('POST','/api/midi');xhr.send(fd)
 }
 
 // --- CALIBRATION ---
@@ -570,9 +678,10 @@ function buildCalibUI(){if(!CFG)return;buildFlute(CFG,'calFluteSvg',true);buildF
 
 function goStep(s){
   calibStep=s;
-  ['step1','step2','step3'].forEach((id,i)=>{$(id).style.display=(i+1===s)?'':'none'});
-  document.querySelectorAll('.step-dot').forEach((d,i)=>{d.className='step-dot'+(i+1===s?' active':i+1<s?' done':'')});
-  if(s===2)buildFingeringRows();
+  ['step1','step2','step3'].forEach((id,i)=>{const el=$(id);el.style.display=(i+1===s)?'':'none';
+    if(i+1===s){el.classList.add('fade-in')}else{el.classList.remove('fade-in')}});
+  document.querySelectorAll('.step-dot').forEach((d,i)=>{d.className='step-dot'+(i+1===s?' active':i+1<s?' done':' locked')});
+  if(s===2){buildFingeringRows();fpHistory=[];fpFuture=[];updUndoUI()}
   if(s===3)buildAirflowRows()
 }
 
@@ -597,7 +706,7 @@ function buildFingerCards(){
     const f=CFG.fingers[i]||{ch:i,a:90,d:1,th:0};
     const d=document.createElement('div');d.className='cal-card';
     d.innerHTML='<h4>Doigt '+(i+1)+' <span style="color:#888;font-size:.85em">(PCA '+f.ch+')</span></h4>'+
-      '<div class="cfg-row"><label>PCA</label><select id="fch'+i+'" style="max-width:80px" onchange="CFG.fingers['+i+'].ch=parseInt(this.value)">'+
+      '<div class="cfg-row"><label>PCA</label><select id="fch'+i+'" style="max-width:80px" onchange="CFG.fingers['+i+'].ch=parseInt(this.value);checkPca();markDirty()">'+
         Array.from({length:16},(_,j)=>'<option value="'+j+'"'+(j===f.ch?' selected':'')+'>'+j+'</option>').join('')+'</select></div>'+
       '<div class="cfg-row"><label>Angle ferme</label><input type="range" min="0" max="180" value="'+f.a+'" id="fa'+i+
         '" oninput="CFG.fingers['+i+'].a=parseInt(this.value);$(\'fav'+i+'\').textContent=this.value+\'&deg;\';testFinger('+i+',parseInt(this.value))">'+
@@ -606,10 +715,12 @@ function buildFingerCards(){
         '<option value="1"'+(f.d===1?' selected':'')+'>+1</option><option value="-1"'+(f.d===-1?' selected':'')+'>-1</option></select></div>'+
       '<div class="cfg-row"><label>Trou arriere</label><input type="checkbox" id="fth'+i+'"'+(f.th?' checked':'')+
         ' style="width:auto;flex:0" onchange="CFG.fingers['+i+'].th=this.checked?1:0;buildFlute(CFG,\'calFluteSvg\',true)"></div>'+
-      '<div class="btn-row"><button class="btn btn-s" onclick="testFinger('+i+',CFG.fingers['+i+'].a)">Fermer</button>'+
-        '<button class="btn btn-s" onclick="testFinger('+i+',CFG.fingers['+i+'].a+(CFG.angle_open||30)*CFG.fingers['+i+'].d)">Ouvrir</button></div>';
+      '<div class="btn-row"><button class="btn btn-s" onclick="testPulse(this);testFinger('+i+',CFG.fingers['+i+'].a)">Fermer</button>'+
+        '<button class="btn btn-s" onclick="testPulse(this);testFinger('+i+',CFG.fingers['+i+'].a+(CFG.angle_open||30)*CFG.fingers['+i+'].d)">Ouvrir</button></div>'+
+      '<div class="pca-warn"></div>';
     c.appendChild(d)
   }
+  checkPca()
 }
 
 function testFinger(i,a){wsSend({t:'test_finger',i:i,a:parseInt(a)});
@@ -618,9 +729,8 @@ function testFinger(i,a){wsSend({t:'test_finger',i:i,a:parseInt(a)});
     el.setAttribute('class','flute-hole '+(open?'open':'closed')+(CFG.fingers[i].th?' thumb':''))}}
 
 function saveStep1(){
-  if(!CFG)return;
+  if(!CFG)return;btnLoad('btnSaveStep1',true);
   CFG.angle_open=parseInt($('angleOpen').value);CFG.air_pca=parseInt($('airPca').value);
-  // Collect finger data
   for(let i=0;i<CFG.num_fingers;i++){
     CFG.fingers[i].ch=parseInt($('fch'+i).value);
     CFG.fingers[i].a=parseInt($('fa'+i).value);
@@ -629,38 +739,40 @@ function saveStep1(){
   }
   const body={num_fingers:CFG.num_fingers,air_pca:CFG.air_pca,angle_open:CFG.angle_open,fingers:CFG.fingers.slice(0,CFG.num_fingers)};
   fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
-    .then(r=>r.json()).then(d=>{if(d.ok){addLog('Doigts sauves');goStep(2)}else addLog('Erreur sauvegarde')})
-    .catch(e=>addLog('Erreur: '+e))
+    .then(r=>r.json()).then(d=>{btnLoad('btnSaveStep1',false);if(d.ok){showToast('Doigts sauvegardes','success');markClean();goStep(2)}else showToast('Erreur sauvegarde','error')})
+    .catch(e=>{btnLoad('btnSaveStep1',false);showToast('Erreur: '+e,'error')})
 }
 
 // --- STEP 2: FINGERINGS ---
 function buildFingeringRows(){
-  const c=$('fingeringRows');c.innerHTML='';if(!CFG)return;
+  const c=$('fingeringRows');c.innerHTML='';if(!CFG)return;let lastOct=-1;
   CFG.notes.forEach((n,ni)=>{
-    const d=document.createElement('div');d.className='fg-row';
+    const oct=Math.floor(n.midi/12)-1;if(oct!==lastOct){lastOct=oct;
+      const sep=document.createElement('div');sep.className='fg-octave';sep.textContent='Octave '+oct;c.appendChild(sep)}
+    const d=document.createElement('div');d.className='fg-row fade-in fade-delay-'+(Math.min(4,(ni%4)+1));
     let dots='';for(let f=0;f<CFG.num_fingers;f++){
       const isThumb=CFG.fingers[f]&&CFG.fingers[f].th;
       dots+='<div class="fg-dot '+(n.fp[f]?'open':'closed')+(isThumb?' thumb':'')+'" data-ni="'+ni+'" data-fi="'+f+'" onclick="toggleFP('+ni+','+f+',this)"></div>'
     }
-    d.innerHTML='<input type="number" class="fg-midi" style="width:48px" value="'+n.midi+'" min="0" max="127" onchange="CFG.notes['+ni+'].midi=parseInt(this.value)">'+
+    d.innerHTML='<input type="number" class="fg-midi" style="width:48px" value="'+n.midi+'" min="0" max="127" onchange="fpSnap();CFG.notes['+ni+'].midi=parseInt(this.value);markDirty()">'+
       '<span class="fg-note">'+mn(n.midi)+'</span>'+
       '<div class="fg-dots">'+dots+'</div>'+
-      '<button class="btn btn-s" style="padding:4px 8px;font-size:.75em" onclick="wsSend({t:\'test_note\',n:'+n.midi+'})">Test</button>';
+      '<button class="btn btn-s" style="padding:4px 8px;font-size:.75em" onclick="testPulse(this);wsSend({t:\'test_note\',n:'+n.midi+'})">Test</button>';
     c.appendChild(d)
   })
 }
 
 function toggleFP(ni,fi,el){
-  CFG.notes[ni].fp[fi]=CFG.notes[ni].fp[fi]?0:1;
-  el.className='fg-dot '+(CFG.notes[ni].fp[fi]?'open':'closed')+(CFG.fingers[fi]&&CFG.fingers[fi].th?' thumb':'')
+  fpSnap();CFG.notes[ni].fp[fi]=CFG.notes[ni].fp[fi]?0:1;
+  el.className='fg-dot '+(CFG.notes[ni].fp[fi]?'open':'closed')+(CFG.fingers[fi]&&CFG.fingers[fi].th?' thumb':'');markDirty()
 }
 
 function addNote(){
-  if(!CFG)return;const last=CFG.notes.length?CFG.notes[CFG.notes.length-1]:null;
+  if(!CFG)return;fpSnap();const last=CFG.notes.length?CFG.notes[CFG.notes.length-1]:null;
   const midi=last?last.midi+2:84;const fp=new Array(CFG.num_fingers).fill(0);
-  CFG.notes.push({midi:midi,fp:fp,amn:20,amx:75});CFG.num_notes=CFG.notes.length;buildFingeringRows()
+  CFG.notes.push({midi:midi,fp:fp,amn:20,amx:75});CFG.num_notes=CFG.notes.length;buildFingeringRows();markDirty()
 }
-function removeLastNote(){if(!CFG||!CFG.notes.length)return;CFG.notes.pop();CFG.num_notes=CFG.notes.length;buildFingeringRows()}
+function removeLastNote(){if(!CFG||!CFG.notes.length)return;fpSnap();CFG.notes.pop();CFG.num_notes=CFG.notes.length;buildFingeringRows();markDirty()}
 
 function applyPreset(val){
   if(!val||!CFG)return;
@@ -683,11 +795,11 @@ function applyPreset(val){
 }
 
 function saveStep2(){
-  if(!CFG)return;
+  if(!CFG)return;btnLoad('btnSaveStep2',true);
   const body={notes:CFG.notes.map(n=>({midi:n.midi,fp:n.fp.slice(0,CFG.num_fingers),amn:n.amn,amx:n.amx}))};
   fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
-    .then(r=>r.json()).then(d=>{if(d.ok){addLog('Doigtes sauves');goStep(3);buildKeyboard()}else addLog('Erreur')})
-    .catch(e=>addLog('Erreur: '+e))
+    .then(r=>r.json()).then(d=>{btnLoad('btnSaveStep2',false);if(d.ok){showToast('Doigtes sauvegardes','success');markClean();fpHistory=[];fpFuture=[];updUndoUI();goStep(3);buildKeyboard()}else showToast('Erreur sauvegarde','error')})
+    .catch(e=>{btnLoad('btnSaveStep2',false);showToast('Erreur: '+e,'error')})
 }
 
 // --- STEP 3: AIRFLOW ---
@@ -695,16 +807,17 @@ function buildAirflowRows(){
   const c=$('airflowRows');c.innerHTML='';if(!CFG)return;
   CFG.notes.forEach((n,ni)=>{
     let dots='';for(let f=0;f<CFG.num_fingers;f++)dots+='<span class="kf '+(n.fp[f]?'o':'c')+'"></span>';
-    const d=document.createElement('div');d.className='air-card';
+    const d=document.createElement('div');d.className='air-card fade-in fade-delay-'+(Math.min(4,(ni%4)+1));
     d.innerHTML='<span class="air-note">'+mn(n.midi)+'</span>'+
       '<span class="kf-row" style="gap:2px">'+dots+'</span>'+
       '<div class="air-sliders">'+
         '<div class="air-vals"><span>Min: <b id="amn'+ni+'">'+n.amn+'</b>%</span><span>Max: <b id="amx'+ni+'">'+n.amx+'</b>%</span></div>'+
-        '<input type="range" min="0" max="100" value="'+n.amn+'" oninput="CFG.notes['+ni+'].amn=parseInt(this.value);$(\'amn'+ni+'\').textContent=this.value">'+
-        '<input type="range" min="0" max="100" value="'+n.amx+'" oninput="CFG.notes['+ni+'].amx=parseInt(this.value);$(\'amx'+ni+'\').textContent=this.value">'+
+        '<div class="dual-range"><div class="dual-range-track"></div><div class="dual-range-fill" id="drf'+ni+'"></div>'+
+        '<input type="range" min="0" max="100" value="'+n.amn+'" oninput="CFG.notes['+ni+'].amn=parseInt(this.value);$(\'amn'+ni+'\').textContent=this.value;updDualFill('+ni+');markDirty()">'+
+        '<input type="range" min="0" max="100" value="'+n.amx+'" oninput="CFG.notes['+ni+'].amx=parseInt(this.value);$(\'amx'+ni+'\').textContent=this.value;updDualFill('+ni+');markDirty()"></div>'+
       '</div>'+
-      '<button class="btn btn-s" style="padding:4px 8px;font-size:.75em" onclick="testCalNote('+n.midi+')">Test</button>';
-    c.appendChild(d)
+      '<button class="btn btn-s" style="padding:4px 8px;font-size:.75em" onclick="testPulse(this);testCalNote('+n.midi+')">Test</button>';
+    c.appendChild(d);updDualFill(ni)
   })
 }
 
@@ -717,11 +830,11 @@ function stopAutoCal(){autoCalRunning=false;$('btnAcalStart').style.display='';$
   wsSend({t:'auto_cal',mode:'stop'})}
 
 function saveStep3(){
-  if(!CFG)return;
+  if(!CFG)return;btnLoad('btnSaveStep3',true);
   const body={notes_air:CFG.notes.map(n=>({amn:n.amn,amx:n.amx}))};
   fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
-    .then(r=>r.json()).then(d=>{if(d.ok){addLog('Souffle sauve');buildKeyboard();alert('Calibration terminee !')}else addLog('Erreur')})
-    .catch(e=>addLog('Erreur: '+e))
+    .then(r=>r.json()).then(d=>{btnLoad('btnSaveStep3',false);if(d.ok){showToast('Calibration terminee !','success');markClean();buildKeyboard()}else showToast('Erreur sauvegarde','error')})
+    .catch(e=>{btnLoad('btnSaveStep3',false);showToast('Erreur: '+e,'error')})
 }
 
 // --- SETTINGS ---
@@ -734,6 +847,9 @@ function fillSettings(){
   $('cfgDelay').value=CFG.servo_delay;$('cfgValveInt').value=CFG.valve_interval;$('cfgMinNote').value=CFG.min_note_dur;
   $('cfgAirOff').value=CFG.air_off;$('cfgAirMin').value=CFG.air_min;$('cfgAirMax').value=CFG.air_max;
   $('cfgVibF').value=CFG.vib_freq;$('cfgVibA').value=CFG.vib_amp;
+  $('cfgCCVol').value=CFG.cc_vol!=null?CFG.cc_vol:127;$('cfgCCExpr').value=CFG.cc_expr!=null?CFG.cc_expr:127;
+  $('cfgCCMod').value=CFG.cc_mod!=null?CFG.cc_mod:0;$('cfgCCBreath').value=CFG.cc_breath!=null?CFG.cc_breath:127;
+  $('cfgCCBright').value=CFG.cc_bright!=null?CFG.cc_bright:64;
   $('cfgCC2On').checked=CFG.cc2_on;$('cfgCC2Thr').value=CFG.cc2_thr;$('cfgCC2Curve').value=CFG.cc2_curve;$('cfgCC2To').value=CFG.cc2_timeout;
   $('cfgSolAct').value=CFG.sol_act;$('cfgSolHold').value=CFG.sol_hold;$('cfgSolTime').value=CFG.sol_time;
   $('cfgUnpower').value=CFG.time_unpower;
@@ -745,19 +861,24 @@ function fillSettings(){
 }
 
 function saveSettings(){
+  btnLoad('btnSaveSettings',true);
   const body={device:$('cfgDevice').value,midi_ch:parseInt($('cfgMidiCh').value),
     servo_delay:parseInt($('cfgDelay').value),valve_interval:parseInt($('cfgValveInt').value),
     min_note_dur:parseInt($('cfgMinNote').value),
     air_off:parseInt($('cfgAirOff').value),air_min:parseInt($('cfgAirMin').value),air_max:parseInt($('cfgAirMax').value),
     vib_freq:parseFloat($('cfgVibF').value),vib_amp:parseFloat($('cfgVibA').value),
+    cc_vol:parseInt($('cfgCCVol').value),cc_expr:parseInt($('cfgCCExpr').value),
+    cc_mod:parseInt($('cfgCCMod').value),cc_breath:parseInt($('cfgCCBreath').value),cc_bright:parseInt($('cfgCCBright').value),
     cc2_on:$('cfgCC2On').checked,cc2_thr:parseInt($('cfgCC2Thr').value),
     cc2_curve:parseFloat($('cfgCC2Curve').value),cc2_timeout:parseInt($('cfgCC2To').value),
     sol_act:parseInt($('cfgSolAct').value),sol_hold:parseInt($('cfgSolHold').value),sol_time:parseInt($('cfgSolTime').value),
     time_unpower:parseInt($('cfgUnpower').value)};
   fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
-    .then(r=>r.json()).then(d=>{$('settingsMsg').textContent=d.ok?'Sauvegarde OK':'Erreur';
-      $('settingsMsg').style.color=d.ok?'#4ecca3':'#e94560';if(d.ok)loadConfig()})
-    .catch(e=>{$('settingsMsg').textContent='Erreur: '+e;$('settingsMsg').style.color='#e94560'})
+    .then(r=>r.json()).then(d=>{btnLoad('btnSaveSettings',false);
+      if(d.ok){showToast('Parametres sauvegardes','success');markClean();loadConfig()}
+      else showToast('Erreur sauvegarde','error');
+      $('settingsMsg').textContent=d.ok?'Sauvegarde OK':'Erreur';$('settingsMsg').style.color=d.ok?'#4ecca3':'#e94560'})
+    .catch(e=>{btnLoad('btnSaveSettings',false);showToast('Erreur: '+e,'error');$('settingsMsg').textContent='Erreur: '+e;$('settingsMsg').style.color='#e94560'})
 }
 
 function resetConfig(){if(!confirm('Remettre tous les parametres par defaut ?'))return;
