@@ -265,6 +265,12 @@ max-height:120px;overflow-y:auto;color:#9aa}
   <!-- STEP 1: FINGERS -->
   <div id="step1" class="step-panel">
     <div class="section">
+      <h3>Instrument</h3>
+      <div class="cfg-row"><label>Type d'instrument</label>
+        <select id="instrumentSelect" style="flex:1;max-width:260px" onchange="selectInstrument(this.value)"></select>
+      </div>
+    </div>
+    <div class="section">
       <h3>Configuration des servos</h3>
       <div class="cfg-row"><label>Nombre de doigts</label>
         <div style="display:flex;align-items:center;gap:8px">
@@ -708,33 +714,38 @@ function buildFlute(cfg,svgId,showNums){
   const tw=Math.max(...allX)+60;
   const h_top=35,h_bot=65,cy=50;
   svg.setAttribute('viewBox','0 0 '+tw+' 100');
-  const g=svgId;
+  const g=svgId,ty=34,by=66,th=by-ty;
   let h='<defs><linearGradient id="wg_'+g+'" x1="0" y1="0" x2="0" y2="1">'+
-    '<stop offset="0%" stop-color="#D4B044"/><stop offset="30%" stop-color="#C4A035"/>'+
+    '<stop offset="0%" stop-color="#D4B044"/><stop offset="35%" stop-color="#C4A035"/>'+
     '<stop offset="70%" stop-color="#9B7A1C"/><stop offset="100%" stop-color="#6B4F10"/></linearGradient>'+
     '<linearGradient id="lp_'+g+'" x1="0" y1="0" x2="0" y2="1">'+
-    '<stop offset="0%" stop-color="#E0C055"/><stop offset="30%" stop-color="#D4B044"/>'+
-    '<stop offset="70%" stop-color="#A8862A"/><stop offset="100%" stop-color="#7A5C15"/></linearGradient>'+
+    '<stop offset="0%" stop-color="#E8CC60"/><stop offset="40%" stop-color="#D4B044"/>'+
+    '<stop offset="100%" stop-color="#A8862A"/></linearGradient>'+
     '<linearGradient id="cr_'+g+'" x1="0" y1="0" x2="0" y2="1">'+
     '<stop offset="0%" stop-color="#B89530"/><stop offset="50%" stop-color="#8A6A18"/>'+
     '<stop offset="100%" stop-color="#5C4A0A"/></linearGradient>'+
-    '<radialGradient id="eh_'+g+'" cx=".5" cy=".4" r=".6">'+
-    '<stop offset="0%" stop-color="#0D0800"/><stop offset="100%" stop-color="#2A1C08"/></radialGradient></defs>';
-  // Corps de la flute (tube principal)
-  h+='<rect x="18" y="28" width="'+(tw-33)+'" height="44" rx="22" fill="url(#wg_'+g+')" stroke="#5C4A0A" stroke-width="1.5"/>';
-  // Couronne (bouchon en bout de tete)
-  h+='<rect x="6" y="30" width="14" height="40" rx="5" fill="url(#cr_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
-  h+='<circle cx="13" cy="'+cy+'" r="4" fill="#8A6A18" stroke="#5C4A0A" stroke-width=".8"/>';
-  h+='<circle cx="12" cy="48" r="1.2" fill="#D4B044" opacity=".4"/>';
+    '<linearGradient id="eh_'+g+'" x1="0" y1="0" x2="0" y2="1">'+
+    '<stop offset="0%" stop-color="#1A1008"/><stop offset="100%" stop-color="#0A0600"/></linearGradient></defs>';
+  // Corps de la flute - vue de cote, bords droits
+  h+='<rect x="14" y="'+ty+'" width="'+(tw-24)+'" height="'+th+'" rx="0" fill="url(#wg_'+g+')" stroke="#5C4A0A" stroke-width="1.5"/>';
+  // Reflet horizontal haut du tube (effet cylindrique)
+  h+='<rect x="14" y="'+ty+'" width="'+(tw-24)+'" height="6" rx="0" fill="#D4B044" opacity=".18"/>';
+  // Couronne - bouchon en bout, angles droits, legerement plus haut
+  h+='<rect x="4" y="'+(ty-3)+'" width="12" height="'+(th+6)+'" rx="1" fill="url(#cr_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
+  // Rainure decorative de la couronne
+  h+='<line x1="10" y1="'+(ty-2)+'" x2="10" y2="'+(by+2)+'" stroke="#5C4A0A" stroke-width=".6" opacity=".5"/>';
   // Bague de jonction tete/corps
-  h+='<rect x="62" y="29" width="4" height="42" rx="2" fill="#A8862A" stroke="#5C4A0A" stroke-width=".6" opacity=".6"/>';
-  // Plaque de levre (lip plate) - ovale surelevee
-  h+='<ellipse cx="42" cy="'+cy+'" rx="16" ry="19" fill="url(#lp_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
-  h+='<ellipse cx="42" cy="'+cy+'" rx="14" ry="17" fill="none" stroke="#EDD580" stroke-width=".8" opacity=".3"/>';
-  // Trou d\'embouchure (blow hole)
-  h+='<rect x="34" y="42" width="16" height="16" rx="7" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width="1"/>';
-  h+='<rect x="36" y="44" width="12" height="12" rx="5" fill="none" stroke="#0D0800" stroke-width=".5" opacity=".3"/>';
-  h+='<ellipse cx="38" cy="44" rx="3" ry="1.2" fill="#D4B044" opacity=".2"/>';
+  h+='<rect x="62" y="'+(ty-1)+'" width="4" height="'+(th+2)+'" rx="0" fill="#A8862A" stroke="#5C4A0A" stroke-width=".6" opacity=".7"/>';
+  // Plaque de levre (lip plate) - bosse vue de cote, depasse au-dessus du tube
+  h+='<path d="M28,'+ty+' Q28,'+(ty-14)+' 42,'+(ty-16)+' Q56,'+(ty-14)+' 56,'+ty+'" fill="url(#lp_'+g+')" stroke="#5C4A0A" stroke-width="1.2"/>';
+  // Reflet sur la plaque de levre
+  h+='<path d="M31,'+(ty-2)+' Q31,'+(ty-11)+' 42,'+(ty-13)+' Q53,'+(ty-11)+' 53,'+(ty-2)+'" fill="none" stroke="#EDD580" stroke-width=".7" opacity=".3"/>';
+  // Trou d\'embouchure (blow hole) - fente sombre dans la plaque
+  h+='<rect x="36" y="'+(ty-10)+'" width="12" height="8" rx="3" fill="url(#eh_'+g+')" stroke="#3D2A08" stroke-width=".8"/>';
+  // Biseau - arete vive cote droit du trou (ou l\'air se fend)
+  h+='<line x1="48" y1="'+(ty-9)+'" x2="48" y2="'+(ty-3)+'" stroke="#D4B044" stroke-width="1" opacity=".5"/>';
+  // Ombre interieure du trou
+  h+='<rect x="37" y="'+(ty-9)+'" width="10" height="6" rx="2" fill="none" stroke="#0A0600" stroke-width=".4" opacity=".3"/>';
   // Top holes
   topHoles.forEach((fi,i)=>{
     h+='<circle id="fh_'+svgId+'_'+fi+'" cx="'+posTop[i]+'" cy="'+h_top+'" r="'+r+'" class="flute-hole closed"/>';
@@ -783,7 +794,7 @@ function goStep(s){
   ['step1','step2','step3'].forEach((id,i)=>{const el=$(id);el.style.display=(i+1===s)?'':'none';
     if(i+1===s){el.classList.add('fade-in')}else{el.classList.remove('fade-in')}});
   document.querySelectorAll('.step-dot').forEach((d,i)=>{d.className='step-dot'+(i+1===s?' active':i+1<s?' done':' locked')});
-  if(s===2){buildPresetSelect();buildFingeringRows();fpHistory=[];fpFuture=[];updUndoUI()}
+  if(s===2){buildPresetSelect();const iv=$('instrumentSelect');if(iv&&iv.value){$('presetSelect').value=iv.value}buildFingeringRows();fpHistory=[];fpFuture=[];updUndoUI()}
   if(s===3)buildAirflowRows()
 }
 
@@ -827,7 +838,36 @@ function buildFingerCards(){
       '<div class="pca-warn"></div>';
     d.innerHTML=html;c.appendChild(d)
   }
-  checkPca()
+  checkPca();buildInstrumentSelect()
+}
+
+function buildInstrumentSelect(){
+  const s=$('instrumentSelect');if(!s)return;
+  s.innerHTML='<option value="">-- Personnalis\u00e9 --</option>';
+  const groups={};PR.forEach(p=>{(groups[p.h]=groups[p.h]||[]).push(p)});
+  Object.keys(groups).sort((a,b)=>a-b).forEach(h=>{
+    const og=document.createElement('optgroup');og.label=h+' trous';
+    groups[h].forEach(p=>{const o=document.createElement('option');o.value=p.id;
+      o.textContent=p.n+(p.th>=0?' (pouce)':'');og.appendChild(o)});
+    s.appendChild(og)})
+}
+
+function selectInstrument(val){
+  if(!val||!CFG)return;
+  const p=PR.find(x=>x.id===val);if(!p)return;
+  // Adjust num_fingers
+  CFG.num_fingers=p.h;
+  while(CFG.fingers.length<p.h)CFG.fingers.push({ch:CFG.fingers.length,a:90,d:1,th:0});
+  // Set thumb
+  CFG.fingers.forEach(f=>f.th=0);
+  if(p.th>=0&&CFG.fingers[p.th])CFG.fingers[p.th].th=1;
+  // Pre-fill notes from preset
+  CFG.notes=p.d.map(n=>({midi:n[0],fp:[...n[1]],amn:n[2],amx:n[3]}));
+  CFG.notes.forEach(n=>{while(n.fp.length<CFG.num_fingers)n.fp.push(0)});
+  CFG.num_notes=CFG.notes.length;
+  // Rebuild UI
+  buildFingerCards();buildFlute(CFG,'calFluteSvg',true);markDirty();
+  showToast(p.n+' - '+p.h+' trous, '+CFG.num_notes+' notes','success')
 }
 
 function testFinger(i,a){wsSend({t:'test_finger',i:i,a:parseInt(a)});
