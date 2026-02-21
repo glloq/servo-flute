@@ -271,7 +271,8 @@ void WebConfigurator::setupRoutes() {
 }
 
 void WebConfigurator::handleRoot(AsyncWebServerRequest* request) {
-  request->send_P(200, "text/html", WEB_HTML_CONTENT);
+  AsyncWebServerResponse* response = request->beginResponse_P(200, "text/html", WEB_HTML_CONTENT, sizeof(WEB_HTML_CONTENT) - 1);
+  request->send(response);
 }
 
 void WebConfigurator::handleApiStatus(AsyncWebServerRequest* request) {
