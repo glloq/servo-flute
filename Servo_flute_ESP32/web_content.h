@@ -401,6 +401,37 @@ max-height:120px;overflow-y:auto;color:#9aa}
       <svg id="exprCurveSvg" viewBox="0 0 320 140" style="width:100%;max-width:400px;height:auto;background:rgba(0,0,0,.2);border-radius:8px"></svg>
       <div style="font-size:.7em;color:#666;margin-top:4px">Bleu = attaque forte (vel 127) / Gris = attaque douce (vel 40)</div>
     </div>
+    <div class="section">
+      <h3>Vibrato (CC1 Modulation)</h3>
+      <p style="font-size:.8em;color:#888;margin:0 0 12px">Oscillation du servo airflow modulee par CC1. Amplitude=0 desactive le vibrato.</p>
+      <div class="cfg-row"><label>Frequence (Hz)</label>
+        <input type="range" min="1" max="12" step="0.5" value="5" id="exVibF" oninput="CFG.vib_freq=parseFloat(this.value);$('exVibFVal').textContent=this.value+'Hz';markDirty()">
+        <span id="exVibFVal" style="min-width:40px">5Hz</span>
+      </div>
+      <div class="cfg-row"><label>Amplitude max (deg)</label>
+        <input type="range" min="0" max="20" step="0.5" value="3" id="exVibA" oninput="CFG.vib_amp=parseFloat(this.value);$('exVibAVal').textContent=this.value+'\u00b0';markDirty()">
+        <span id="exVibAVal" style="min-width:36px">3&deg;</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Breath Controller (CC2)</h3>
+      <p style="font-size:.8em;color:#888;margin:0 0 12px">Controle continu du souffle par CC2. Si aucun CC2 n'est recu, la velocite noteOn est utilisee en fallback.</p>
+      <div class="cfg-row"><label>Actif</label><input type="checkbox" id="exCC2On" style="width:auto;flex:0" onchange="CFG.cc2_on=this.checked;markDirty()"></div>
+      <div class="cfg-row"><label>Seuil silence</label>
+        <input type="range" min="0" max="30" value="5" id="exCC2Thr" oninput="CFG.cc2_thr=parseInt(this.value);$('exCC2ThrVal').textContent=this.value;markDirty()">
+        <span id="exCC2ThrVal" style="min-width:28px">5</span>
+      </div>
+      <div class="cfg-row"><label>Courbe reponse</label>
+        <input type="range" min="0.1" max="3" step="0.1" value="1" id="exCC2Curve" oninput="CFG.cc2_curve=parseFloat(this.value);$('exCC2CurveVal').textContent=this.value;markDirty()">
+        <span id="exCC2CurveVal" style="min-width:28px">1</span>
+      </div>
+      <div class="cfg-row"><label>Timeout fallback (ms)</label>
+        <input type="range" min="100" max="5000" step="100" value="2000" id="exCC2To" oninput="CFG.cc2_timeout=parseInt(this.value);$('exCC2ToVal').textContent=this.value+'ms';markDirty()">
+        <span id="exCC2ToVal" style="min-width:52px">2000ms</span>
+      </div>
+    </div>
+
     <div class="btn-row" style="justify-content:space-between">
       <button class="btn btn-s" onclick="goStep(3)"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Retour</button>
       <button class="btn btn-g" id="btnSaveStep4" onclick="saveStep4()"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M3 8l3.5 4L13 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Sauver &amp; Terminer</button>
@@ -431,24 +462,12 @@ max-height:120px;overflow-y:auto;color:#9aa}
     <div class="cfg-row"><label>Angle max</label><input type="number" id="cfgAirMax" min="0" max="180"></div>
   </div>
 
-  <div class="section"><h3>Vibrato</h3>
-    <div class="cfg-row"><label>Frequence (Hz)</label><input type="number" id="cfgVibF" min="0" max="20" step="0.5"></div>
-    <div class="cfg-row"><label>Amplitude (deg)</label><input type="number" id="cfgVibA" min="0" max="30" step="0.5"></div>
-  </div>
-
   <div class="section"><h3>CC Defaults</h3>
     <div class="cfg-row"><label>Volume (CC7)</label><input type="number" id="cfgCCVol" min="0" max="127"></div>
     <div class="cfg-row"><label>Expression (CC11)</label><input type="number" id="cfgCCExpr" min="0" max="127"></div>
     <div class="cfg-row"><label>Modulation (CC1)</label><input type="number" id="cfgCCMod" min="0" max="127"></div>
     <div class="cfg-row"><label>Breath (CC2)</label><input type="number" id="cfgCCBreath" min="0" max="127"></div>
     <div class="cfg-row"><label>Brightness (CC74)</label><input type="number" id="cfgCCBright" min="0" max="127"></div>
-  </div>
-
-  <div class="section"><h3>Breath CC2</h3>
-    <div class="cfg-row"><label>Active</label><input type="checkbox" id="cfgCC2On" style="width:auto;flex:0"></div>
-    <div class="cfg-row"><label>Seuil silence</label><input type="number" id="cfgCC2Thr" min="0" max="127"></div>
-    <div class="cfg-row"><label>Courbe</label><input type="number" id="cfgCC2Curve" min="0.1" max="5" step="0.1"></div>
-    <div class="cfg-row"><label>Timeout (ms)</label><input type="number" id="cfgCC2To" min="0" max="10000"></div>
   </div>
 
   <div class="section"><h3>Solenoide</h3>
@@ -1149,6 +1168,14 @@ function buildExprUI(){
   $('airAtkOff').value=CFG.air_atk_off||20;$('atkOffVal').textContent=(CFG.air_atk_off||20)+'%';
   $('airAtkMs').value=CFG.air_atk_ms||150;$('atkMsVal').textContent=(CFG.air_atk_ms||150)+'ms';
   $('airVelResp').value=CFG.air_vel_resp!=null?CFG.air_vel_resp:50;$('velRespVal').textContent=(CFG.air_vel_resp!=null?CFG.air_vel_resp:50)+'%';
+  // Vibrato
+  const vf=CFG.vib_freq||5;$('exVibF').value=vf;$('exVibFVal').textContent=vf+'Hz';
+  const va=CFG.vib_amp!=null?CFG.vib_amp:3;$('exVibA').value=va;$('exVibAVal').textContent=va+'\u00b0';
+  // Breath CC2
+  $('exCC2On').checked=!!CFG.cc2_on;
+  const thr=CFG.cc2_thr||5;$('exCC2Thr').value=thr;$('exCC2ThrVal').textContent=thr;
+  const crv=CFG.cc2_curve||1;$('exCC2Curve').value=crv;$('exCC2CurveVal').textContent=crv;
+  const to=CFG.cc2_timeout||2000;$('exCC2To').value=to;$('exCC2ToVal').textContent=to+'ms';
   $('exprParams').style.display=m===0?'none':'';
   setAirMode(m,true)
 }
@@ -1166,17 +1193,21 @@ function drawExprCurve(){
   const w=320,h=140,pad=30,gw=w-pad*2,gh=h-pad-10;
   const m=CFG.air_atk_mode||0,off=(CFG.air_atk_off||20)/100,dur=CFG.air_atk_ms||150,vr=(CFG.air_vel_resp!=null?CFG.air_vel_resp:50)/100;
   const maxMs=Math.max(500,dur*2.5);
+  // Calculer le max Y dynamique (accent peut depasser 100%)
+  const peakBase=40+(127/127)*60*vr+(1-vr)*60;
+  const maxY=m===1?Math.min(150,Math.ceil((peakBase+peakBase*off)/10)*10):100;
+  const tickStep=maxY<=100?25:maxY<=120?20:25;
   let s='<line x1="'+pad+'" y1="'+(h-pad)+'" x2="'+(w-pad)+'" y2="'+(h-pad)+'" stroke="#444" stroke-width="1"/>';
   s+='<line x1="'+pad+'" y1="10" x2="'+pad+'" y2="'+(h-pad)+'" stroke="#444" stroke-width="1"/>';
   s+='<text x="'+(w/2)+'" y="'+(h-4)+'" text-anchor="middle" style="font-size:9px;fill:#666">Temps (ms)</text>';
   s+='<text x="8" y="'+(h/2-10)+'" style="font-size:9px;fill:#666" transform="rotate(-90 8 '+(h/2-10)+')">Souffle %</text>';
-  // Ticks
   for(let t=0;t<=maxMs;t+=100){const x=pad+(t/maxMs)*gw;
     s+='<line x1="'+x+'" y1="'+(h-pad)+'" x2="'+x+'" y2="'+(h-pad+4)+'" stroke="#555" stroke-width=".5"/>';
     if(t%200===0)s+='<text x="'+x+'" y="'+(h-pad+14)+'" text-anchor="middle" style="font-size:8px;fill:#555">'+t+'</text>'}
-  for(let p=0;p<=100;p+=25){const y=(h-pad)-(p/100)*gh;
-    s+='<text x="'+(pad-4)+'" y="'+(y+3)+'" text-anchor="end" style="font-size:8px;fill:#555">'+p+'</text>'}
-  // Draw 2 curves: vel=127 (strong) and vel=40 (soft)
+  for(let p=0;p<=maxY;p+=tickStep){const y=(h-pad)-(p/maxY)*gh;
+    s+='<text x="'+(pad-4)+'" y="'+(y+3)+'" text-anchor="end" style="font-size:8px;fill:#555">'+p+'</text>';
+    if(p===100&&maxY>100)s+='<line x1="'+pad+'" y1="'+y+'" x2="'+(w-pad)+'" y2="'+y+'" stroke="#e94560" stroke-width=".5" stroke-dasharray="2 2" opacity=".3"/>'}
+  // 2 courbes: vel=127 (forte, bleu) et vel=40 (douce, gris)
   [['#4ecdc4',127,.9],['#888',40,.5]].forEach(([col,vel,op])=>{
     const base=40+(vel/127)*60*vr+(1-vr)*60;
     let pts=[];
@@ -1184,13 +1215,12 @@ function drawExprCurve(){
       let v=base;
       if(m===1&&t<dur)v=base+base*off*(1-t/dur);
       else if(m===2&&t<dur)v=base-base*off*(1-t/dur);
-      v=Math.max(0,Math.min(100,v));
-      const x=pad+(t/maxMs)*gw,y=(h-pad)-(v/100)*gh;
+      v=Math.max(0,v);
+      const x=pad+(t/maxMs)*gw,y=(h-pad)-(v/maxY)*gh;
       pts.push(x.toFixed(1)+','+y.toFixed(1))
     }
     s+='<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+col+'" stroke-width="2" opacity="'+op+'"/>';
-    // Target line
-    const ty=(h-pad)-(base/100)*gh;
+    const ty=(h-pad)-(base/maxY)*gh;
     s+='<line x1="'+pad+'" y1="'+ty+'" x2="'+(w-pad)+'" y2="'+ty+'" stroke="'+col+'" stroke-width=".5" stroke-dasharray="4 3" opacity=".4"/>'
   });
   svg.innerHTML=s
@@ -1198,7 +1228,9 @@ function drawExprCurve(){
 
 function saveStep4(){
   if(!CFG)return;btnLoad('btnSaveStep4',true);
-  const body={air_atk_mode:CFG.air_atk_mode||0,air_atk_off:CFG.air_atk_off||20,air_atk_ms:CFG.air_atk_ms||150,air_vel_resp:CFG.air_vel_resp!=null?CFG.air_vel_resp:50};
+  const body={air_atk_mode:CFG.air_atk_mode||0,air_atk_off:CFG.air_atk_off||20,air_atk_ms:CFG.air_atk_ms||150,air_vel_resp:CFG.air_vel_resp!=null?CFG.air_vel_resp:50,
+    vib_freq:CFG.vib_freq||5,vib_amp:CFG.vib_amp!=null?CFG.vib_amp:3,
+    cc2_on:!!CFG.cc2_on,cc2_thr:CFG.cc2_thr||5,cc2_curve:CFG.cc2_curve||1,cc2_timeout:CFG.cc2_timeout||2000};
   fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(r=>r.json()).then(d=>{btnLoad('btnSaveStep4',false);if(d.ok){showToast('Calibration terminee !','success');markClean();buildKeyboard();buildFlute(CFG,'fluteSvg',false)}else showToast('Erreur sauvegarde','error')})
     .catch(e=>{btnLoad('btnSaveStep4',false);showToast('Erreur: '+e,'error')})
@@ -1213,14 +1245,12 @@ function fillSettings(){
   sel.value=CFG.midi_ch||0;
   $('cfgDelay').value=CFG.servo_delay;$('cfgValveInt').value=CFG.valve_interval;$('cfgMinNote').value=CFG.min_note_dur;
   $('cfgAirMin').value=CFG.air_min;$('cfgAirMax').value=CFG.air_max;
-  $('cfgVibF').value=CFG.vib_freq;$('cfgVibA').value=CFG.vib_amp;
   $('cfgCCVol').value=CFG.cc_vol!=null?CFG.cc_vol:127;$('cfgCCExpr').value=CFG.cc_expr!=null?CFG.cc_expr:127;
   $('cfgCCMod').value=CFG.cc_mod!=null?CFG.cc_mod:0;$('cfgCCBreath').value=CFG.cc_breath!=null?CFG.cc_breath:127;
   $('cfgCCBright').value=CFG.cc_bright!=null?CFG.cc_bright:64;
-  $('cfgCC2On').checked=CFG.cc2_on;$('cfgCC2Thr').value=CFG.cc2_thr;$('cfgCC2Curve').value=CFG.cc2_curve;$('cfgCC2To').value=CFG.cc2_timeout;
-  // Solenoid pin dropdown
+  // Solenoid pin dropdown (PWM-capable, non utilises par I2C/I2S/LED/boutons)
   const sp=$('cfgSolPin');sp.innerHTML='';
-  [2,4,5,12,13,14,15,16,17,18,19,21,22,23,25,26,27,32,33].forEach(p=>{
+  [12,13,16,17,18,19,23,25,26,27,33].forEach(p=>{
     const o=document.createElement('option');o.value=p;o.textContent='GPIO '+p;sp.appendChild(o)});
   sp.value=CFG.sol_pin||13;
   $('cfgSolAct').value=CFG.sol_act;$('cfgSolHold').value=CFG.sol_hold;$('cfgSolTime').value=CFG.sol_time;
@@ -1241,11 +1271,8 @@ function saveSettings(){
     servo_delay:parseInt($('cfgDelay').value),valve_interval:parseInt($('cfgValveInt').value),
     min_note_dur:parseInt($('cfgMinNote').value),
     air_min:parseInt($('cfgAirMin').value),air_max:parseInt($('cfgAirMax').value),
-    vib_freq:parseFloat($('cfgVibF').value),vib_amp:parseFloat($('cfgVibA').value),
     cc_vol:parseInt($('cfgCCVol').value),cc_expr:parseInt($('cfgCCExpr').value),
     cc_mod:parseInt($('cfgCCMod').value),cc_breath:parseInt($('cfgCCBreath').value),cc_bright:parseInt($('cfgCCBright').value),
-    cc2_on:$('cfgCC2On').checked,cc2_thr:parseInt($('cfgCC2Thr').value),
-    cc2_curve:parseFloat($('cfgCC2Curve').value),cc2_timeout:parseInt($('cfgCC2To').value),
     sol_pin:parseInt($('cfgSolPin').value),
     sol_act:parseInt($('cfgSolAct').value),sol_hold:parseInt($('cfgSolHold').value),sol_time:parseInt($('cfgSolTime').value),
     time_unpower:parseInt($('cfgUnpower').value),hide_calib:$('cfgHideCalib').checked};
