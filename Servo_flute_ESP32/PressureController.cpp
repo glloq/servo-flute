@@ -214,50 +214,40 @@ void PressureController::update() {
     } else {
       _fillPercent = 100 - (uint8_t)(((uint32_t)(_distanceMm - cfg.sensorMinMm) * 100) / (cfg.sensorMaxMm - cfg.sensorMinMm));
     }
-
-    // Securite : si distance trop courte (surgonflage), couper pompe
-    if (_distanceMm <= PUMP_SAFETY_MAX_MM && _distanceMm > 0) {
-      setPumpPwm(0);
-      _pidIntegral = 0;
-      return;
-    }
   }
 
-  // Boucle PID periodique
+  // Controle pompe par seuil de hauteur (pas de PID)
+  // La pompe s'active quand le remplissage tombe sous la cible,
+  // et s'arrete quand le remplissage atteint la cible ou si
+  // la distance depasse 300mm (capteur hors portee / pas de ballon)
   if (now - _lastPidTime >= PRESSURE_PID_INTERVAL_MS) {
-    float dt = (now - _lastPidTime) / 1000.0f;
     _lastPidTime = now;
 
     if (_targetPercent == 0) {
       setPumpPwm(0);
-      _pidIntegral = 0;
-      _pidLastError = 0;
       return;
     }
 
-    // Erreur : difference entre cible et etat actuel
-    float error = (float)_targetPercent - (float)_fillPercent;
-
-    // PID (PI seulement, pas de derivee pour eviter le bruit)
-    float kp = cfg.pidKp / 10.0f;
-    float ki = cfg.pidKi / 10.0f;
-
-    _pidIntegral += error * dt;
-    // Anti-windup
-    if (_pidIntegral > 100.0f) _pidIntegral = 100.0f;
-    if (_pidIntegral < -100.0f) _pidIntegral = -100.0f;
-
-    float output = kp * error + ki * _pidIntegral;
-    _pidLastError = error;
-
-    // Mapper sortie PID vers PWM pompe
-    if (output <= 0) {
+    // Securite : distance > 300mm = capteur ne voit pas le ballon, couper pompe
+    if (_distanceMm > PUMP_SAFETY_MAX_DIST_MM) {
       setPumpPwm(0);
-    } else {
-      if (output > 100.0f) output = 100.0f;
-      uint8_t pwm = cfg.pumpMinPwm + (uint8_t)((cfg.pumpMaxPwm - cfg.pumpMinPwm) * output / 100.0f);
-      setPumpPwm(pwm);
+      return;
     }
+
+    // Securite : distance trop courte (surgonflage), couper pompe
+    if (_distanceMm <= PUMP_SAFETY_MIN_MM && _distanceMm > 0) {
+      setPumpPwm(0);
+      return;
+    }
+
+    // Hysteresis: pompe ON si remplissage < cible - 5%, OFF si >= cible
+    if (_fillPercent < _targetPercent - 5) {
+      // Pompe a PWM max pour gonfler
+      setPumpPwm(cfg.pumpMaxPwm);
+    } else if (_fillPercent >= _targetPercent) {
+      setPumpPwm(0);
+    }
+    // Entre (cible-5) et cible : maintenir l'etat actuel (hysteresis)
   }
 }
 
