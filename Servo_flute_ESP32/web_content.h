@@ -254,6 +254,9 @@ border-bottom:1px solid #1a4080;position:sticky;top:0;background:#16213e;z-index
       <input type="range" min="1" max="127" value="100" id="velSlider" oninput="setVelocity(this.value)">
       <span id="velVal" style="min-width:28px;text-align:right">100</span>
     </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:6px">
+      <button class="btn btn-s" id="kbdToggle" onclick="toggleKbdMode()" style="padding:4px 10px;font-size:.75em"><svg viewBox="0 0 16 16" width="12" height="12"><rect x="1" y="3" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="5" width="2" height="2" rx=".3" fill="currentColor"/><rect x="7" y="5" width="2" height="2" rx=".3" fill="currentColor"/><rect x="11" y="5" width="2" height="2" rx=".3" fill="currentColor"/><rect x="5" y="9" width="6" height="2" rx=".3" fill="currentColor"/></svg><span id="kbdModeLabel">Piano</span></button>
+    </div>
   </div>
   <div class="keys" id="pianoKeys"></div>
 </div>
@@ -420,9 +423,9 @@ border-bottom:1px solid #1a4080;position:sticky;top:0;background:#16213e;z-index
       <p style="font-size:.8em;color:#888;margin:0 0 12px">Definissez comment le servo airflow reagit au debut de chaque note (attaque) et l'influence de la velocite MIDI sur le volume de souffle.<br>Ces valeurs servent de defaut ; <b>CC73 (Attack Time)</b> peut changer le mode en temps reel via MIDI : 0-42=Stable, 43-84=Accent, 85-127=Crescendo.</p>
       <div class="cfg-row"><label>Mode d'attaque</label>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="btn btn-s expr-mode" data-mode="0" onclick="setAirMode(0)">Stable</button>
-          <button class="btn btn-s expr-mode" data-mode="1" onclick="setAirMode(1)">Accent</button>
-          <button class="btn btn-s expr-mode" data-mode="2" onclick="setAirMode(2)">Crescendo</button>
+          <button class="btn btn-s expr-mode" data-mode="0" onclick="setExprMode(0)">Stable</button>
+          <button class="btn btn-s expr-mode" data-mode="1" onclick="setExprMode(1)">Accent</button>
+          <button class="btn btn-s expr-mode" data-mode="2" onclick="setExprMode(2)">Crescendo</button>
         </div>
       </div>
       <div id="exprModeDesc" style="font-size:.78em;color:#aaa;margin:4px 0 12px;padding:6px 10px;background:rgba(255,255,255,.04);border-radius:6px"></div>
@@ -701,6 +704,7 @@ border-bottom:1px solid #1a4080;position:sticky;top:0;background:#16213e;z-index
   </div>
 
   <div class="section"><h3>Servo Airflow</h3>
+    <div class="cfg-row"><label>Angle repos</label><input type="number" id="cfgAirOff" min="0" max="180"></div>
     <div class="cfg-row"><label>Angle min</label><input type="number" id="cfgAirMin" min="0" max="180"></div>
     <div class="cfg-row"><label>Angle max</label><input type="number" id="cfgAirMax" min="0" max="180"></div>
   </div>
@@ -1236,7 +1240,13 @@ function loadConfig(){
 function buildKeyboard(){
   const c=$('pianoKeys');c.innerHTML='';if(!CFG||!CFG.notes||!CFG.notes.length){c.innerHTML='<div style="color:#888;padding:16px;text-align:center">Aucune note</div>';return}
   if(CFG.kbd_mode===1){buildPianoKeyboard(c)}else{buildFluteKeyboard(c)}
-  buildKeyMap()
+  buildKeyMap();updKbdToggle()
+}
+function updKbdToggle(){const l=$('kbdModeLabel');if(l&&CFG)l.textContent=CFG.kbd_mode===1?'Flute':'Piano'}
+function toggleKbdMode(){
+  if(!CFG)return;CFG.kbd_mode=CFG.kbd_mode===1?0:1;
+  buildKeyboard();
+  fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kbd_mode:CFG.kbd_mode})})
 }
 function addKeyEvents(el,midi){
   el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();if(noteOn(midi))el.classList.add('pressed')},{passive:false});
@@ -1335,9 +1345,9 @@ const KC='azertyuiopqsdfghjklmwxcvbn'.split('');let keyMap={},keysDown=new Set()
 function buildKeyMap(){keyMap={};if(!CFG)return;CFG.notes.forEach((n,i)=>{if(i<KC.length)keyMap[KC[i]]=n.midi})}
 document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT'||e.repeat||e.ctrlKey||e.altKey||e.metaKey)return;
   const n=keyMap[e.key.toLowerCase()];if(n&&!keysDown.has(e.key)){
-    if(noteOn(n)){keysDown.add(e.key);const el=document.querySelector('.key[data-midi="'+n+'"]');if(el)el.classList.add('pressed')}}});
+    if(noteOn(n)){keysDown.add(e.key);const el=document.querySelector('.key[data-midi="'+n+'"],.pkey[data-midi="'+n+'"]');if(el)el.classList.add('pressed')}}});
 document.addEventListener('keyup',e=>{const n=keyMap[e.key.toLowerCase()];if(n&&keysDown.has(e.key)){keysDown.delete(e.key);noteOff(n);
-    const el=document.querySelector('.key[data-midi="'+n+'"]');if(el)el.classList.remove('pressed')}});
+    const el=document.querySelector('.key[data-midi="'+n+'"],.pkey[data-midi="'+n+'"]');if(el)el.classList.remove('pressed')}});
 document.addEventListener('keydown',e=>{if(!e.ctrlKey)return;
   if(e.key==='z'&&calibStep===2){e.preventDefault();undoFp()}
   if(e.key==='y'&&calibStep===2){e.preventDefault();redoFp()}});
@@ -2054,10 +2064,10 @@ function buildExprUI(){
   const crv=CFG.cc2_curve||1;$('exCC2Curve').value=crv;$('exCC2CurveVal').textContent=crv;
   const to=CFG.cc2_timeout||2000;$('exCC2To').value=to;$('exCC2ToVal').textContent=to+'ms';
   $('exprParams').style.display=m===0?'none':'';
-  setAirMode(m,true)
+  setExprMode(m,true)
 }
 
-function setAirMode(m,noMark){
+function setExprMode(m,noMark){
   CFG.air_atk_mode=m;
   document.querySelectorAll('.expr-mode').forEach(b=>{b.classList.toggle('active',parseInt(b.dataset.mode)===m)});
   $('exprModeDesc').textContent=EXPR_MODES[m].d;
@@ -2121,7 +2131,7 @@ function fillSettings(){
   for(let i=1;i<=16;i++){const o=document.createElement('option');o.value=i;o.textContent='Canal '+i;sel.appendChild(o)}
   sel.value=CFG.midi_ch||0;
   $('cfgDelay').value=CFG.servo_delay;$('cfgValveInt').value=CFG.valve_interval;$('cfgMinNote').value=CFG.min_note_dur;
-  $('cfgAirMin').value=CFG.air_min;$('cfgAirMax').value=CFG.air_max;
+  $('cfgAirOff').value=CFG.air_off!=null?CFG.air_off:20;$('cfgAirMin').value=CFG.air_min;$('cfgAirMax').value=CFG.air_max;
   $('cfgCCVol').value=CFG.cc_vol!=null?CFG.cc_vol:127;$('cfgCCExpr').value=CFG.cc_expr!=null?CFG.cc_expr:127;
   $('cfgCCMod').value=CFG.cc_mod!=null?CFG.cc_mod:0;$('cfgCCBreath').value=CFG.cc_breath!=null?CFG.cc_breath:127;
   $('cfgCCBright').value=CFG.cc_bright!=null?CFG.cc_bright:64;
@@ -2151,7 +2161,7 @@ function saveSettings(){
   const body={device:$('cfgDevice').value,midi_ch:parseInt($('cfgMidiCh').value),
     servo_delay:parseInt($('cfgDelay').value),valve_interval:parseInt($('cfgValveInt').value),
     min_note_dur:parseInt($('cfgMinNote').value),
-    air_min:parseInt($('cfgAirMin').value),air_max:parseInt($('cfgAirMax').value),
+    air_off:parseInt($('cfgAirOff').value),air_min:parseInt($('cfgAirMin').value),air_max:parseInt($('cfgAirMax').value),
     cc_vol:parseInt($('cfgCCVol').value),cc_expr:parseInt($('cfgCCExpr').value),
     cc_mod:parseInt($('cfgCCMod').value),cc_breath:parseInt($('cfgCCBreath').value),cc_bright:parseInt($('cfgCCBright').value),
     sol_pin:parseInt($('cfgSolPin').value),
