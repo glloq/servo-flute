@@ -71,12 +71,12 @@ color:#e0e0e0;padding:6px 8px;border-radius:4px;font-size:0.85em;width:100%}
 .keys{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:8px 0}
 .key{background:linear-gradient(180deg,#2a2a4a,#1a1a2e);border:1px solid #0f3460;
 border-radius:6px;padding:10px 8px;text-align:center;cursor:pointer;user-select:none;
-min-width:60px;flex:0 0 auto;transition:all .15s}
+-webkit-user-select:none;touch-action:manipulation;min-width:60px;flex:0 0 auto;transition:all .15s}
 .key.black{background:linear-gradient(180deg,#1a1a2e,#0a0a1e);border-color:#444}
 .key.pressed,.key:active{background:#e94560;border-color:#e94560;transform:scale(.96)}
 .piano-keys{position:relative;display:flex;padding:8px 0;justify-content:center}
 .pkey{position:relative;display:flex;align-items:flex-end;justify-content:center;
-cursor:pointer;user-select:none;transition:all .12s;box-sizing:border-box}
+cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation;transition:all .12s;box-sizing:border-box}
 .pkey.white{background:linear-gradient(180deg,#f8f8f8,#ddd);border:1px solid #999;
 border-radius:0 0 5px 5px;width:44px;height:140px;z-index:1;margin:0 1px}
 .pkey.blk{background:linear-gradient(180deg,#333,#111);border:1px solid #000;
@@ -207,13 +207,27 @@ padding:2px 8px;border-radius:10px;font-weight:bold}
 display:flex;justify-content:space-between;position:fixed;bottom:0;left:0;right:0;z-index:5}
 .log{background:#0a0a1a;border-radius:4px;padding:8px;font-family:monospace;font-size:0.75em;
 max-height:120px;overflow-y:auto;color:#9aa}
+.keys,.piano-keys{-webkit-user-select:none;user-select:none;touch-action:manipulation}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:none;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:#16213e;border-radius:12px;width:95vw;max-width:700px;max-height:90vh;overflow-y:auto;
+box-shadow:0 8px 32px rgba(0,0,0,.6);border:1px solid #1a4080}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;
+border-bottom:1px solid #1a4080;position:sticky;top:0;background:#16213e;z-index:1}
+.modal-hdr h3{margin:0;font-size:1em;color:#e0e0e0}
+.modal-close{background:none;border:none;color:#888;font-size:1.4em;cursor:pointer;padding:0 4px}
+.modal-close:hover{color:#e94560}
+.modal-body{padding:16px}
+.pump-toggle{cursor:pointer;opacity:.9;transition:opacity .15s}
+.pump-toggle:hover{opacity:1}
+.pump-off{opacity:.4}
 </style>
 </head>
 <body>
 <div class="toast-container" id="toastContainer"></div>
 <div class="hdr">
   <h1 id="devName">ServoFlute<span class="unsaved-badge" id="unsavedBadge">modifi&eacute;</span></h1>
-  <div class="hdr-c"><span style="color:#e94560">B</span><svg viewBox="0 0 28 28" width="22" height="22"><circle cx="14" cy="14" r="12" fill="none" stroke="#8aa" stroke-width="1.5"/><text x="14" y="19" text-anchor="middle" fill="#e94560" font-size="18" font-weight="bold">&#8734;</text></svg><span style="color:#e94560">P</span></div>
+  <div class="hdr-c" onclick="openSeqModal()" style="cursor:pointer" title="Editeur de sequences"><span style="color:#e94560">B</span><svg viewBox="0 0 28 28" width="22" height="22"><circle cx="14" cy="14" r="12" fill="none" stroke="#8aa" stroke-width="1.5"/><text x="14" y="19" text-anchor="middle" fill="#e94560" font-size="18" font-weight="bold">&#8734;</text></svg><span style="color:#e94560">P</span></div>
   <div class="hdr-r">
     <span class="dot off" id="sDot"></span>
     <button class="gear-btn" onclick="toggleSettings()" title="Reglages" id="gearBtn">
@@ -238,11 +252,7 @@ max-height:120px;overflow-y:auto;color:#9aa}
   <div class="section">
     <div class="cfg-row"><label>Velocity</label>
       <input type="range" min="1" max="127" value="100" id="velSlider" oninput="setVelocity(this.value)">
-      <span id="velVal" style="min-width:28px;text-align:right"></span>
-    </div>
-    <div class="cfg-row"><label>Souffle</label>
-      <input type="range" min="0" max="100" value="50" id="airSlider" oninput="setAirLive(this.value)">
-      <span id="airVal" style="min-width:36px;text-align:right">50%</span>
+      <span id="velVal" style="min-width:28px;text-align:right">100</span>
     </div>
   </div>
   <div class="keys" id="pianoKeys"></div>
@@ -281,20 +291,6 @@ max-height:120px;overflow-y:auto;color:#9aa}
     <div class="file-info" id="progressText">--:-- / --:--</div>
   </div>
 
-  <div class="section">
-    <h3>Editeur</h3>
-    <p style="font-size:.78em;color:#888;margin:0 0 8px">Creer une sequence simple. Cliquer sur la grille pour placer/retirer des notes.</p>
-    <div class="cfg-row">
-      <label>BPM</label><input type="number" id="seqBpm" value="120" min="40" max="300" style="width:60px" onchange="drawSeqGrid()">
-      <label style="margin-left:12px">Mesures</label><input type="number" id="seqBars" value="4" min="1" max="16" style="width:50px" onchange="drawSeqGrid()">
-    </div>
-    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin:8px 0">
-      <svg id="seqSvg" style="min-width:100%;height:auto;background:rgba(0,0,0,.2);border-radius:6px;cursor:crosshair"></svg>
-    </div>
-    <div class="btn-row">
-      <button class="btn btn-g" onclick="uploadSeqMidi()"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 2l10 6-10 6z" fill="currentColor"/></svg>Jouer</button>
-      <button class="btn btn-s" onclick="clearSeq()">Effacer</button>
-    </div>
   </div>
 </div>
 
@@ -783,6 +779,31 @@ max-height:120px;overflow-y:auto;color:#9aa}
   <span id="heapBar">-</span>
 </div>
 
+<!-- SEQUENCE EDITOR MODAL -->
+<div class="modal-overlay" id="seqModal" onclick="if(event.target===this)closeSeqModal()">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3>Editeur de sequences</h3>
+      <button class="modal-close" onclick="closeSeqModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.78em;color:#888;margin:0 0 8px">Creer une sequence. Cliquer sur la grille pour placer/retirer des notes.</p>
+      <div class="cfg-row">
+        <label>BPM</label><input type="number" id="seqBpm" value="120" min="40" max="300" style="width:60px" onchange="drawSeqGrid()">
+        <label style="margin-left:12px">Mesures</label><input type="number" id="seqBars" value="4" min="1" max="16" style="width:50px" onchange="drawSeqGrid()">
+      </div>
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin:8px 0">
+        <svg id="seqSvg" style="min-width:100%;height:auto;background:rgba(0,0,0,.2);border-radius:6px;cursor:crosshair"></svg>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-g" onclick="uploadSeqMidi()"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 2l10 6-10 6z" fill="currentColor"/></svg>Jouer</button>
+        <button class="btn btn-s" onclick="clearSeq()">Effacer</button>
+      </div>
+      <div style="margin-top:12px;font-size:.72em;color:#666" id="seqMemInfo"></div>
+    </div>
+  </div>
+</div>
+
 <script>
 // --- Constants (mirrored from settings.h) ---
 const MIDI_CC_MAX=127,MIDI_VEL_MAX=127,MAX_FINGERS=15;
@@ -1050,12 +1071,37 @@ function updateAirDiagram(d){
   document.querySelectorAll('[id=airValveInd]').forEach(vi=>vi.setAttribute('fill',d.valve_open?'#4e4':'#e44'));
   // Update all balloon percent displays
   document.querySelectorAll('[id=airBalloonPct]').forEach(bp=>{bp.textContent=(d.res_pct!=null?d.res_pct:'--')+'%'});
+  // Update servo air needle rotation on 120° arc
+  document.querySelectorAll('[id=airServoNeedle]').forEach(nd=>{
+    if(d.air_angle==null)return;
+    // Map servo angle (0-180) to gauge angle (-150° to -30°)
+    const pct=Math.min(1,Math.max(0,d.air_angle/180));
+    const deg=-150+pct*120;
+    const cx=nd.parentNode?nd.getAttribute('x1')||0:0;
+    const cy2=nd.parentNode?nd.getAttribute('y1')||0:0;
+    nd.setAttribute('transform','rotate('+deg+','+cx+','+cy2+')')});
+  // Update pump icon state
+  if(d.pump_pwm!=null){
+    document.querySelectorAll('[id=airPumpIcon]').forEach(ic=>{
+      ic.setAttribute('stroke',d.pump_pwm>0?'#4ecca3':'#dde')})}
   // Update pump/reservoir display in Air tab
   const pp=$('airPumpPwm');if(pp)pp.textContent=d.pump_pwm>0?d.pump_pwm:'OFF';
   const rp=$('airResPct');if(rp)rp.textContent=(d.res_pct!=null?d.res_pct:'-')+'%';
   const rm=$('airResMm');if(rm)rm.textContent=(d.res_mm!=null?d.res_mm:'-')+'mm';
   const vs=$('airValveState');if(vs)vs.textContent=d.valve_open?'OUVERT':'FERME';
   const sa=$('airServoAngle');if(sa)sa.textContent=(d.air_angle!=null?d.air_angle:'-')+'°';
+}
+// Pump toggle from keyboard (click pump in SVG to disable/enable)
+let pumpDisabled=false;
+function togglePump(){
+  pumpDisabled=!pumpDisabled;
+  wsSend({t:'pump_enable',v:pumpDisabled?0:1});
+  document.querySelectorAll('.pump-toggle').forEach(g=>{
+    g.classList.toggle('pump-off',pumpDisabled)});
+  // Show red cross overlay
+  document.querySelectorAll('[id=pumpCrossOff]').forEach(el=>{
+    el.style.display=pumpDisabled?'':'none'});
+  showToast(pumpDisabled?'Pompe desactivee':'Pompe activee','info')
 }
 // --- First boot wizard ---
 let wizAirMode=0;
@@ -1193,8 +1239,10 @@ function buildKeyboard(){
   buildKeyMap()
 }
 function addKeyEvents(el,midi){
-  el.addEventListener('touchstart',e=>{e.preventDefault();if(noteOn(midi))el.classList.add('pressed')},{passive:false});
+  el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();if(noteOn(midi))el.classList.add('pressed')},{passive:false});
   el.addEventListener('touchend',e=>{e.preventDefault();noteOff(midi);el.classList.remove('pressed')},{passive:false});
+  el.addEventListener('touchmove',e=>{e.preventDefault()},{passive:false});
+  el.addEventListener('touchcancel',()=>{noteOff(midi);el.classList.remove('pressed')});
   el.addEventListener('mousedown',e=>{e.preventDefault();if(noteOn(midi))el.classList.add('pressed')});
   el.addEventListener('mouseup',()=>{noteOff(midi);el.classList.remove('pressed')});
   el.addEventListener('mouseleave',()=>{if(el.classList.contains('pressed')){noteOff(midi);el.classList.remove('pressed')}})
@@ -1213,11 +1261,11 @@ function buildFluteKeyboard(c){
 }
 function buildPianoKeyboard(c){
   c.className='piano-keys';
-  // Construire un piano couvrant la plage MIDI configuree
+  // Construire un piano optimise pour les notes jouables uniquement
   const midiSet=new Set(CFG.notes.map(n=>n.midi));
   const lo=Math.min(...midiSet),hi=Math.max(...midiSet);
-  // Etendre aux limites d'octave pour un rendu naturel
-  const startMidi=lo-(lo%12);const endMidi=hi+(11-(hi%12));
+  // Padding minimal: 1 note blanche de chaque cote pour un rendu propre
+  const startMidi=Math.max(0,lo-2);const endMidi=Math.min(127,hi+2);
   const blacks=new Set([1,3,6,8,10]);
   // Passe 1: creer les blanches, passe 2: inserer les noires
   const whiteKeys=[];const blackKeys=[];
@@ -1273,16 +1321,14 @@ function noteOn(midi){
   if(curNote!==null&&curNote!==midi)return false;
   curNote=midi;updateFluteForNote(midi);
   document.querySelectorAll('#fluteSvg .flute-hole.open').forEach(h=>h.classList.add('playing'));
+  // Souffle: calculer a partir de velocity et plage de la note
   if(CFG){const nd=CFG.notes.find(n=>n.midi===midi);if(nd){
-    const sl=$('airSlider'),av=$('airVal');
-    sl.min=nd.amn;sl.max=nd.amx;
-    const mid=Math.round((nd.amn+nd.amx)/2);sl.value=mid;av.textContent=mid+'%';
-    wsSend({t:'air_live',v:mid})}}
+    const airPct=nd.amn+Math.round((nd.amx-nd.amn)*velocity/127);
+    wsSend({t:'air_live',v:airPct})}}
   wsSend({t:'non',n:midi,v:velocity});return true}
 function noteOff(midi){wsSend({t:'nof',n:midi});if(curNote===midi){curNote=null;
   document.querySelectorAll('#fluteSvg .flute-hole.playing').forEach(h=>h.classList.remove('playing'))}}
 function setVelocity(v){velocity=parseInt(v);$('velVal').textContent=v;wsSend({t:'velocity',v:velocity})}
-function setAirLive(v){$('airVal').textContent=v+'%';wsSend({t:'air_live',v:parseInt(v)})}
 
 // Keyboard shortcuts
 const KC='azertyuiopqsdfghjklmwxcvbn'.split('');let keyMap={},keysDown=new Set();
@@ -1378,12 +1424,21 @@ function buildAirOverlay(g,em,ox,fluteX,ty,by,cy,svgH){
   const vlW=26,vlH=26; // valve box size
   let curX=fluteX; // build from right to left
 
-  // -- Servo Airflow (just before embouchure) --
+  // -- Servo Airflow with 120° arc gauge (just before embouchure) --
   const saX=curX-saW-8;
   const saY=cy-saH/2;
   s+='<rect x="'+saX+'" y="'+saY+'" width="'+saW+'" height="'+saH+'" rx="4" fill="url(#agMetal_'+g+')" stroke="#334" stroke-width="1.2"/>';
-  s+='<path id="airServoNeedle" d="M'+(saX+saW/2)+','+cy+' L'+(saX+saW/2)+','+(cy-12)+'" stroke="#e94" stroke-width="2" stroke-linecap="round"/>';
-  s+='<circle cx="'+(saX+saW/2)+'" cy="'+cy+'" r="2.5" fill="#e94"/>';
+  // Arc gauge: 120° sweep from -150° to -30° (bottom-centered)
+  const gcx=saX+saW/2,gcy=cy+2,gr=11;
+  const a1=-150*Math.PI/180,a2=-30*Math.PI/180;
+  s+='<path d="M'+(gcx+gr*Math.cos(a1))+','+(gcy+gr*Math.sin(a1))+' A'+gr+','+gr+' 0 0,1 '+(gcx+gr*Math.cos(a2))+','+(gcy+gr*Math.sin(a2))+'" fill="none" stroke="#556" stroke-width="1.5" stroke-linecap="round"/>';
+  // Tick marks at 0%, 50%, 100%
+  for(let t=0;t<=2;t++){const ta=a1+(a2-a1)*t/2;const tx1=gcx+(gr+2)*Math.cos(ta),ty1=gcy+(gr+2)*Math.sin(ta);
+    const tx2=gcx+(gr+4)*Math.cos(ta),ty2=gcy+(gr+4)*Math.sin(ta);
+    s+='<line x1="'+tx1+'" y1="'+ty1+'" x2="'+tx2+'" y2="'+ty2+'" stroke="#888" stroke-width=".8"/>';}
+  // Needle (default at 50% = -90°)
+  s+='<path id="airServoNeedle" d="M'+gcx+','+gcy+' L'+gcx+','+(gcy-gr+1)+'" stroke="#e94" stroke-width="2" stroke-linecap="round"/>';
+  s+='<circle cx="'+gcx+'" cy="'+gcy+'" r="2" fill="#e94"/>';
   s+='<text x="'+(saX+saW/2)+'" y="'+(saY+saH+10)+'" text-anchor="middle" style="font-size:7px;fill:#9aa">Servo Air</text>';
 
   // -- Tube: servo air -> flute embouchure --
@@ -1417,13 +1472,19 @@ function buildAirOverlay(g,em,ox,fluteX,ty,by,cy,svgH){
 
   // -- Pump + Reservoir column --
   if(m>=2){
-    // Pump at bottom-left
+    // Pump at bottom-left (clickable to toggle on/off)
     const pW=40,pH=32;
     const pX=m>=3?ox:vlX-pW-12;
     const pY=cy+8;
+    s+='<g class="pump-toggle'+(pumpDisabled?' pump-off':'')+'" onclick="togglePump()">';
     s+='<rect x="'+pX+'" y="'+pY+'" width="'+pW+'" height="'+pH+'" rx="4" fill="url(#agMetal_'+g+')" stroke="#334" stroke-width="1.2"/>';
     s+='<circle id="airPumpIcon" cx="'+(pX+pW/2)+'" cy="'+(pY+pH/2)+'" r="10" fill="none" stroke="#dde" stroke-width="1.2"/>';
     s+='<line id="airPumpBlade" x1="'+(pX+pW/2)+'" y1="'+(pY+pH/2-8)+'" x2="'+(pX+pW/2)+'" y2="'+(pY+pH/2+8)+'" stroke="#dde" stroke-width="1.5"/>';
+    // Red cross when disabled
+    s+='<g id="pumpCrossOff" style="display:'+(pumpDisabled?'':'none')+'">';
+    s+='<line x1="'+(pX+8)+'" y1="'+(pY+6)+'" x2="'+(pX+pW-8)+'" y2="'+(pY+pH-6)+'" stroke="#e44" stroke-width="3" stroke-linecap="round"/>';
+    s+='<line x1="'+(pX+pW-8)+'" y1="'+(pY+6)+'" x2="'+(pX+8)+'" y2="'+(pY+pH-6)+'" stroke="#e44" stroke-width="3" stroke-linecap="round"/>';
+    s+='</g></g>';
     s+='<text x="'+(pX+pW/2)+'" y="'+(pY+pH+10)+'" text-anchor="middle" style="font-size:7px;fill:#9aa">Pompe</text>';
 
     if(m>=3){
@@ -1641,6 +1702,15 @@ function loadMidiFile(name){
     }).catch(()=>showToast('Erreur reseau','error'))
 }
 
+// --- SEQUENCE EDITOR MODAL ---
+function openSeqModal(){$('seqModal').classList.add('show');drawSeqGrid();updateSeqMemInfo()}
+function closeSeqModal(){$('seqModal').classList.remove('show')}
+function updateSeqMemInfo(){
+  // Estimate memory: ~4 bytes per note event (step + noteIdx)
+  const used=seqNotes.length*4;const max=200*1024;
+  const el=$('seqMemInfo');if(el)el.textContent='Memoire: '+(used<1024?used+' B':(used/1024).toFixed(1)+' KB')+' / 200 KB';
+}
+
 // --- STEP SEQUENCER ---
 let seqNotes=[];// [{step,noteIdx}]
 const SEQ_NOTE_RANGE=()=>{if(!CFG||!CFG.notes||!CFG.notes.length)return{notes:[60],labels:['C4']};
@@ -1677,9 +1747,9 @@ function drawSeqGrid(){
 function toggleSeqNote(step,noteIdx){
   const idx=seqNotes.findIndex(n=>n.step===step&&n.noteIdx===noteIdx);
   if(idx>=0)seqNotes.splice(idx,1);else seqNotes.push({step,noteIdx});
-  drawSeqGrid()
+  drawSeqGrid();updateSeqMemInfo()
 }
-function clearSeq(){seqNotes=[];drawSeqGrid()}
+function clearSeq(){seqNotes=[];drawSeqGrid();updateSeqMemInfo()}
 
 function uploadSeqMidi(){
   if(!seqNotes.length){showToast('Sequence vide','error');return}
