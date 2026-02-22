@@ -153,7 +153,8 @@ Modes : 0=classique (solenoide), 1=servo-valve, 2=pompe directe,
 // Timing capteur / PID
 #define PRESSURE_READ_INTERVAL_MS   50     // Intervalle lecture capteur (ms)
 #define PRESSURE_PID_INTERVAL_MS    100    // Intervalle boucle PID (ms)
-#define PUMP_SAFETY_MAX_MM          5      // Distance min avant coupure securite
+#define PUMP_SAFETY_MIN_MM          5      // Distance min avant coupure securite (surgonflage)
+#define PUMP_SAFETY_MAX_DIST_MM    300    // Distance max (30cm) : capteur hors portee, couper pompe
 
 /*******************************************************************************
 ---------------------------   POWER MANAGEMENT        ------------------------
