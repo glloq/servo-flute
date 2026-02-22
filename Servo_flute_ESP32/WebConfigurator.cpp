@@ -1004,6 +1004,16 @@ void WebConfigurator::processWsMessage(AsyncWebSocketClient* client, uint8_t* da
   } else if (type == "pump_stop") {
     _instrument->getPressureCtrl().stop();
 
+  } else if (type == "pump_enable") {
+    int vIdx = msg.indexOf("\"v\":");
+    if (vIdx >= 0) {
+      int val = msg.substring(vIdx + 4).toInt();
+      if (val == 0) {
+        _instrument->getPressureCtrl().stop();
+      }
+      // Enable/disable is handled by stop/resume - pump resumes on next target set
+    }
+
 #if MIC_ENABLED
   } else if (type == "mic_mon") {
     int oIdx = msg.indexOf("\"on\":");
